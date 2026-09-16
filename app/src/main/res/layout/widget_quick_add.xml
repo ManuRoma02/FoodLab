@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_quick_add_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_quick_add_bg"
+    android:gravity="center"
+    android:padding="8dp"
+    android:orientation="vertical">
+
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:padding="8dp"
+        android:src="@android:drawable/ic_menu_add"
+        android:contentDescription="@string/widget_add_food"
+        android:tint="#FFFFFF" />
+
+</LinearLayout>
+

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/coin,@raw/click,@raw/error,@raw/power_up,@raw/blip_select_1,@raw/blip_select_2,@raw/blip_select_3" />
