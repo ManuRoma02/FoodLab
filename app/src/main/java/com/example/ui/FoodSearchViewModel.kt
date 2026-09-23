@@ -262,6 +262,10 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun quickLogFood(food: FoodItem, dateString: String, mealType: String, quantityGrams: Int = if (food.defaultServingSize > 0) food.defaultServingSize else 100) {
+        addMealEntry(food, quantityGrams, mealType, dateString)
+    }
+
     fun toggleFavorite(food: FoodItem) {
         viewModelScope.launch {
             if (food.id < 0) {
@@ -324,7 +328,8 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
         protein: Float, 
         carbs: Float, 
         fat: Float, 
-        portions: List<Pair<String, Float>> = emptyList()
+        portions: List<Pair<String, Float>> = emptyList(),
+        barcode: String = ""
     ) {
         val cleanName = name.trim().take(160)
         if (cleanName.isEmpty() || calories !in 0..900 || !protein.isFinite() || !carbs.isFinite() || !fat.isFinite()) return
@@ -336,7 +341,8 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
                     caloriesPer100g = calories,
                     proteinPer100g = protein.coerceIn(0f, 100f),
                     carbsPer100g = carbs.coerceIn(0f, 100f),
-                    fatPer100g = fat.coerceIn(0f, 100f)
+                    fatPer100g = fat.coerceIn(0f, 100f),
+                    barcode = barcode.filter(Char::isDigit).take(32)
                 )
             )
             if (portions.isNotEmpty()) {

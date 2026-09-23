@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,6 +41,8 @@ import com.example.ui.PedometerViewModel
 import com.example.ui.components.*
 import com.example.util.*
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.barcode.common.Barcode
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -53,10 +57,11 @@ fun SearchScreen(
     currentDate: String,
     onNavigateBack: () -> Unit,
     onFoodSelected: (Int) -> Unit,
-    onNavigateToCreateFood: () -> Unit,
+    onNavigateToCreateFood: (String) -> Unit,
     onNavigateToCreateRecipe: () -> Unit
 ) {
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val soundManager = LocalSoundManager.current
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
@@ -71,9 +76,10 @@ fun SearchScreen(
     var mealToEdit by remember { mutableStateOf<MealEntry?>(null) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var showScannerDialog by remember { mutableStateOf(false) }
+    var manualBarcodeQuery by remember { mutableStateOf("") }
     var scanLoading by remember { mutableStateOf(false) }
     var scanError by remember { mutableStateOf<String?>(null) }
-    var selectedFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("ALL") }
+    var selectedFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("TUTTI") }
     BackHandler(enabled = mealToEdit != null) { mealToEdit = null }
     BackHandler(enabled = showScannerDialog) {
         showScannerDialog = false
@@ -81,52 +87,79 @@ fun SearchScreen(
         scanError = null
     }
 
+    fun lookupBarcode(code: String) {
+        val clean = code.trim()
+        if (clean.isBlank()) return
+        scanLoading = true
+        scanError = null
+        scope.launch {
+            val result = viewModel.fetchProductByBarcode(clean)
+            scanLoading = false
+            when (result) {
+                is BarcodeLookupResult.Success -> {
+                    soundManager.playSound("power_up")
+                    showScannerDialog = false
+                    onFoodSelected(result.food.id)
+                }
+                BarcodeLookupResult.NotFound -> {
+                    soundManager.playSound("error")
+                    manualBarcodeQuery = clean
+                    scanError = "Nessun alimento trovato per il codice: $clean. Puoi cercarlo per nome o crearlo manualmente."
+                    showScannerDialog = true
+                }
+                is BarcodeLookupResult.NetworkError -> {
+                    soundManager.playSound("error")
+                    manualBarcodeQuery = clean
+                    scanError = result.message
+                    showScannerDialog = true
+                }
+            }
+        }
+    }
+
     fun startCameraScan() {
         try {
-            val scanner = GmsBarcodeScanning.getClient(context)
+            val options = GmsBarcodeScannerOptions.Builder()
+                .setBarcodeFormats(
+                    Barcode.FORMAT_QR_CODE,
+                    Barcode.FORMAT_EAN_13,
+                    Barcode.FORMAT_EAN_8,
+                    Barcode.FORMAT_UPC_A,
+                    Barcode.FORMAT_UPC_E,
+                    Barcode.FORMAT_CODE_128
+                )
+                .enableAutoZoom()
+                .build()
+            val scanner = GmsBarcodeScanning.getClient(context, options)
             scanner.startScan()
                 .addOnSuccessListener { barcode ->
                     val rawValue = barcode.rawValue
                     if (!rawValue.isNullOrBlank()) {
-                        soundManager.playSound("coin")
-                        scanLoading = true
-                        scope.launch {
-                            val result = viewModel.fetchProductByBarcode(rawValue)
-                            scanLoading = false
-                            when (result) {
-                                is BarcodeLookupResult.Success -> {
-                                    soundManager.playSound("power_up")
-                                    showScannerDialog = false
-                                    onFoodSelected(result.food.id)
-                                }
-                                BarcodeLookupResult.NotFound -> {
-                                    soundManager.playSound("error")
-                                    scanError = "No product was found for that barcode. Try manual search."
-                                }
-                                is BarcodeLookupResult.NetworkError -> {
-                                    soundManager.playSound("error")
-                                    scanError = result.message
-                                }
-                            }
-                        }
+                        lookupBarcode(rawValue)
                     }
                 }
                 .addOnFailureListener { e ->
-                    Log.w(SCREEN_TAG, "GMS barcode scan failed; showing manual fallback", e)
-                    soundManager.playSound("error")
-                    scanError = "Camera system unavailable. Please use the simulator below."
+                    Log.w(SCREEN_TAG, "GMS barcode scan failed or cancelled", e)
+                    val message = e.message.orEmpty()
+                    if (message.contains("cancel", ignoreCase = true) || message.contains("16", ignoreCase = true)) {
+                        // User cancelled scan normally, do not display error dialog
+                    } else {
+                        scanError = "Scansione con fotocamera non disponibile. Puoi inserire il codice a barre manualmente qui sotto."
+                        showScannerDialog = true
+                    }
                 }
         } catch (e: Exception) {
             Log.w(SCREEN_TAG, "GMS scanner initiation failed", e)
-            scanError = "Camera scan unsupported. Please use the simulator below."
+            scanError = "Scansione non supportata su questo dispositivo. Inserisci il codice a barre manualmente."
+            showScannerDialog = true
         }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
         Column(modifier = Modifier.padding(16.dp).weight(1f)) {
             FoodLabScreenHeader(
-                title = "Add food",
-                subtitle = "Logging to ${mealType.lowercase(Locale.getDefault())}",
+                title = "Aggiungi alimento",
+                subtitle = "Aggiunta a ${MealTypes.displayName(mealType)}",
                 onBack = onNavigateBack
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -136,21 +169,39 @@ fun SearchScreen(
                 value = searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search food, brand, barcode, recipe", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 trailingIcon = {
-                    IconButton(
-                        onClick = {
-                            soundManager.playSound("click")
-                            scanError = null
-                            showScannerDialog = true
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(
+                                onClick = {
+                                    soundManager.playSound("click")
+                                    viewModel.updateSearchQuery("")
+                                },
+                                modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cancella ricerca",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Scan QR/Barcode",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        IconButton(
+                            onClick = {
+                                soundManager.playSound("click")
+                                scanError = null
+                                startCameraScan()
+                            },
+                            modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "Scansiona codice a barre",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 singleLine = true,
@@ -165,9 +216,9 @@ fun SearchScreen(
                 ),
                 supportingText = {
                     Text(
-                        text = if (searchQuery.isBlank()) "Type 2+ chars for online search. Local results rank by match, favorites, and recent use."
-                        else if (isOffline) "Offline mode active. Tap 'LOCAL FOODS' card below for saved items."
-                        else searchError ?: "Searching local foods and Open Food Facts. Try name, brand, ingredients, or digits.",
+                        text = if (searchQuery.isBlank()) "Digita almeno 2 caratteri per la ricerca online."
+                        else if (isOffline) "Modalità offline attiva. Mostrati solo gli alimenti locali salvati."
+                        else searchError ?: "Ricerca tra i cibi salvati e Open Food Facts.",
                         style = MaterialTheme.typography.labelSmall,
                         color = if (searchError != null || isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -178,8 +229,8 @@ fun SearchScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Categories
-            val filterOptions = listOf("ALL", "MY FOODS", "RECIPES", "FAVORITES", "TEMPLATES")
-            Text("FILTERS", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val filterOptions = listOf("TUTTI", "I MIEI CIBI", "RICETTE", "PREFERITI", "COMBINAZIONI")
+            Text("FILTRI", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier
@@ -197,9 +248,9 @@ fun SearchScreen(
             val displayedResults = remember(searchResults, selectedFilter) {
                 searchResults.filter { food ->
                     when(selectedFilter) {
-                        "MY FOODS" -> food.id > 0 && food.brand != "Recipe"
-                        "RECIPES" -> food.brand == "Recipe"
-                        "FAVORITES" -> food.isFavorite
+                        "I MIEI CIBI" -> food.id > 0 && food.brand != "Recipe"
+                        "RICETTE" -> food.brand == "Recipe"
+                        "PREFERITI" -> food.isFavorite
                         else -> true
                     }
                 }
@@ -211,12 +262,12 @@ fun SearchScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (searchQuery.isBlank()) "RECENT & FAVORITES" else "${displayedResults.size} SEARCH RESULTS",
+                    text = if (searchQuery.isBlank()) "RECENTI E PREFERITI" else "${displayedResults.size} RISULTATI",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = if (searchQuery.isBlank()) "Ready before you type" else "Ranked by match quality",
+                    text = if (searchQuery.isBlank()) "Subito disponibili" else "Ordinati per pertinenza",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -234,7 +285,7 @@ fun SearchScreen(
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                text = "LOGGED TO ${mealType.uppercase()}", 
+                                text = "REGISTRATI IN ${mealType.uppercase()}", 
                                 style = MaterialTheme.typography.titleSmall, 
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
@@ -278,7 +329,7 @@ fun SearchScreen(
                                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                 )
                                                 Text(
-                                                    text = "${meal.quantityGrams}g  â¢  ${meal.calories} kcal  â¢  P: ${meal.protein.toInt()}g C: ${meal.carbs.toInt()}g F: ${meal.fat.toInt()}g", 
+                                                    text = "${meal.quantityGrams}g  •  ${meal.calories} kcal  •  P: ${meal.protein.toInt()}g C: ${meal.carbs.toInt()}g F: ${meal.fat.toInt()}g", 
                                                     style = MaterialTheme.typography.labelSmall, 
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -318,7 +369,7 @@ fun SearchScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (searchQuery.isBlank()) "DISHES, RECENT & FAVORITES" else "SEARCH RESULTS",
+                            text = if (searchQuery.isBlank()) "ALIMENTI, RECENTI E PREFERITI" else "RISULTATI RICERCA",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -331,7 +382,7 @@ fun SearchScreen(
                 }
 
                 // Bento-style Custom Dish & Recipe Buttons
-                if (selectedFilter != "TEMPLATES") {
+                if (selectedFilter != "COMBINAZIONI") {
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -345,7 +396,7 @@ fun SearchScreen(
                                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
                                     .clickable {
                                         soundManager.playSound("click")
-                                        onNavigateToCreateFood()
+                                        onNavigateToCreateFood("")
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -361,7 +412,7 @@ fun SearchScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "+ Custom Dish",
+                                        "+ Nuovo Alimento",
                                         color = MaterialTheme.colorScheme.primaryContainer,
                                         style = MaterialTheme.typography.labelLarge
                                     )
@@ -392,7 +443,7 @@ fun SearchScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "Recipe",
+                                        "+ Ricetta",
                                         color = MaterialTheme.colorScheme.primaryContainer,
                                         style = MaterialTheme.typography.labelLarge
                                     )
@@ -402,7 +453,7 @@ fun SearchScreen(
                     }
                 }
 
-                if (selectedFilter == "TEMPLATES") {
+                if (selectedFilter == "COMBINAZIONI") {
                     if (loggedMeals.isNotEmpty()) {
                         item {
                             Box(
@@ -412,7 +463,7 @@ fun SearchScreen(
                                     .border(1.dp, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
                                     .clickable {
                                         soundManager.playSound("click")
-                                        templateNameInput = "${mealType} Template ${templates.size + 1}"
+                                        templateNameInput = "Combinazione ${MealTypes.displayName(mealType)} ${templates.size + 1}"
                                         showSaveTemplateDialog = true
                                     }
                                     .padding(16.dp),
@@ -430,7 +481,7 @@ fun SearchScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "SAVE CURRENT ${mealType.uppercase()} AS TEMPLATE",
+                                        "SALVA ${MealTypes.displayName(mealType).uppercase()} COME COMBINAZIONE",
                                         color = MaterialTheme.colorScheme.primaryContainer,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold
@@ -452,7 +503,7 @@ fun SearchScreen(
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        "NO MEAL TEMPLATES YET",
+                                        "NESSUNA COMBINAZIONE SALVATA",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -460,7 +511,7 @@ fun SearchScreen(
                                     if (loggedMeals.isEmpty()) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            "Log some foods first to save them as a combo.",
+                                            "Aggiungi degli alimenti per salvarli insieme come combinazione rapida.",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -492,14 +543,14 @@ fun SearchScreen(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(t.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                                            Text("${templateFoodList.size} foods  •  ${templateFoodList.sumOf { (it.caloriesPer100g * it.quantityGrams) / 100 }} kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text("${templateFoodList.size} alimenti  •  ${templateFoodList.sumOf { (it.caloriesPer100g * it.quantityGrams) / 100 }} kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                             IconButton(onClick = {
                                                 soundManager.playSound("error")
                                                 viewModel.deleteTemplate(t.id)
                                             }, modifier = Modifier.size(48.dp)) {
-                                                Icon(Icons.Default.Delete, contentDescription = "Delete template", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Default.Delete, contentDescription = "Elimina combinazione", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                                             }
                                             Button(
                                                 onClick = {
@@ -509,7 +560,7 @@ fun SearchScreen(
                                                 shape = RoundedCornerShape(16.dp),
                                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
                                             ) {
-                                                Text("LOG COMBO", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                                Text("AGGIUNGI", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
@@ -523,7 +574,7 @@ fun SearchScreen(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
-                                                Text("â¢ ${item.foodName} (${item.quantityGrams}g)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text("• ${item.foodName} (${item.quantityGrams}g)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                 Text("$cals kcal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                         }
@@ -533,6 +584,56 @@ fun SearchScreen(
                         }
                     }
                 } else {
+                    if ((isOffline || searchError != null) && searchQuery.isNotBlank()) {
+                        item(key = "search_offline_banner") {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f), RoundedCornerShape(16.dp)),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.WifiOff,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "RICERCA ONLINE NON DISPONIBILE",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = searchError ?: "Connessione assente. Risultati mostrati dal database locale.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    OutlinedButton(
+                                        onClick = { viewModel.updateSearchQuery(searchQuery) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                                    ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Riprova", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (isSearchLoading) {
                         items(3) { index ->
                             val infiniteTransition = rememberInfiniteTransition(label = "skeletonPulse_$index")
@@ -547,68 +648,10 @@ fun SearchScreen(
                             )
                             SkeletonSearchCard(alpha = alpha)
                         }
-                    } else if ((isOffline || searchError != null) && searchQuery.isNotBlank()) {
-                        item {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f), RoundedCornerShape(20.dp)),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f))
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(20.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Text(
-                                        text = "ONLINE SEARCH UNAVAILABLE",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = MaterialTheme.colorScheme.error,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = searchError ?: "Connection error. Open Food Facts unreachable. You can continue searching local foods.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        OutlinedButton(
-                                            onClick = { viewModel.updateSearchQuery(searchQuery) },
-                                            shape = RoundedCornerShape(16.dp),
-                                            modifier = Modifier.weight(1f),
-                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                                        ) {
-                                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("RETRY", style = MaterialTheme.typography.labelMedium)
-                                        }
-                                        Button(
-                                            onClick = {
-                                                selectedFilter = "MY FOODS"
-                                                soundManager.playSound("click")
-                                            },
-                                            shape = RoundedCornerShape(16.dp),
-                                            modifier = Modifier.weight(1.3f),
-                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
-                                        ) {
-                                            Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("LOCAL FOODS", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else if (displayedResults.isEmpty()) {
-                        item {
+                    }
+
+                    if (displayedResults.isEmpty() && !isSearchLoading) {
+                        item(key = "search_empty_state") {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -625,26 +668,33 @@ fun SearchScreen(
                                     )
                                     Spacer(Modifier.height(12.dp))
                                     Text(
-                                        if (searchQuery.isBlank()) "No saved foods yet" else "No matches. Try a brand, barcode, or shorter name.",
+                                        if (searchQuery.isBlank()) "Nessun alimento salvato" else "Nessun risultato trovato per \"$searchQuery\".",
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
-                                    if (searchQuery.isBlank()) {
-                                        Spacer(Modifier.height(12.dp))
-                                        Button(onClick = onNavigateToCreateFood) { Text("CREATE A FOOD") }
+                                    Spacer(Modifier.height(12.dp))
+                                    Button(onClick = { onNavigateToCreateFood(if (searchQuery.all { it.isDigit() }) searchQuery else "") }) {
+                                        Text("CREA ALIMENTO")
                                     }
                                 }
                             }
                         }
-                    } else {
+                    } else if (displayedResults.isNotEmpty()) {
                         items(items = displayedResults, key = { it.id }) { food ->
                             SearchResultCard(
                                 food = food,
-                                onToggleFavorite = { viewModel.toggleFavorite(food) },
+                                showAddIcon = true,
                                 onClick = { 
                                     soundManager.playSound("click")
                                     onFoodSelected(food.id)
+                                },
+                                onToggleFavorite = { viewModel.toggleFavorite(food) },
+                                onAddClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    soundManager.playSound("coin")
+                                    viewModel.quickLogFood(food, currentDate, mealType)
+                                    android.widget.Toast.makeText(context, "${food.name} aggiunto a ${mealType.lowercase()}", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
@@ -652,6 +702,26 @@ fun SearchScreen(
                 }
             }
         }
+    }
+
+    mealToEdit?.let { meal ->
+        EditMealEntryDialog(
+            meal = meal,
+            onDismiss = { mealToEdit = null },
+            onSave = { newGrams ->
+                dashboardViewModel.updateMealQuantity(meal, newGrams)
+                viewModel.updateMealQuantity(meal, newGrams)
+                android.widget.Toast.makeText(context, "Quantità aggiornata a ${newGrams}g", android.widget.Toast.LENGTH_SHORT).show()
+                mealToEdit = null
+            },
+            onDelete = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                dashboardViewModel.deleteMealEntry(meal.id)
+                viewModel.deleteMeal(meal.id)
+                android.widget.Toast.makeText(context, "${meal.foodName} rimosso", android.widget.Toast.LENGTH_SHORT).show()
+                mealToEdit = null
+            }
+        )
     }
 
     if (showSaveTemplateDialog) {
@@ -665,14 +735,14 @@ fun SearchScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("SAVE MEAL AS TEMPLATE", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                    Text("Save these ${loggedMeals.size} logged foods as a single reusable template.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("SALVA COME COMBINAZIONE", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("Salva questi ${loggedMeals.size} alimenti come combinazione da riutilizzare rapidamente.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     OutlinedTextField(
                         value = templateNameInput,
                         onValueChange = { templateNameInput = it },
-                        label = { Text("TEMPLATE NAME") },
-                        placeholder = { Text("e.g. My Heavy Breakfast") },
+                        label = { Text("NOME COMBINAZIONE") },
+                        placeholder = { Text("es. Colazione Proteica") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -684,7 +754,7 @@ fun SearchScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text("CANCEL")
+                            Text("ANNULLA")
                         }
                         Button(
                             onClick = {
@@ -699,8 +769,147 @@ fun SearchScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text("SAVE")
+                            Text("SALVA")
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (scanLoading) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = {}) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Ricerca alimento da codice a barre...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+
+    if (showScannerDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showScannerDialog = false }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "CODICE A BARRE",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        IconButton(onClick = { showScannerDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Chiudi", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    if (scanError != null) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                        ) {
+                            Text(
+                                text = scanError.orEmpty(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+
+                    Text(
+                        "Digita o incolla il codice a barre per cercarlo nel database:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    OutlinedTextField(
+                        value = manualBarcodeQuery,
+                        onValueChange = { input ->
+                            manualBarcodeQuery = input.filter { it.isDigit() }.take(32)
+                        },
+                        label = { Text("Codice a barre (EAN / UPC)") },
+                        placeholder = { Text("es. 8001234567890") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Search),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                showScannerDialog = false
+                                startCameraScan()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Fotocamera", style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        Button(
+                            onClick = {
+                                if (manualBarcodeQuery.isNotBlank()) {
+                                    lookupBarcode(manualBarcodeQuery)
+                                }
+                            },
+                            enabled = manualBarcodeQuery.isNotBlank(),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Cerca", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    TextButton(
+                        onClick = {
+                            showScannerDialog = false
+                            onNavigateToCreateFood(manualBarcodeQuery)
+                        },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            "+ Crea nuovo alimento manualmente",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }

@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
@@ -60,6 +61,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.DailyTarget
 import com.example.ui.SettingsViewModel
@@ -67,10 +69,18 @@ import com.example.util.LocalPreferencesManager
 import com.example.util.LocalSoundManager
 import com.example.util.ReminderScheduler
 import com.example.util.ThemeSkin
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import kotlin.math.roundToInt
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel,
+    onNavigateToOnboarding: () -> Unit = {}
+) {
     val soundManager = LocalSoundManager.current
     val context = LocalContext.current
     val preferencesManager = LocalPreferencesManager.current
@@ -173,8 +183,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             FoodLabScreenHeader(
-                title = "Settings",
-                subtitle = "Targets, themes, and privacy"
+                title = "Impostazioni",
+                subtitle = "Obiettivi, tema e privacy"
             )
 
             // 1. MACRO TARGETS SECTION
@@ -190,12 +200,46 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        "NUTRITION TARGETS",
+                        "OBIETTIVI NUTRIZIONALI",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
+                    // Apple-style TDEE Recalculation Button
+                    Button(
+                        onClick = {
+                            soundManager.playSound("click")
+                            onNavigateToOnboarding()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            contentColor = MaterialTheme.colorScheme.primary
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                    ) {
+                        Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "CALCOLA IL TUO FABBISOGNO (TDEE)",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+
                     val options = listOf("FIXED", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
+                    val dayNamesItalian = mapOf(
+                        "FIXED" to "TUTTI",
+                        "MONDAY" to "LUN",
+                        "TUESDAY" to "MAR",
+                        "WEDNESDAY" to "MER",
+                        "THURSDAY" to "GIO",
+                        "FRIDAY" to "VEN",
+                        "SATURDAY" to "SAB",
+                        "SUNDAY" to "DOM"
+                    )
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -216,7 +260,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                     .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
                                 Text(
-                                    text = if (option == "FIXED") "ALL DAYS" else option.take(3),
+                                    text = dayNamesItalian[option] ?: option.take(3),
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                                 )
@@ -274,7 +318,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     }
 
                     ModernTargetSlider(
-                        label = "CALORIES",
+                        label = "CALORIE",
                         value = calories,
                         valueRange = 1000f..4000f,
                         stepSize = 50f,
@@ -283,7 +327,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         onValueChange = { calories = it }
                     )
                     ModernTargetSlider(
-                        label = "PROTEIN",
+                        label = "PROTEINE",
                         value = protein,
                         valueRange = 50f..300f,
                         stepSize = 5f,
@@ -292,7 +336,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         onValueChange = { protein = it }
                     )
                     ModernTargetSlider(
-                        label = "CARBS",
+                        label = "CARBOIDRATI",
                         value = carbs,
                         valueRange = 50f..400f,
                         stepSize = 5f,
@@ -301,7 +345,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         onValueChange = { carbs = it }
                     )
                     ModernTargetSlider(
-                        label = "FAT",
+                        label = "GRASSI",
                         value = fat,
                         valueRange = 20f..200f,
                         stepSize = 5f,
@@ -329,7 +373,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("SAVE TARGETS", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("SALVA OBIETTIVI", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
@@ -347,18 +391,18 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        "ACTIVITY GOALS",
+                        "OBIETTIVI ATTIVITÀ",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
                     ModernTargetSlider(
-                        label = "DAILY STEPS GOAL",
+                        label = "OBIETTIVO PASSI GIORNALIERO",
                         value = steps,
                         valueRange = 2000f..30000f,
                         stepSize = 500f,
                         accentColor = Color(0xFF8B5CF6),
-                        unit = "steps",
+                        unit = "passi",
                         onValueChange = {
                             steps = it
                             preferencesManager.setStepGoal(it.roundToInt())
@@ -380,7 +424,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
-                        "THEME & SOUNDS",
+                        "TEMA & SUONI",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -393,25 +437,39 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         items(themeOptions.size) { index ->
                             val option = themeOptions[index]
                             val isSelected = option == activeTheme
+                            val animatedBg by animateColorAsState(
+                                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                label = "themeBg"
+                            )
+                            val animatedText by animateColorAsState(
+                                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                label = "themeText"
+                            )
+                            val animatedBorder by animateColorAsState(
+                                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                label = "themeBorder"
+                            )
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
-                                    .clickable {
+                                    .applePressEffect(pressedScale = 0.93f) {
                                         soundManager.playSound("click")
                                         preferencesManager.setThemeSkin(option)
                                     }
-                                    .border(
-                                        1.dp,
-                                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                                        RoundedCornerShape(14.dp)
-                                    )
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(animatedBg)
+                                    .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
                                     .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
                                 Text(
                                     text = option.name,
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.2.sp
+                                    ),
+                                    color = animatedText
                                 )
                             }
                         }
@@ -420,15 +478,15 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
 
                     ModernSwitchTile(
-                        title = "Sound Effects",
-                        subtitle = "Audio feedback on interactions",
+                        title = "Effetti sonori",
+                        subtitle = "Feedback audio ai tocchi (disattivato di default)",
                         checked = soundEffectsEnabled,
                         onCheckedChange = { preferencesManager.setSoundEnabled(it) }
                     )
 
                     ModernSwitchTile(
-                        title = "Step Counter Sync",
-                        subtitle = "Track daily physical steps",
+                        title = "Sincronizzazione contapassi",
+                        subtitle = "Rileva i passi quotidiani dal sensore",
                         checked = syncStepsEnabled,
                         onCheckedChange = { checked ->
                             if (checked && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -440,8 +498,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     )
 
                     ModernSwitchTile(
-                        title = "Daily Reminders",
-                        subtitle = "Notifications for logging meals",
+                        title = "Promemoria giornalieri",
+                        subtitle = "Notifiche per la registrazione dei pasti",
                         checked = notificationsEnabled,
                         onCheckedChange = { checked ->
                             if (checked && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -533,6 +591,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 }
@@ -640,12 +700,19 @@ private fun ModernSwitchTile(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+    val soundManager = LocalSoundManager.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .applePressEffect(pressedScale = 0.98f) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                soundManager.playSound("click")
+                onCheckedChange(!checked)
+            }
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .clickable { onCheckedChange(!checked) }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -656,7 +723,11 @@ private fun ModernSwitchTile(
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                soundManager.playSound("click")
+                onCheckedChange(it)
+            },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                 checkedTrackColor = MaterialTheme.colorScheme.primary,

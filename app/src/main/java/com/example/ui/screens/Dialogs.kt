@@ -132,7 +132,7 @@ fun RetroScannerDialog(
             ) {
                 // Header
                 Text(
-                    text = "PRODUCT SCANNER",
+                    text = "SCANNER PRODOTTO",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -149,7 +149,7 @@ fun RetroScannerDialog(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             BlinkingText(
-                                text = "SEARCHING DATABASE...",
+                                text = "RICERCA IN CORSO...",
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -177,7 +177,7 @@ fun RetroScannerDialog(
                     ) {
                         Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("SCAN WITH CAMERA", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("SCANSIONA CON FOTOCAMERA", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
 
                     Row(
@@ -185,14 +185,14 @@ fun RetroScannerDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        Text(" OR ENTER CODE ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(" OPPURE INSERISCI CODICE ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     }
 
                     OutlinedTextField(
                         value = rawInput,
                         onValueChange = { rawInput = it },
-                        label = { Text("BARCODE") },
+                        label = { Text("CODICE A BARRE") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                         modifier = Modifier.fillMaxWidth(),
@@ -211,7 +211,7 @@ fun RetroScannerDialog(
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest, contentColor = MaterialTheme.colorScheme.onSurface)
                     ) {
-                        Text("LOOKUP BARCODE", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("CERCA CODICE", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 }
 
@@ -223,13 +223,22 @@ fun RetroScannerDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "CANCEL",
+                        text = "ANNULLA",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
+    }
+}
+
+fun formatWeightInput(weightKg: Float?): String {
+    if (weightKg == null || weightKg <= 0f) return ""
+    return if (weightKg % 1f == 0f) {
+        weightKg.toInt().toString()
+    } else {
+        String.format(Locale.US, "%.1f", weightKg)
     }
 }
 
@@ -245,10 +254,11 @@ fun LogWeightDialog(
             onTypingChanged(false)
         }
     }
+    val soundManager = com.example.util.LocalSoundManager.current
     var newWeight by remember { mutableStateOf(initialWeight) }
     var isFocused by remember { mutableStateOf(false) }
     val parsedWeight = newWeight.replace(',', '.').toFloatOrNull()
-    val isWeightValid = parsedWeight?.isFinite() == true && parsedWeight in 20f..400f
+    val isWeightValid = parsedWeight != null && parsedWeight.isFinite() && parsedWeight in 20f..400f
     LaunchedEffect(isFocused) {
         onTypingChanged(isFocused)
     }
@@ -266,45 +276,59 @@ fun LogWeightDialog(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("LOG BODY WEIGHT", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                Text("REGISTRA PESO", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                 OutlinedTextField(
                     value = newWeight,
                     onValueChange = { newValue ->
                         val normalized = newValue.replace(',', '.').take(6)
-                        if (normalized.isEmpty() || normalized.matches(Regex("^\\\\d{0,3}(?:\\\\.\\\\d{0,2})?$"))) {
+                        if (normalized.isEmpty() || normalized.matches(Regex("""^\d{0,3}(?:\.\d{0,2})?$"""))) {
                             newWeight = normalized
                         }
                     },
-                    label = { Text("WEIGHT") },
+                    label = { Text("PESO") },
                     suffix = { Text("kg") },
                     isError = newWeight.isNotEmpty() && !isWeightValid,
                     supportingText = {
-                        Text(if (newWeight.isNotEmpty() && !isWeightValid) "Enter a value from 20 to 400 kg" else "Allowed range: 20–400 kg")
+                        Text(if (newWeight.isNotEmpty() && !isWeightValid) "Inserisci un valore tra 20 e 400 kg" else "Intervallo consentito: 20–400 kg")
                     },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                        onDone = {
+                            if (isWeightValid && parsedWeight != null) {
+                                soundManager.playSound("coin")
+                                onSave(parsedWeight)
+                            }
+                        }
+                    ),
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth().onFocusChanged { isFocused = it.isFocused }
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
-                        onClick = onDismiss,
+                        onClick = {
+                            soundManager.playSound("click")
+                            onDismiss()
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("CANCEL")
+                        Text("ANNULLA")
                     }
                     Button(
                         onClick = {
-                            parsedWeight?.takeIf { isWeightValid }?.let(onSave)
+                            if (isWeightValid && parsedWeight != null) {
+                                soundManager.playSound("coin")
+                                onSave(parsedWeight)
+                            }
                         },
                         enabled = isWeightValid,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("SAVE", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Text("SALVA", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
@@ -357,12 +381,12 @@ fun EditMealEntryDialog(
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("EDIT MEAL ENTRY", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                        Text("MODIFICA VOCE PASTO", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                         Text(meal.foodName, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                         Text(meal.mealType.uppercase(Locale.getDefault()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.Close, contentDescription = "Chiudi", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 OutlinedTextField(
@@ -371,7 +395,7 @@ fun EditMealEntryDialog(
                         val digitsOnly = input.filter { char -> char.isDigit() }
                         quantityText = digitsOnly
                     },
-                    label = { Text("QUANTITY (GRAMS)") },
+                    label = { Text("QUANTITÀ (GRAMMI)") },
                     isError = isNegativeOrInvalid,
                     supportingText = if (isNegativeOrInvalid) {
                         { Text("Inserisci un valore positivo maggiore di 0", color = MaterialTheme.colorScheme.error) }
@@ -430,7 +454,7 @@ fun EditMealEntryDialog(
                     carbs = editedCarbs,
                     fat = editedFat,
                     accent = calorieAccent,
-                    subtitle = "Preview after edit"
+                    subtitle = "Anteprima dopo la modifica"
                 )
 
                 Row(
@@ -443,9 +467,9 @@ fun EditMealEntryDialog(
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Delete, contentDescription = "Elimina", modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("DELETE", style = MaterialTheme.typography.labelLarge)
+                        Text("ELIMINA", style = MaterialTheme.typography.labelLarge)
                     }
 
                     Button(
@@ -460,9 +484,9 @@ fun EditMealEntryDialog(
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Save", modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Check, contentDescription = "Salva", modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("SAVE", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("SALVA", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
@@ -488,7 +512,7 @@ fun CalendarDialog(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("CALENDAR HISTORY", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+            Text("CRONOLOGIA CALENDARIO", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(16.dp))
             
             val dt = java.util.Date()
@@ -527,7 +551,7 @@ fun CalendarDialog(
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurface)
             ) {
-                Text("CLOSE", style = MaterialTheme.typography.labelLarge)
+                Text("CHIUDI", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

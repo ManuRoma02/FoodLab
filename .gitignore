@@ -30,4 +30,6 @@ test_output.txt
 FoodTrack_remote/
 __pycache__/
 *.pyc
+.agents/
+skills-lock.json
 

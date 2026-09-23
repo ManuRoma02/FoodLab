@@ -119,7 +119,7 @@ fun FoodDetailCardContent(
                 Column(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(food.name, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
                     Text(
-                        food.brand.ifEmpty { "Custom food" },
+                        food.brand.ifEmpty { "Alimento personalizzato" },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -143,12 +143,12 @@ fun FoodDetailCardContent(
                 carbs = food.carbsPer100g,
                 fat = food.fatPer100g,
                 accent = calorieOverTargetColor(food.caloriesPer100g - 450, MaterialTheme.colorScheme.primary),
-                subtitle = "Reference values per 100g"
+                subtitle = "Valori nutrizionali per 100g"
             )
         }
 
         FoodLabSectionCard {
-            Text("QUICK SERVINGS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+            Text("PORZIONI RAPIDE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(50, 100, 150).forEach { grams ->
                     val ratio = grams / 100f
@@ -173,7 +173,8 @@ fun FoodDetailCardContent(
 fun FoodDatabaseDetailScreen(
     viewModel: com.example.ui.FoodSearchViewModel,
     foodId: Int,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onLogFood: ((Int) -> Unit)? = null
 ) {
     val food by androidx.compose.runtime.produceState<com.example.data.FoodItem?>(initialValue = null, foodId) {
         value = viewModel.getFoodById(foodId)
@@ -188,14 +189,34 @@ fun FoodDatabaseDetailScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                FoodLabScreenHeader(
-                    title = "Food details",
-                    subtitle = "Nutrition per serving",
-                    onBack = onNavigateBack,
-                    modifier = Modifier.padding(16.dp)
-                )
-                FoodDetailCardContent(food = currentFood, modifier = Modifier.fillMaxSize())
+            FoodLabScreenHeader(
+                title = "Dettagli alimento",
+                subtitle = "Valori nutrizionali per porzione",
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(16.dp)
+            )
+            FoodDetailCardContent(food = currentFood, modifier = Modifier.weight(1f))
+            
+            if (onLogFood != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    tonalElevation = 8.dp
+                ) {
+                    Button(
+                        onClick = { onLogFood(currentFood.id) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("REGISTRA NEL DIARIO", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
             }
         }
     }

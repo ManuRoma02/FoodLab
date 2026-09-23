@@ -19,10 +19,10 @@ fun ShoppingListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Shopping List", fontWeight = FontWeight.Bold) },
+                title = { Text("Lista della Spesa", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
                     }
                 }
             )
@@ -34,7 +34,7 @@ fun ShoppingListScreen(
                 .padding(innerPadding),
             contentAlignment = Alignment.Center
         ) {
-            Text("Shopping List", style = MaterialTheme.typography.bodyLarge)
+            Text("Lista della Spesa", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

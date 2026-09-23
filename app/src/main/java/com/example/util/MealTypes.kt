@@ -16,4 +16,14 @@ object MealTypes {
             else -> type?.trim()?.uppercase() ?: BREAKFAST
         }
     }
+
+    fun displayName(type: String?): String {
+        return when (canonicalize(type)) {
+            BREAKFAST -> "Colazione"
+            LUNCH -> "Pranzo"
+            DINNER -> "Cena"
+            SNACK -> "Spuntino"
+            else -> type?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Pasto"
+        }
+    }
 }

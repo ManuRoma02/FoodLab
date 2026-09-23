@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.LunchDining
 import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Icecream
@@ -108,7 +109,8 @@ fun FoodsDatabaseScreen(
     viewModel: com.example.ui.FoodSearchViewModel,
     onNavigateToCreateFood: () -> Unit,
     onNavigateToCreateRecipe: () -> Unit,
-    onFoodSelected: (Int) -> Unit
+    onFoodSelected: (Int) -> Unit,
+    onNavigateToRecipes: () -> Unit = {}
 ) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
@@ -116,15 +118,15 @@ fun FoodsDatabaseScreen(
     val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
     val isWideScreen = screenWidth >= 600
 
-    var selectedFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("ALL") }
+    var selectedFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("TUTTI") }
     var selectedFoodId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
 
     val displayedResults = remember(searchResults, selectedFilter) {
         searchResults.filter { food ->
             when (selectedFilter) {
-                "MY FOODS" -> food.id > 0 && food.brand != "Recipe"
-                "RECIPES" -> food.brand == "Recipe"
-                "FAVORITES" -> food.isFavorite
+                "I MIEI CIBI" -> food.id > 0 && food.brand != "Recipe"
+                "RICETTE" -> food.brand == "Recipe"
+                "PREFERITI" -> food.isFavorite
                 else -> true
             }
         }.sortedByDescending { it.useCount }
@@ -151,8 +153,8 @@ fun FoodsDatabaseScreen(
                     .padding(16.dp)
             ) {
                 FoodLabScreenHeader(
-                    title = "Foods",
-                    subtitle = "Database & Search"
+                    title = "Alimenti",
+                    subtitle = "Database e Ricerca"
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -165,6 +167,7 @@ fun FoodsDatabaseScreen(
                     isSearchLoading = isSearchLoading,
                     onNavigateToCreateFood = onNavigateToCreateFood,
                     onNavigateToCreateRecipe = onNavigateToCreateRecipe,
+                    onNavigateToRecipes = onNavigateToRecipes,
                     onToggleFavorite = viewModel::toggleFavorite,
                     selectedFoodId = selectedFoodId,
                     onFoodClick = { food -> selectedFoodId = food.id },
@@ -188,13 +191,13 @@ fun FoodsDatabaseScreen(
                     Column(modifier = Modifier.fillMaxSize()) {
                         FoodLabScreenHeader(
                             title = currentDetailFood.name,
-                            subtitle = currentDetailFood.brand.ifEmpty { "Nutrition per serving" },
+                            subtitle = currentDetailFood.brand.ifEmpty { "Valori nutrizionali per porzione" },
                             modifier = Modifier.padding(16.dp),
                             trailing = {
                                 IconButton(onClick = { viewModel.toggleFavorite(currentDetailFood) }) {
                                     Icon(
                                         imageVector = if (currentDetailFood.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                        contentDescription = "Favorite",
+                                        contentDescription = "Preferito",
                                         tint = if (currentDetailFood.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -223,12 +226,12 @@ fun FoodsDatabaseScreen(
                                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                             )
                             Text(
-                                "SELECT A FOOD",
+                                "SELEZIONA UN ALIMENTO",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Select an item from the list on the left to inspect complete macronutrients, calories and servings.",
+                                "Seleziona un elemento dalla lista a sinistra per visualizzare macronutrienti, calorie e porzioni.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -248,12 +251,12 @@ fun FoodsDatabaseScreen(
         ) {
             Column(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp)
                     .weight(1f)
             ) {
                 FoodLabScreenHeader(
-                    title = "Foods",
-                    subtitle = "Search, favorites, custom dishes"
+                    title = "Alimenti",
+                    subtitle = "Cerca, preferiti e piatti personalizzati"
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -266,6 +269,7 @@ fun FoodsDatabaseScreen(
                     isSearchLoading = isSearchLoading,
                     onNavigateToCreateFood = onNavigateToCreateFood,
                     onNavigateToCreateRecipe = onNavigateToCreateRecipe,
+                    onNavigateToRecipes = onNavigateToRecipes,
                     onToggleFavorite = viewModel::toggleFavorite,
                     selectedFoodId = null,
                     onFoodClick = { food -> onFoodSelected(food.id) },
@@ -286,6 +290,7 @@ private fun FoodsListContent(
     isSearchLoading: Boolean,
     onNavigateToCreateFood: () -> Unit,
     onNavigateToCreateRecipe: () -> Unit,
+    onNavigateToRecipes: () -> Unit = {},
     onToggleFavorite: (com.example.data.FoodItem) -> Unit,
     selectedFoodId: Int?,
     onFoodClick: (com.example.data.FoodItem) -> Unit,
@@ -296,8 +301,8 @@ private fun FoodsListContent(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            placeholder = { Text("Search food, brand, barcode", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+            placeholder = { Text("Cerca alimento, marca, codice a barre...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
@@ -314,7 +319,7 @@ private fun FoodsListContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Categories
-        val filterOptions = listOf("ALL", "MY FOODS", "RECIPES", "FAVORITES")
+        val filterOptions = listOf("TUTTI", "I MIEI CIBI", "RICETTE", "PREFERITI")
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -331,6 +336,7 @@ private fun FoodsListContent(
         // Main List
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 110.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
@@ -340,12 +346,13 @@ private fun FoodsListContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("ALL DISHES", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+                        Text("ALIMENTI E RICETTE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
                         Text("${displayedResults.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primaryContainer)
                     }
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FoodLabActionButton("+ Custom Dish", Icons.Default.Restaurant, onNavigateToCreateFood, Modifier.weight(1f))
-                        FoodLabActionButton("+ Recipe", Icons.Default.Cookie, onNavigateToCreateRecipe, Modifier.weight(1f))
+                        FoodLabActionButton("+ Alimento", Icons.Default.Restaurant, onNavigateToCreateFood, Modifier.weight(1f))
+                        FoodLabActionButton("+ Ricetta", Icons.Default.Add, onNavigateToCreateRecipe, Modifier.weight(1f))
+                        FoodLabActionButton("Le Ricette", Icons.AutoMirrored.Filled.MenuBook, onNavigateToRecipes, Modifier.weight(1f))
                     }
                 }
             }
@@ -373,7 +380,7 @@ private fun FoodsListContent(
                             .padding(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("NO DISHES FOUND", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("NESSUN ALIMENTO TROVATO", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {

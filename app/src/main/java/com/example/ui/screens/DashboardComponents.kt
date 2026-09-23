@@ -119,10 +119,10 @@ fun CompactWeightChip(
     Row(
         modifier = modifier
             .heightIn(min = 40.dp)
+            .applePressEffect(pressedScale = 0.94f, onClick = onClick)
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -239,10 +239,10 @@ fun DashboardDateButton(
     Box(
         modifier = Modifier
             .size(44.dp)
+            .applePressEffect(pressedScale = 0.9f, onClick = if (enabled) onClick else null)
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-            .clickable(enabled = enabled, onClick = onClick)
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center
     ) {
@@ -260,9 +260,9 @@ fun SmoothProgressRail(
 ) {
     val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = androidx.compose.animation.core.tween(
-            durationMillis = 360,
-            easing = androidx.compose.animation.core.FastOutSlowInEasing
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
         ),
         label = "SmoothProgressRail"
     )
@@ -505,18 +505,19 @@ fun QuickFavoritesRow(
                 val servingGrams = if (food.defaultServingSize > 0) food.defaultServingSize else 100
                 val cals = food.caloriesPer100g * servingGrams / 100
                 Surface(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        soundManager.playSound("power_up")
-                        onQuickLog(food)
-                    },
+                    modifier = Modifier
+                        .height(44.dp)
+                        .applePressEffect(pressedScale = 0.94f) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            soundManager.playSound("power_up")
+                            onQuickLog(food)
+                        },
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-                    ),
-                    modifier = Modifier.height(44.dp)
+                    )
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -829,17 +830,34 @@ fun HorizontalDatePicker(
             val dayName = remember(parsedDate) { java.text.SimpleDateFormat("EEE", Locale.US).format(parsedDate).uppercase() }
             val dayNumber = remember(parsedDate) { java.text.SimpleDateFormat("dd", Locale.US).format(parsedDate) }
 
+            val animatedBg by androidx.compose.animation.animateColorAsState(
+                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent,
+                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                label = "dayBg"
+            )
+            val animatedBorder by androidx.compose.animation.animateColorAsState(
+                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent,
+                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                label = "dayBorder"
+            )
+            val animatedDayTextColor by androidx.compose.animation.animateColorAsState(
+                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                label = "dayTextColor"
+            )
+            val animatedNumTextColor by androidx.compose.animation.animateColorAsState(
+                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                label = "numTextColor"
+            )
+
             Column(
                 modifier = Modifier
                     .width(44.dp)
+                    .applePressEffect(pressedScale = 0.92f) { onDateChange(date) }
                     .clip(RoundedCornerShape(14.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent)
-                    .border(
-                        1.dp,
-                        if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent,
-                        RoundedCornerShape(14.dp)
-                    )
-                    .clickable { onDateChange(date) }
+                    .background(animatedBg)
+                    .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -847,12 +865,12 @@ fun HorizontalDatePicker(
                 Text(
                     text = dayName,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = animatedDayTextColor
                 )
                 Text(
                     text = dayNumber,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                    color = animatedNumTextColor
                 )
             }
         }
@@ -905,7 +923,8 @@ fun UnifiedHeroHeader(
                             text = if (remainingCalories >= 0) "$remainingCalories" else "${-remainingCalories}",
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 28.sp
+                                fontSize = 30.sp,
+                                letterSpacing = (-0.5).sp
                             ),
                             color = if (remainingCalories < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                         )
@@ -923,14 +942,14 @@ fun UnifiedHeroHeader(
                                 .align(Alignment.CenterVertically)
                         ) {
                             Text(
-                                text = if (remainingCalories >= 0) "LEFT" else "OVER TARGET",
+                                text = if (remainingCalories >= 0) "RIMASTE" else "IN ECCESSO",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
                                 color = if (remainingCalories < 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                     Text(
-                        text = "Target $targetCalories • Logged $loggedCalories • Burned $burnedCalories",
+                        text = "Obiettivo $targetCalories • Assunte $loggedCalories • Bruciate $burnedCalories",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -966,19 +985,19 @@ fun UnifiedHeroHeader(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     MacroProgressLine(
-                        label = "PROTEIN",
+                        label = "PROTEINE",
                         consumed = proteinConsumed.toInt(),
                         target = proteinTarget.toInt(),
                         color = Color(0xFF22C55E)
                     )
                     MacroProgressLine(
-                        label = "CARBS",
+                        label = "CARBOIDRATI",
                         consumed = carbsConsumed.toInt(),
                         target = carbsTarget.toInt(),
                         color = Color(0xFFF59E0B)
                     )
                     MacroProgressLine(
-                        label = "FAT",
+                        label = "GRASSI",
                         consumed = fatConsumed.toInt(),
                         target = fatTarget.toInt(),
                         color = Color(0xFF06B6D4)
@@ -992,9 +1011,9 @@ fun UnifiedHeroHeader(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .applePressEffect(pressedScale = 0.97f, onClick = onStepClick)
                     .clip(RoundedCornerShape(14.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .clickable(onClick = onStepClick)
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -1002,14 +1021,14 @@ fun UnifiedHeroHeader(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.AutoMirrored.Filled.DirectionsWalk,
-                        contentDescription = "Steps",
+                        contentDescription = "Passi",
                         tint = Color(0xFF3B82F6),
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
-                        Text("DAILY STEPS", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
-                        Text("$steps / $stepsTarget steps", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("PASSI GIORNALIERI", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                        Text("$steps / $stepsTarget passi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Box(modifier = Modifier.width(90.dp)) {
@@ -1083,7 +1102,7 @@ fun UnifiedMealsCard(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                "MEALS & DIET LOG",
+                "PASTI DI OGGI",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -1131,7 +1150,7 @@ fun UnifiedMealsCard(
                                     color = accentColor
                                 )
                                 Text(
-                                    if (meals.isNotEmpty()) "${meals.size} item${if (meals.size == 1) "" else "s"}" else "Empty",
+                                    if (meals.isNotEmpty()) "${meals.size} ${if (meals.size == 1) "alimento" else "alimenti"}" else "Nessun alimento",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1146,15 +1165,16 @@ fun UnifiedMealsCard(
                             Spacer(modifier = Modifier.width(10.dp))
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(accentColor.copy(alpha = 0.18f))
-                                    .clickable {
+                                    .applePressEffect(pressedScale = 0.92f) {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                         onAddMealClick(typeKey)
                                     }
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(accentColor.copy(alpha = 0.18f))
+                                    .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
                                     .padding(horizontal = 14.dp, vertical = 6.dp)
                             ) {
-                                Text("+ Add", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = accentColor)
+                                Text("+ Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = accentColor)
                             }
                         }
                     }
@@ -1693,16 +1713,16 @@ fun MacroPreviewCard(
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
             Column {
-                Text("MACROS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text("MACRONUTRIENTI", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
                 Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text("$calories kcal", style = MaterialTheme.typography.titleMedium, color = accent)
         }
         MacroDistributionBar(protein = protein, carbs = carbs, fat = fat)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NutrientPill("Protein", protein, Color(0xFF22C55E), Modifier.weight(1f))
-            NutrientPill("Carbs", carbs, Color(0xFFF59E0B), Modifier.weight(1f))
-            NutrientPill("Fat", fat, Color(0xFF06B6D4), Modifier.weight(1f))
+            NutrientPill("Proteine", protein, Color(0xFF22C55E), Modifier.weight(1f))
+            NutrientPill("Carboidrati", carbs, Color(0xFFF59E0B), Modifier.weight(1f))
+            NutrientPill("Grassi", fat, Color(0xFF06B6D4), Modifier.weight(1f))
         }
     }
 }

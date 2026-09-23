@@ -189,7 +189,7 @@ fun RecipesScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                contentPadding = PaddingValues(top = 16.dp, bottom = 110.dp)
             ) {
                 items(templatesWithItems, key = { it.template.id }) { recipeWithItems ->
                     RecipeCard(

@@ -81,12 +81,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         .map { weights -> weights.maxByOrNull { it.timestamp } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    fun updateWeight(weightKg: Float) {
+    fun updateWeight(weightKg: Float, dateString: String = SessionManager.formatDate(java.util.Date())) {
         if (!weightKg.isFinite() || weightKg !in 20f..400f) return
         viewModelScope.launch {
             repository.insertWeight(
                 WeightLog(
-                    dateString = SessionManager.formatDate(java.util.Date()), 
+                    dateString = dateString, 
                     weightKg = weightKg,
                     timestamp = System.currentTimeMillis()
                 )

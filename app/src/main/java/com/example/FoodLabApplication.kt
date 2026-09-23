@@ -42,6 +42,7 @@ class FoodLabApplication : Application() {
             NotificationScheduler.scheduleReminders(this, notificationsEnabled)
             com.example.util.WidgetUpdater.updateAllWidgets(this)
             CoroutineScope(Dispatchers.IO).launch {
+                repository.ensureDefaultFoodsSeeded()
                 CreaDatabaseImporter.importIfNeeded(this@FoodLabApplication, repository)
             }
         } catch (e: Exception) {

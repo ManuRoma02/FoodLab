@@ -12,7 +12,8 @@ import androidx.room.Relation
         Index(value = ["name"]),
         Index(value = ["brand"]),
         Index(value = ["isFavorite"]),
-        Index(value = ["useCount"])
+        Index(value = ["useCount"]),
+        Index(value = ["barcode"])
     ]
 )
 data class FoodItem(
@@ -25,7 +26,8 @@ data class FoodItem(
     val fatPer100g: Float,
     val defaultServingSize: Int = 100,
     val isFavorite: Boolean = false,
-    val useCount: Int = 0
+    val useCount: Int = 0,
+    val barcode: String = ""
 )
 
 @Entity(

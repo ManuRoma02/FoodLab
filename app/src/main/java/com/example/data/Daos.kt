@@ -21,8 +21,14 @@ interface FoodDao {
     """)
     fun searchFoods(query: String): Flow<List<FoodItem>>
 
+    @Query("SELECT COUNT(*) FROM foods")
+    suspend fun getFoodCount(): Int
+
     @Query("SELECT * FROM foods WHERE id = :id LIMIT 1")
     suspend fun getFoodById(id: Int): FoodItem?
+
+    @Query("SELECT * FROM foods WHERE barcode = :barcode AND barcode != '' LIMIT 1")
+    suspend fun getFoodByBarcode(barcode: String): FoodItem?
 
     @Query("SELECT * FROM foods WHERE id IN (:ids)")
     suspend fun getFoodsByIds(ids: List<Int>): List<FoodItem>

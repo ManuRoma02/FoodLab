@@ -20,6 +20,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.Routes
@@ -27,29 +33,38 @@ import com.example.util.LocalSoundManager
 
 
 @Composable
-fun BottomNavBar(navController: NavController, currentRoute: String?) {
+fun BottomNavBar(
+    navController: NavController,
+    currentRoute: String?,
+    modifier: Modifier = Modifier
+) {
     val soundManager = LocalSoundManager.current
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 16.dp,
+                    elevation = 8.dp,
                     shape = RoundedCornerShape(32.dp),
-                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                    ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                    ambientColor = Color.Black.copy(alpha = 0.20f)
                 ),
             shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.70f),
             border = BorderStroke(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                    )
+                )
             )
         ) {
             Row(
@@ -60,8 +75,8 @@ fun BottomNavBar(navController: NavController, currentRoute: String?) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 NavBarItem(
-                    icon = Icons.Default.VideogameAsset,
-                    label = "Stages",
+                    icon = Icons.Default.DateRange,
+                    label = "Diario",
                     isSelected = currentRoute == Routes.Dashboard
                 ) {
                     soundManager.playSound("click")
@@ -72,8 +87,8 @@ fun BottomNavBar(navController: NavController, currentRoute: String?) {
                     }
                 }
                 NavBarItem(
-                    icon = Icons.Default.Fastfood,
-                    label = "Items",
+                    icon = Icons.Default.Restaurant,
+                    label = "Alimenti",
                     isSelected = currentRoute == Routes.FoodsDatabase ||
                             currentRoute?.startsWith("foods_database_detail") == true ||
                             currentRoute == Routes.CreateFood
@@ -86,8 +101,8 @@ fun BottomNavBar(navController: NavController, currentRoute: String?) {
                     }
                 }
                 NavBarItem(
-                    icon = Icons.Default.EmojiEvents,
-                    label = "Highscore",
+                    icon = Icons.Default.BarChart,
+                    label = "Progressi",
                     isSelected = currentRoute == Routes.Stats || currentRoute == Routes.Analytics
                 ) {
                     soundManager.playSound("click")
@@ -98,8 +113,8 @@ fun BottomNavBar(navController: NavController, currentRoute: String?) {
                     }
                 }
                 NavBarItem(
-                    icon = Icons.Default.Memory,
-                    label = "Config",
+                    icon = Icons.Default.Settings,
+                    label = "Impostazioni",
                     isSelected = currentRoute == Routes.Settings
                 ) {
                     soundManager.playSound("click")
@@ -129,8 +144,8 @@ fun FoodLabNavigationRail(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
         NavigationRailItem(
-            icon = { Icon(Icons.Default.VideogameAsset, contentDescription = "Stages") },
-            label = { Text("Stages", style = MaterialTheme.typography.labelSmall) },
+            icon = { Icon(Icons.Default.DateRange, contentDescription = "Diario") },
+            label = { Text("Diario", style = MaterialTheme.typography.labelSmall) },
             selected = currentRoute == Routes.Dashboard,
             onClick = {
                 soundManager.playSound("click")
@@ -143,8 +158,8 @@ fun FoodLabNavigationRail(
         )
         Spacer(modifier = Modifier.height(12.dp))
         NavigationRailItem(
-            icon = { Icon(Icons.Default.Fastfood, contentDescription = "Items") },
-            label = { Text("Items", style = MaterialTheme.typography.labelSmall) },
+            icon = { Icon(Icons.Default.Restaurant, contentDescription = "Alimenti") },
+            label = { Text("Alimenti", style = MaterialTheme.typography.labelSmall) },
             selected = currentRoute == Routes.FoodsDatabase || currentRoute?.startsWith("foods_database_detail") == true || currentRoute == Routes.CreateFood,
             onClick = {
                 soundManager.playSound("click")
@@ -157,8 +172,8 @@ fun FoodLabNavigationRail(
         )
         Spacer(modifier = Modifier.height(12.dp))
         NavigationRailItem(
-            icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "Highscore") },
-            label = { Text("Highscore", style = MaterialTheme.typography.labelSmall) },
+            icon = { Icon(Icons.Default.BarChart, contentDescription = "Progressi") },
+            label = { Text("Progressi", style = MaterialTheme.typography.labelSmall) },
             selected = currentRoute == Routes.Stats || currentRoute == Routes.Analytics,
             onClick = {
                 soundManager.playSound("click")
@@ -171,8 +186,8 @@ fun FoodLabNavigationRail(
         )
         Spacer(modifier = Modifier.height(12.dp))
         NavigationRailItem(
-            icon = { Icon(Icons.Default.Memory, contentDescription = "Config") },
-            label = { Text("Config", style = MaterialTheme.typography.labelSmall) },
+            icon = { Icon(Icons.Default.Settings, contentDescription = "Impostazioni") },
+            label = { Text("Impostazioni", style = MaterialTheme.typography.labelSmall) },
             selected = currentRoute == Routes.Settings,
             onClick = {
                 soundManager.playSound("click")
@@ -226,7 +241,7 @@ fun NavBarItem(
                 color = animatedBorderColor,
                 shape = RoundedCornerShape(24.dp)
             )
-            .clickable(onClick = onClick)
+            .applePressEffect(pressedScale = 0.92f, onClick = onClick)
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioLowBouncy,
@@ -282,34 +297,110 @@ fun NavBarItem(
 }
 
 @Composable
+fun Modifier.applePressEffect(
+    pressedScale: Float = 0.96f,
+    onClick: (() -> Unit)? = null
+): Modifier {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) pressedScale else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "applePressScale"
+    )
+    val haptic = LocalHapticFeedback.current
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
+    return this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .then(
+            if (onClick != null) {
+                Modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick
+                )
+            } else {
+                Modifier
+            }
+        )
+}
+
+@Composable
 fun ImprovedTagButton(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val animatedBg by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "tagBg"
+    )
+    val animatedText by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "tagText"
+    )
+    val animatedBorder by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "tagBorder"
+    )
+
     Box(
         modifier = Modifier
+            .applePressEffect(pressedScale = 0.94f, onClick = onClick)
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceContainer
-            )
-            .border(
-                1.dp,
-                if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                RoundedCornerShape(20.dp)
-            )
-            .clickable(onClick = onClick)
+            .background(animatedBg)
+            .border(1.dp, animatedBorder, RoundedCornerShape(20.dp))
             .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.3.sp
+            ),
+            color = animatedText
         )
+    }
+}
+
+@Composable
+fun MacroBadge(label: String, value: String, color: Color) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = color.copy(alpha = 0.12f),
+        border = BorderStroke(0.5.dp, color.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "$label ",
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                color = color
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -325,12 +416,12 @@ fun SearchResultCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+            .applePressEffect(pressedScale = 0.97f, onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             1.dp,
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
         )
@@ -345,7 +436,10 @@ fun SearchResultCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = food.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.2).sp
+                    ),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -353,26 +447,43 @@ fun SearchResultCard(
                 if (food.brand.isNotBlank()) {
                     Text(
                         text = food.brand,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.2.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "${food.caloriesPer100g} kcal/100g",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text("P: ${food.proteinPer100g}g", style = MaterialTheme.typography.labelSmall, color = Color(0xFF22C55E))
-                    Text("C: ${food.carbsPer100g}g", style = MaterialTheme.typography.labelSmall, color = Color(0xFFF59E0B))
-                    Text("F: ${food.fatPer100g}g", style = MaterialTheme.typography.labelSmall, color = Color(0xFF06B6D4))
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                    ) {
+                        Text(
+                            text = "${food.caloriesPer100g} kcal/100g",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = (-0.1).sp
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        )
+                    }
+
+                    MacroBadge(label = "P", value = "${food.proteinPer100g}g", color = Color(0xFF22C55E))
+                    MacroBadge(label = "C", value = "${food.carbsPer100g}g", color = Color(0xFFF59E0B))
+                    MacroBadge(label = "F", value = "${food.fatPer100g}g", color = Color(0xFF06B6D4))
                 }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onToggleFavorite != null) {
-                    IconButton(onClick = onToggleFavorite) {
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                    ) {
                         Icon(
                             imageVector = if (food.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
@@ -381,7 +492,10 @@ fun SearchResultCard(
                     }
                 }
                 if (showAddIcon && onAddClick != null) {
-                    IconButton(onClick = onAddClick) {
+                    IconButton(
+                        onClick = onAddClick,
+                        modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add",

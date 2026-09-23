@@ -28,6 +28,7 @@ class Repository(
     
     fun searchFoods(query: String) = foodDao.searchFoods(query)
     suspend fun getFoodById(id: Int) = foodDao.getFoodById(id)
+    suspend fun getFoodByBarcode(barcode: String): FoodItem? = foodDao.getFoodByBarcode(barcode)
     suspend fun getFoodsByIds(ids: List<Int>) = if (ids.isEmpty()) emptyList() else foodDao.getFoodsByIds(ids)
     suspend fun incrementUseCount(id: Int) = foodDao.incrementUseCount(id)
     suspend fun incrementUseCounts(ids: List<Int>) {
@@ -36,6 +37,20 @@ class Repository(
     suspend fun setFavorite(id: Int, isFavorite: Boolean) = foodDao.setFavorite(id, isFavorite)
     suspend fun insertFood(food: FoodItem): Long = foodDao.insertFood(food)
     suspend fun insertInitialFoods(foods: List<FoodItem>): List<Long> = foodDao.insertFoods(foods)
+
+    suspend fun ensureDefaultFoodsSeeded() {
+        if (foodDao.getFoodCount() == 0) {
+            DefaultFoodCatalog.items.forEach { seed ->
+                val foodId = foodDao.insertFood(seed.food).toInt()
+                if (seed.portions.isNotEmpty()) {
+                    val portions = seed.portions.map { (name, weight) ->
+                        FoodPortion(foodId = foodId, name = name, weightGrams = weight)
+                    }
+                    portionDao.insertPortions(portions)
+                }
+            }
+        }
+    }
 
     fun getMealsForDate(date: String) = mealDao.getMealsForDate(date)
     fun getAllMeals() = mealDao.getAllMeals()
@@ -197,16 +212,25 @@ class Repository(
     }
 
     suspend fun fetchProductByBarcode(barcode: String, tempId: Int = -1): BarcodeLookupResult {
-        val api = openFoodFactsApi ?: return BarcodeLookupResult.NetworkError("Remote API unavailable")
         val cleanBarcode = barcode.filter(Char::isDigit).take(32)
         if (cleanBarcode.length !in 8..32) return BarcodeLookupResult.NotFound
+
+        // 1. Check local database first
+        val localFood = foodDao.getFoodByBarcode(cleanBarcode)
+        if (localFood != null) {
+            val portions = portionDao.getPortionsForFood(localFood.id)
+            return BarcodeLookupResult.Success(localFood, portions.firstOrNull())
+        }
+
+        // 2. Query remote Open Food Facts API
+        val api = openFoodFactsApi ?: return BarcodeLookupResult.NetworkError("Remote API unavailable")
         return try {
             val response = api.getProductByBarcode(cleanBarcode)
             val product = response.product
             if (response.status == 1 && product != null) {
                 val mapped = OpenFoodFactsMapper.map(product, tempId, fallbackName = "Barcode product")
                     ?: return BarcodeLookupResult.NotFound
-                BarcodeLookupResult.Success(mapped.food, mapped.portion)
+                BarcodeLookupResult.Success(mapped.food.copy(barcode = cleanBarcode), mapped.portion)
             } else {
                 BarcodeLookupResult.NotFound
             }

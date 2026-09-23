@@ -115,7 +115,7 @@ class PreferencesManager private constructor(context: Context) {
     }
 
     private fun loadSoundEnabled(): Boolean {
-        return prefs.getBoolean("sound_enabled", true)
+        return prefs.getBoolean("sound_enabled", false)
     }
 
     fun setSoundEnabled(enabled: Boolean) {
@@ -137,7 +137,7 @@ class PreferencesManager private constructor(context: Context) {
         prefs.edit { clear() }
         _themeSkin.value = ThemeSkin.RETRO_DARK
         _syncSteps.value = false
-        _soundEnabled.value = true
+        _soundEnabled.value = false
         _notificationsEnabled.value = false
         _hasCompletedOnboarding.value = false
         _waterGoal.value = 2500

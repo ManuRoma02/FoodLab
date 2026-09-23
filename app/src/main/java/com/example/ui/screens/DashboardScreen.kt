@@ -108,6 +108,7 @@ fun DashboardScreen(
     val soundManager = LocalSoundManager.current
     val preferencesManager = LocalPreferencesManager.current
     val syncStepsEnabled by preferencesManager.syncSteps.collectAsStateWithLifecycle()
+    val stepGoal by preferencesManager.stepGoal.collectAsStateWithLifecycle()
     val currentLiveSteps by pedometerViewModel.steps.collectAsStateWithLifecycle()
 
     val haptic = LocalHapticFeedback.current
@@ -241,7 +242,7 @@ fun DashboardScreen(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Unified Hero Header
@@ -258,8 +259,8 @@ fun DashboardScreen(
                         fatConsumed = pageSummary.fat,
                         fatTarget = pageTarget.targetFat.toFloat(),
                         steps = pageSteps,
-                        stepsTarget = 10000,
-                        weightText = latestWeight?.let { String.format(Locale.getDefault(), "%.1f KG", it.weightKg) } ?: "ADD KG",
+                        stepsTarget = stepGoal,
+                        weightText = latestWeight?.let { String.format(Locale.getDefault(), "%.1f KG", it.weightKg) } ?: "+ Peso",
                         onWeightClick = { showWeightDialog = true },
                         onStepClick = {
                             if (!hasActivityPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -281,7 +282,15 @@ fun DashboardScreen(
                         onMealClick = { meal -> mealToEdit = meal },
                         onQuickLog = { food ->
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.quickLogFood(food)
+                            val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                            val mealType = when {
+                                hour in 4..10 -> com.example.util.MealTypes.BREAKFAST
+                                hour in 11..14 -> com.example.util.MealTypes.LUNCH
+                                hour in 18..22 -> com.example.util.MealTypes.DINNER
+                                else -> com.example.util.MealTypes.SNACK
+                            }
+                            viewModel.quickLogFood(food, mealType)
+                            android.widget.Toast.makeText(context, "${food.name} registrato in ${com.example.util.MealTypes.displayName(mealType).lowercase()}", android.widget.Toast.LENGTH_SHORT).show()
                         },
                         onDeleteMeal = { meal ->
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -295,10 +304,10 @@ fun DashboardScreen(
 
     if (showWeightDialog) {
         LogWeightDialog(
-            initialWeight = latestWeight?.weightKg?.toString() ?: "",
+            initialWeight = formatWeightInput(latestWeight?.weightKg),
             onDismiss = { showWeightDialog = false },
             onSave = { weight ->
-                viewModel.updateWeight(weight)
+                viewModel.updateWeight(weight, currentDate)
                 showWeightDialog = false
             }
         )

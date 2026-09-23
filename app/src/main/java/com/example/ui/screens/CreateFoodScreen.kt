@@ -44,7 +44,11 @@ enum class FoodInputMode {
 }
 
 @Composable
-fun CreateFoodScreen(viewModel: FoodSearchViewModel, onNavigateBack: () -> Unit) {
+fun CreateFoodScreen(
+    viewModel: FoodSearchViewModel, 
+    onNavigateBack: () -> Unit,
+    initialBarcode: String = ""
+) {
     val soundManager = LocalSoundManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -53,7 +57,7 @@ fun CreateFoodScreen(viewModel: FoodSearchViewModel, onNavigateBack: () -> Unit)
 
     var name by remember { mutableStateOf("") }
     var brand by remember { mutableStateOf("") }
-    var barcodeText by remember { mutableStateOf("") }
+    var barcodeText by remember(initialBarcode) { mutableStateOf(initialBarcode) }
     var isBarcodeSearching by remember { mutableStateOf(false) }
     var barcodeStatusMessage by remember { mutableStateOf<String?>(null) }
 
@@ -600,8 +604,11 @@ fun CreateFoodScreen(viewModel: FoodSearchViewModel, onNavigateBack: () -> Unit)
                             finalProteinPer100g,
                             finalCarbsPer100g,
                             finalFatPer100g,
-                            finalPortions
+                            finalPortions,
+                            barcodeText.trim()
                         )
+                        soundManager.playSound("coin")
+                        android.widget.Toast.makeText(context, "${name.trim()} salvato nei tuoi alimenti", android.widget.Toast.LENGTH_SHORT).show()
                         onNavigateBack()
                     }
                 },

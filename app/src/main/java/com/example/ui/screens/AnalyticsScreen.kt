@@ -84,11 +84,13 @@ fun AnalyticsScreen(
     val showWeightChart by prefsManager.showWeightChart.collectAsStateWithLifecycle()
     val showStepsChart by prefsManager.showStepsChart.collectAsStateWithLifecycle()
     val showStreakCard by prefsManager.showStreakCard.collectAsStateWithLifecycle()
+    val stepGoal by prefsManager.stepGoal.collectAsStateWithLifecycle()
 
     var showCustomizationSheet by remember { mutableStateOf(false) }
     var showLogWeightDialog by remember { mutableStateOf(false) }
 
     val todayStr = remember { SessionManager.formatDate(Date()) }
+    val todaySteps: Int = remember(todayStr) { com.example.util.StepCounterStore.savedSteps(context, todayStr) }
     val last7Days = remember(todayStr) {
         (6 downTo 0).map { daysAgo ->
             SessionManager.getPreviousDay(todayStr, daysAgo)
@@ -169,7 +171,7 @@ fun AnalyticsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Progress & Analytics",
+                "Progressi e Statistiche",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -229,8 +231,8 @@ fun AnalyticsScreen(
             // 4. Individual Protein Trend Chart Card (Green)
             AnimatedVisibility(visible = showProteinChart) {
                 IndividualMacroTrendCard(
-                    title = "Protein Trend (7 Days)",
-                    macroName = "Protein",
+                    title = "Trend Proteine (7 giorni)",
+                    macroName = "Proteine",
                     unit = "g",
                     lineColor = Color(0xFF22C55E),
                     targetValue = defaultTargetProtein.toFloat(),
@@ -241,8 +243,8 @@ fun AnalyticsScreen(
             // 5. Individual Carbs Trend Chart Card (Amber)
             AnimatedVisibility(visible = showCarbsChart) {
                 IndividualMacroTrendCard(
-                    title = "Carbs Trend (7 Days)",
-                    macroName = "Carbs",
+                    title = "Trend Carboidrati (7 giorni)",
+                    macroName = "Carboidrati",
                     unit = "g",
                     lineColor = Color(0xFFF59E0B),
                     targetValue = defaultTargetCarbs.toFloat(),
@@ -253,8 +255,8 @@ fun AnalyticsScreen(
             // 6. Individual Fat Trend Chart Card (Cyan)
             AnimatedVisibility(visible = showFatChart) {
                 IndividualMacroTrendCard(
-                    title = "Fat Trend (7 Days)",
-                    macroName = "Fat",
+                    title = "Trend Grassi (7 giorni)",
+                    macroName = "Grassi",
                     unit = "g",
                     lineColor = Color(0xFF06B6D4),
                     targetValue = defaultTargetFat.toFloat(),
@@ -276,7 +278,7 @@ fun AnalyticsScreen(
 
             // 8. Activity & Steps Card
             AnimatedVisibility(visible = showStepsChart) {
-                ActivityStepsCard()
+                ActivityStepsCard(stepGoal = stepGoal, currentSteps = todaySteps)
             }
 
             // 9. Streak & Mood Journal Grid Card
@@ -284,12 +286,12 @@ fun AnalyticsScreen(
                 SlimeCalendarGrid(allMeals = allMeals, targetCalories = defaultTargetCalories)
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(110.dp))
         }
     }
 
     if (showLogWeightDialog) {
-        val currentInitialWeight = weights.firstOrNull()?.weightKg?.toString() ?: "70.0"
+        val currentInitialWeight = formatWeightInput(weights.firstOrNull()?.weightKg)
         LogWeightDialog(
             initialWeight = currentInitialWeight,
             onDismiss = { showLogWeightDialog = false },
@@ -298,9 +300,11 @@ fun AnalyticsScreen(
                     db.weightLogDao().insertWeight(
                         WeightLog(
                             dateString = todayStr,
-                            weightKg = weightKg
+                            weightKg = weightKg,
+                            timestamp = System.currentTimeMillis()
                         )
                     )
+                    com.example.util.WidgetUpdater.updateAllWidgets(context)
                 }
                 showLogWeightDialog = false
             }
@@ -350,7 +354,7 @@ private fun CalorieDeficitSummaryCard(dailyIntakes: List<DayCalorieData>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "7-Day Energy Balance",
+                    "Bilancio Energetico (7 Giorni)",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -382,10 +386,10 @@ private fun CalorieDeficitSummaryCard(dailyIntakes: List<DayCalorieData>) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MetricColumn(label = "Avg Intake", value = "$avgIntake kcal/d", color = MaterialTheme.colorScheme.onSurface)
-                MetricColumn(label = "Avg Target", value = "$avgTarget kcal/d", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                MetricColumn(label = "Media Assunti", value = "$avgIntake kcal/d", color = MaterialTheme.colorScheme.onSurface)
+                MetricColumn(label = "Media Obiettivo", value = "$avgTarget kcal/d", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 MetricColumn(
-                    label = "Net 7-Day",
+                    label = "Saldo 7 Giorni",
                     value = if (netDifference >= 0) "-$netDifference kcal" else "+${-netDifference} kcal",
                     color = if (netDifference >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
@@ -394,9 +398,9 @@ private fun CalorieDeficitSummaryCard(dailyIntakes: List<DayCalorieData>) {
             val estKgChange = netDifference / 7700f
             Text(
                 text = if (netDifference >= 0) {
-                    "Estimated body fat loss: ~${String.format(Locale.US, "%.2f", estKgChange)} kg over 7 days"
+                    "Variazione stimata massa grassa: ~${String.format(Locale.getDefault(), "%.2f", estKgChange)} kg in 7 giorni"
                 } else {
-                    "Estimated body fat surplus: ~${String.format(Locale.US, "%.2f", -estKgChange)} kg over 7 days"
+                    "Surplus stimato massa grassa: ~${String.format(Locale.getDefault(), "%.2f", -estKgChange)} kg in 7 giorni"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -847,7 +851,11 @@ private fun IndividualMacroTrendCard(
 }
 
 @Composable
-private fun ActivityStepsCard() {
+private fun ActivityStepsCard(
+    stepGoal: Int,
+    currentSteps: Int = 0
+) {
+    val estimatedKcal = (currentSteps * 0.04f).toInt().coerceAtLeast(0)
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -865,7 +873,7 @@ private fun ActivityStepsCard() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Daily Activity & Steps",
+                    "Attività e Passi Giornalieri",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -880,9 +888,9 @@ private fun ActivityStepsCard() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
-                MetricColumn(label = "Daily Step Goal", value = "10,000 steps", color = MaterialTheme.colorScheme.onSurface)
-                MetricColumn(label = "Est. Burn", value = "~380 kcal/day", color = Color(0xFFF59E0B))
-                MetricColumn(label = "Active Days", value = "6 / 7 days", color = MaterialTheme.colorScheme.primary)
+                MetricColumn(label = "Obiettivo Passi", value = "${String.format(Locale.getDefault(), "%,d", stepGoal)}", color = MaterialTheme.colorScheme.onSurface)
+                MetricColumn(label = "Passi Oggi", value = "${String.format(Locale.getDefault(), "%,d", currentSteps)}", color = Color(0xFFF59E0B))
+                MetricColumn(label = "Stima Calorie", value = "~$estimatedKcal kcal", color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -921,14 +929,15 @@ private fun SlimeCalendarGrid(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "14-Day Streak & Journal Grid",
+                    "Registro e Serie (14 Giorni)",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                val loggedDaysCount = last14Days.count { (mealsByDate[it] ?: emptyList()).isNotEmpty() }
                 Text(
-                    "🔥 Streak Active",
+                    text = if (loggedDaysCount > 0) "🔥 $loggedDaysCount giorni registrati" else "Nessun dato registrato",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFFFEF08A)
+                    color = if (loggedDaysCount > 0) Color(0xFFFEF08A) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -1024,16 +1033,16 @@ private fun WeightProgressionCard(
             ) {
                 Column {
                     Text(
-                        "Weight Progression",
+                        "Andamento Peso",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     sortedWeights.lastOrNull()?.let { last ->
                         val diff = last.weightKg - targetWeightKg
-                        val diffStr = if (diff > 0) "+${String.format(Locale.US, "%.1f", diff)} kg to target"
-                                      else "${String.format(Locale.US, "%.1f", diff)} kg to target"
+                        val diffStr = if (diff > 0) "+${String.format(Locale.US, "%.1f", diff)} kg dall'obiettivo"
+                                      else "${String.format(Locale.US, "%.1f", diff)} kg dall'obiettivo"
                         Text(
-                            text = "Current: ${last.weightKg} kg ($diffStr)",
+                            text = "Attuale: ${last.weightKg} kg ($diffStr)",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1042,7 +1051,7 @@ private fun WeightProgressionCard(
                 TextButton(onClick = onLogWeightClick) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Log Weight")
+                    Text("Registra Peso")
                 }
             }
 
@@ -1066,7 +1075,7 @@ private fun WeightProgressionCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "No weight logs recorded yet.",
+                            "Nessun peso registrato.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1074,7 +1083,7 @@ private fun WeightProgressionCard(
                             onClick = onLogWeightClick,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                         ) {
-                            Text("Log First Entry")
+                            Text("Registra il primo peso")
                         }
                     }
                 }
@@ -1113,7 +1122,7 @@ private fun WeightProgressionCard(
                     )
 
                     val targetLabelLayout = textMeasurer.measure(
-                        text = "Target: ${targetWeightKg}kg",
+                        text = "Obiettivo: ${targetWeightKg}kg",
                         style = TextStyle(fontSize = 10.sp, color = tertiaryColor, fontWeight = FontWeight.Bold)
                     )
                     drawText(

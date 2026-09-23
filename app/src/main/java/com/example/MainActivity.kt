@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -81,6 +82,7 @@ object Routes {
     fun createSearchRoute(mealType: String) = "search/$mealType"
     fun createFoodDetailRoute(id: Int, mealType: String) = "food_detail/$id/$mealType"
     fun createFoodsDatabaseDetailRoute(id: Int) = "foods_database_detail/$id"
+    fun createCreateFoodRoute(barcode: String = "") = if (barcode.isNotBlank()) "create_food?barcode=$barcode" else "create_food"
 }
 
 private fun getRouteIndex(route: String?): Int {
@@ -147,6 +149,7 @@ class MainActivity : ComponentActivity() {
             val soundManager = remember { SoundManager(context) }
             val preferencesManager = remember { PreferencesManager.getInstance(context) }
             val currentThemeSkin by preferencesManager.themeSkin.collectAsStateWithLifecycle()
+            val hasCompletedOnboarding by preferencesManager.hasCompletedOnboarding.collectAsStateWithLifecycle()
             
             DisposableEffect(Unit) {
                 onDispose {
@@ -223,7 +226,8 @@ class MainActivity : ComponentActivity() {
                         ReminderScheduler.sync(context, granted)
                     }
 
-                    LaunchedEffect(Unit) {
+                    LaunchedEffect(hasCompletedOnboarding) {
+                        if (!hasCompletedOnboarding) return@LaunchedEffect
                         if (preferencesManager.syncSteps.value && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) {
                                 activityPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
@@ -270,15 +274,13 @@ class MainActivity : ComponentActivity() {
                                         foodSearchViewModel = foodSearchViewModel,
                                         pedometerViewModel = pedometerViewModel,
                                         currentDate = currentDate,
-                                        onDateChange = { currentDateState.value = it }
+                                        onDateChange = { currentDateState.value = it },
+                                        hasCompletedOnboarding = hasCompletedOnboarding
                                     )
                                 }
                             }
                         } else {
-                            Scaffold(
-                                modifier = Modifier.fillMaxSize(),
-                                bottomBar = { if (showBottomBar && !isWideScreen) BottomNavBar(navController, currentRoute) }
-                            ) { innerPadding ->
+                            Box(modifier = Modifier.fillMaxSize()) {
                                 FoodLabNavHost(
                                     navController = navController,
                                     dashboardViewModel = dashboardViewModel,
@@ -286,8 +288,16 @@ class MainActivity : ComponentActivity() {
                                     pedometerViewModel = pedometerViewModel,
                                     currentDate = currentDate,
                                     onDateChange = { currentDateState.value = it },
-                                    modifier = Modifier.padding(innerPadding)
+                                    hasCompletedOnboarding = hasCompletedOnboarding,
+                                    modifier = Modifier.fillMaxSize()
                                 )
+                                if (showBottomBar && !isWideScreen) {
+                                    BottomNavBar(
+                                        navController = navController,
+                                        currentRoute = currentRoute,
+                                        modifier = Modifier.align(Alignment.BottomCenter)
+                                    )
+                                }
                             }
                         }
                     }
@@ -305,11 +315,12 @@ private fun FoodLabNavHost(
     pedometerViewModel: com.example.ui.PedometerViewModel,
     currentDate: String,
     onDateChange: (String) -> Unit,
+    hasCompletedOnboarding: Boolean,
     modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = Routes.Dashboard,
+        startDestination = if (hasCompletedOnboarding) Routes.Dashboard else Routes.Onboarding,
         modifier = modifier,
         enterTransition = {
             val initialIdx = getRouteIndex(initialState.destination.route)
@@ -352,6 +363,16 @@ private fun FoodLabNavHost(
             )
         }
     ) {
+        composable(Routes.Onboarding) {
+            OnboardingScreen(
+                onFinishOnboarding = {
+                    navController.navigate(Routes.Dashboard) {
+                        popUpTo(Routes.Onboarding) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
         composable(Routes.Dashboard) {
             DashboardScreen(
                 viewModel = dashboardViewModel,
@@ -376,16 +397,29 @@ private fun FoodLabNavHost(
                 onFoodSelected = { foodId ->
                     navController.navigate(Routes.createFoodDetailRoute(foodId, mealType))
                 },
-                onNavigateToCreateFood = {
-                    navController.navigate(Routes.CreateFood)
+                onNavigateToCreateFood = { barcode ->
+                    navController.navigate(Routes.createCreateFoodRoute(barcode))
                 },
                 onNavigateToCreateRecipe = {
                     navController.navigate(Routes.CreateRecipe)
                 }
             )
         }
-        composable(Routes.CreateFood) {
-            CreateFoodScreen(foodSearchViewModel, onNavigateBack = { navController.popBackStack() })
+        composable(
+            route = "create_food?barcode={barcode}",
+            arguments = listOf(
+                navArgument("barcode") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val barcode = backStackEntry.arguments?.getString("barcode") ?: ""
+            CreateFoodScreen(
+                viewModel = foodSearchViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                initialBarcode = barcode
+            )
         }
         composable(Routes.CreateRecipe) {
             CreateRecipeScreen(
@@ -408,7 +442,10 @@ private fun FoodLabNavHost(
                 foodId = foodId,
                 currentDate = currentDate,
                 mealType = mealType,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onMealLogged = {
+                    navController.popBackStack(Routes.Dashboard, inclusive = false)
+                }
             )
         }
         composable(Routes.FoodsDatabase) {
@@ -416,6 +453,7 @@ private fun FoodLabNavHost(
                 viewModel = foodSearchViewModel,
                 onNavigateToCreateFood = { navController.navigate(Routes.CreateFood) },
                 onNavigateToCreateRecipe = { navController.navigate(Routes.CreateRecipe) },
+                onNavigateToRecipes = { navController.navigate(Routes.Recipes) },
                 onFoodSelected = { foodId ->
                     navController.navigate(Routes.createFoodsDatabaseDetailRoute(foodId))
                 }
@@ -426,10 +464,20 @@ private fun FoodLabNavHost(
             arguments = listOf(navArgument("foodId") { type = NavType.IntType })
         ) { backStackEntry ->
             val foodId = backStackEntry.arguments?.getInt("foodId") ?: 0
+            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+            val mealType = when {
+                hour in 4..10 -> MealTypes.BREAKFAST
+                hour in 11..14 -> MealTypes.LUNCH
+                hour in 18..22 -> MealTypes.DINNER
+                else -> MealTypes.SNACK
+            }
             FoodDatabaseDetailScreen(
                 viewModel = foodSearchViewModel,
                 foodId = foodId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onLogFood = { id ->
+                    navController.navigate(Routes.createFoodDetailRoute(id, mealType))
+                }
             )
         }
         composable(Routes.Analytics) {
@@ -450,7 +498,10 @@ private fun FoodLabNavHost(
         }
         composable(Routes.Settings) {
             val settingsViewModel: SettingsViewModel = viewModel()
-            SettingsScreen(settingsViewModel)
+            SettingsScreen(
+                viewModel = settingsViewModel,
+                onNavigateToOnboarding = { navController.navigate(Routes.Onboarding) }
+            )
         }
     }
 }
