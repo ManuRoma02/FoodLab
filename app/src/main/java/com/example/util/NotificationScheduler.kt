@@ -24,6 +24,27 @@ object NotificationScheduler {
         return target.timeInMillis - now.timeInMillis
     }
 
+    fun createChannels(context: Context) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
+            val mealChannel = android.app.NotificationChannel(
+                "meal_reminders_channel",
+                "Meal Reminders",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Reminders to log breakfast, lunch, and dinner"
+            }
+            val streakChannel = android.app.NotificationChannel(
+                "streak_guard_channel",
+                "Streak Protection",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alerts to protect your logging streak"
+            }
+            notificationManager.createNotificationChannels(listOf(mealChannel, streakChannel))
+        }
+    }
+
     fun scheduleReminders(context: Context, enabled: Boolean = true) {
         try {
             val workManager = WorkManager.getInstance(context)

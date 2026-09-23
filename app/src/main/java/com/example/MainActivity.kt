@@ -216,7 +216,10 @@ class MainActivity : ComponentActivity() {
 
                     val notificationPermissionLauncher = rememberLauncherForActivityResult(
                         ActivityResultContracts.RequestPermission()
-                    ) { _ -> }
+                    ) { granted ->
+                        preferencesManager.setNotificationsEnabled(granted)
+                        ReminderScheduler.sync(context, granted)
+                    }
 
                     LaunchedEffect(Unit) {
                         if (preferencesManager.syncSteps.value && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -224,7 +227,7 @@ class MainActivity : ComponentActivity() {
                                 activityPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
                             }
                         }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (preferencesManager.notificationsEnabled.value && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }

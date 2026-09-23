@@ -37,11 +37,7 @@ class FoodLabApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         try {
-            app.rive.runtime.kotlin.core.Rive.init(this)
-        } catch (t: Throwable) {
-            android.util.Log.w("FoodLabApp", "Rive initialization skipped or failed: ${t.message}")
-        }
-        try {
+            NotificationScheduler.createChannels(this)
             val notificationsEnabled = PreferencesManager.getInstance(this).notificationsEnabled.value
             NotificationScheduler.scheduleReminders(this, notificationsEnabled)
             com.example.util.WidgetUpdater.updateAllWidgets(this)
