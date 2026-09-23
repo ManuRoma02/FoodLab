@@ -138,8 +138,23 @@ fun DashboardScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
+    var lastKnownToday by remember { mutableStateOf(today) }
     val initialPage = remember { pageIndexForDate(currentDate, today) }
     val pagerState = rememberPagerState(initialPage = initialPage) { TOTAL_PAGES }
+
+    // When the day rolls over (e.g. at midnight), keep user on today if they were on today
+    LaunchedEffect(today) {
+        if (today != lastKnownToday) {
+            val wasOnToday = (currentDate == lastKnownToday)
+            lastKnownToday = today
+            if (wasOnToday) {
+                onDateChange(today)
+                try {
+                    pagerState.scrollToPage(BASE_PAGE_INDEX)
+                } catch (_: Exception) {}
+            }
+        }
+    }
 
     // Synchronize pager when currentDate changes externally (e.g. from top date picker)
     LaunchedEffect(currentDate, today) {

@@ -11,6 +11,7 @@ class MidnightWidgetSyncWorker(
 
     override suspend fun doWork(): Result {
         try {
+            StepCounterStore.resetForNewDay(applicationContext)
             WidgetUpdater.updateAllWidgets(applicationContext)
         } catch (e: Exception) {
             android.util.Log.e("MidnightWidgetSync", "Error updating widgets at midnight", e)

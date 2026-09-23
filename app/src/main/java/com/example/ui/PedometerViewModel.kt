@@ -2,7 +2,10 @@ package com.example.ui
 
 import android.Manifest
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -37,6 +40,13 @@ class PedometerViewModel(application: Application) : AndroidViewModel(applicatio
     private var lastAccelMagnitude = 0f
     private var lastStepTimestamp = 0L
     private var lastWidgetUpdateTime = 0L
+    private var currentTrackingDate = StepCounterStore.today()
+
+    private val dateChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            onDateChanged()
+        }
+    }
     
     fun getStepsForDateFlow(dateString: String): Flow<Int> {
         val today = StepCounterStore.today()
@@ -48,10 +58,11 @@ class PedometerViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     init {
-        _steps.value = StepCounterStore.savedSteps(appContext)
+        refresh()
         viewModelScope.launch {
             preferencesManager.syncSteps.collect { enabled ->
                 if (enabled) {
+                    refresh()
                     startTracking()
                 } else {
                     stopTracking()
@@ -59,10 +70,47 @@ class PedometerViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             }
         }
+
+        // Ticker to automatically catch midnight transitions while app is running
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(10_000L)
+                val today = StepCounterStore.today()
+                if (today != currentTrackingDate) {
+                    onDateChanged(today)
+                }
+            }
+        }
+
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_DATE_CHANGED)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        }
+        try {
+            appContext.registerReceiver(dateChangeReceiver, filter)
+        } catch (_: Exception) {}
+    }
+
+    fun onDateChanged(newDate: String = StepCounterStore.today()) {
+        currentTrackingDate = newDate
+        StepCounterStore.resetForNewDay(appContext, newDate)
+        _steps.value = if (preferencesManager.syncSteps.value) {
+            StepCounterStore.savedSteps(appContext, newDate)
+        } else {
+            0
+        }
+        com.example.util.WidgetUpdater.updateAllWidgets(appContext)
     }
 
     fun refresh() {
-        _steps.value = StepCounterStore.savedSteps(appContext)
+        val today = StepCounterStore.today()
+        currentTrackingDate = today
+        _steps.value = if (preferencesManager.syncSteps.value) {
+            StepCounterStore.savedSteps(appContext, today)
+        } else {
+            0
+        }
     }
 
     override fun onResume(owner: LifecycleOwner) {
@@ -165,5 +213,8 @@ class PedometerViewModel(application: Application) : AndroidViewModel(applicatio
     override fun onCleared() {
         super.onCleared()
         stopTracking()
+        try {
+            appContext.unregisterReceiver(dateChangeReceiver)
+        } catch (_: Exception) {}
     }
 }
