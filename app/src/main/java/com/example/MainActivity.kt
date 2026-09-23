@@ -59,6 +59,7 @@ import com.example.util.MealTypes
 import com.example.util.PreferencesManager
 import com.example.util.ReminderScheduler
 import com.example.util.SoundManager
+import com.example.util.ThemeSkin
 import com.example.util.WidgetUpdater
 import java.util.Date
 
@@ -145,6 +146,7 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val soundManager = remember { SoundManager(context) }
             val preferencesManager = remember { PreferencesManager.getInstance(context) }
+            val currentThemeSkin by preferencesManager.themeSkin.collectAsStateWithLifecycle()
             
             DisposableEffect(Unit) {
                 onDispose {
@@ -156,7 +158,7 @@ class MainActivity : ComponentActivity() {
                 LocalSoundManager provides soundManager,
                 LocalPreferencesManager provides preferencesManager
             ) {
-                MyApplicationTheme {
+                MyApplicationTheme(themeSkin = currentThemeSkin) {
                     val navController = rememberNavController()
                     val dashboardViewModel: DashboardViewModel = viewModel()
                     val foodSearchViewModel: FoodSearchViewModel = viewModel()

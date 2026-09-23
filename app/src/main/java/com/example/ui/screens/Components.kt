@@ -1,20 +1,25 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.Routes
@@ -24,30 +29,87 @@ import com.example.util.LocalSoundManager
 @Composable
 fun BottomNavBar(navController: NavController, currentRoute: String?) {
     val soundManager = LocalSoundManager.current
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        NavBarItem(icon = Icons.Default.VideogameAsset, label = "Stages", isSelected = currentRoute == Routes.Dashboard) {
-             soundManager.playSound("click")
-             navController.navigate(Routes.Dashboard) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
-        }
-        NavBarItem(icon = Icons.Default.Fastfood, label = "Items", isSelected = currentRoute == Routes.FoodsDatabase || currentRoute?.startsWith("foods_database_detail") == true || currentRoute == Routes.CreateFood) {
-             soundManager.playSound("click")
-             navController.navigate(Routes.FoodsDatabase) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
-        }
-        NavBarItem(icon = Icons.Default.EmojiEvents, label = "Highscore", isSelected = currentRoute == Routes.Stats || currentRoute == Routes.Analytics) {
-             soundManager.playSound("click")
-             navController.navigate(Routes.Stats) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
-        }
-        NavBarItem(icon = Icons.Default.Memory, label = "Config", isSelected = currentRoute == Routes.Settings) {
-             soundManager.playSound("click")
-             navController.navigate(Routes.Settings) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(32.dp),
+                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                    ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                ),
+            shape = RoundedCornerShape(32.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f),
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NavBarItem(
+                    icon = Icons.Default.VideogameAsset,
+                    label = "Stages",
+                    isSelected = currentRoute == Routes.Dashboard
+                ) {
+                    soundManager.playSound("click")
+                    navController.navigate(Routes.Dashboard) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+                NavBarItem(
+                    icon = Icons.Default.Fastfood,
+                    label = "Items",
+                    isSelected = currentRoute == Routes.FoodsDatabase ||
+                            currentRoute?.startsWith("foods_database_detail") == true ||
+                            currentRoute == Routes.CreateFood
+                ) {
+                    soundManager.playSound("click")
+                    navController.navigate(Routes.FoodsDatabase) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+                NavBarItem(
+                    icon = Icons.Default.EmojiEvents,
+                    label = "Highscore",
+                    isSelected = currentRoute == Routes.Stats || currentRoute == Routes.Analytics
+                ) {
+                    soundManager.playSound("click")
+                    navController.navigate(Routes.Stats) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+                NavBarItem(
+                    icon = Icons.Default.Memory,
+                    label = "Config",
+                    isSelected = currentRoute == Routes.Settings
+                ) {
+                    soundManager.playSound("click")
+                    navController.navigate(Routes.Settings) {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            }
         }
     }
 }
@@ -125,22 +187,97 @@ fun FoodLabNavigationRail(
 }
 
 @Composable
-fun NavBarItem(icon: ImageVector, label: String, isSelected: Boolean, onClick: () -> Unit) {
-    val color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f) else Color.Transparent
+fun NavBarItem(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val animatedBgColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "nav_item_bg"
+    )
+    val animatedBorderColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "nav_item_border"
+    )
+    val animatedContentColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "nav_item_tint"
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.12f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "nav_icon_scale"
+    )
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(24.dp))
+            .background(animatedBgColor)
+            .border(
+                width = 1.dp,
+                color = animatedBorderColor,
+                shape = RoundedCornerShape(24.dp)
+            )
             .clickable(onClick = onClick)
-            .background(bgColor)
-            .padding(8.dp)
-            .width(64.dp)
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            )
+            .padding(horizontal = if (isSelected) 14.dp else 12.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Icon(imageVector = icon, contentDescription = label, tint = color)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = label, style = MaterialTheme.typography.labelLarge, color = color)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = animatedContentColor,
+                modifier = Modifier
+                    .size(24.dp)
+                    .scale(iconScale)
+            )
+            AnimatedVisibility(
+                visible = isSelected,
+                enter = fadeIn(animationSpec = tween(180)) + expandHorizontally(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ),
+                exit = fadeOut(animationSpec = tween(120)) + shrinkHorizontally(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+            ) {
+                Row {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = animatedContentColor,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+        }
     }
 }
 

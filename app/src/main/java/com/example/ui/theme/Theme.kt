@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.example.util.ThemeSkin
 
 private val DarkColorScheme = darkColorScheme(
     primary = Primary,
@@ -41,9 +42,10 @@ private val DarkColorScheme = darkColorScheme(
 fun MyApplicationTheme(
     darkTheme: Boolean = true, // Force dark theme for tactical feel
     dynamicColor: Boolean = false,
+    themeSkin: ThemeSkin = ThemeSkin.RETRO_DARK,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = DarkColorScheme
+    val colorScheme = colorSchemeForSkin(themeSkin)
 
     MaterialTheme(
         colorScheme = colorScheme,
