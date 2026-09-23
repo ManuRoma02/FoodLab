@@ -283,12 +283,7 @@ fun DashboardScreen(
                         onQuickLog = { food ->
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-                            val mealType = when {
-                                hour in 4..10 -> com.example.util.MealTypes.BREAKFAST
-                                hour in 11..14 -> com.example.util.MealTypes.LUNCH
-                                hour in 18..22 -> com.example.util.MealTypes.DINNER
-                                else -> com.example.util.MealTypes.SNACK
-                            }
+                            val mealType = com.example.util.MealTypes.inferMealTypeFromHour(hour)
                             viewModel.quickLogFood(food, mealType)
                             android.widget.Toast.makeText(context, "${food.name} registrato in ${com.example.util.MealTypes.displayName(mealType).lowercase()}", android.widget.Toast.LENGTH_SHORT).show()
                         },

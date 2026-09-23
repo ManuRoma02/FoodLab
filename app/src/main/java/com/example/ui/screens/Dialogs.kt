@@ -294,9 +294,11 @@ fun LogWeightDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
                         onDone = {
-                            if (isWeightValid && parsedWeight != null) {
-                                soundManager.playSound("coin")
-                                onSave(parsedWeight)
+                            if (isWeightValid) {
+                                parsedWeight?.let {
+                                    soundManager.playSound("coin")
+                                    onSave(it)
+                                }
                             }
                         }
                     ),
@@ -318,9 +320,11 @@ fun LogWeightDialog(
                     }
                     Button(
                         onClick = {
-                            if (isWeightValid && parsedWeight != null) {
-                                soundManager.playSound("coin")
-                                onSave(parsedWeight)
+                            if (isWeightValid) {
+                                parsedWeight?.let {
+                                    soundManager.playSound("coin")
+                                    onSave(it)
+                                }
                             }
                         },
                         enabled = isWeightValid,

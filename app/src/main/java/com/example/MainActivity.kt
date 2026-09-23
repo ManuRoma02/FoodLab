@@ -82,7 +82,12 @@ object Routes {
     fun createSearchRoute(mealType: String) = "search/$mealType"
     fun createFoodDetailRoute(id: Int, mealType: String) = "food_detail/$id/$mealType"
     fun createFoodsDatabaseDetailRoute(id: Int) = "foods_database_detail/$id"
-    fun createCreateFoodRoute(barcode: String = "") = if (barcode.isNotBlank()) "create_food?barcode=$barcode" else "create_food"
+    fun createCreateFoodRoute(barcode: String = "", initialName: String = ""): String {
+        val params = mutableListOf<String>()
+        if (barcode.isNotBlank()) params.add("barcode=${barcode.trim()}")
+        if (initialName.isNotBlank()) params.add("initialName=" + java.net.URLEncoder.encode(initialName.trim(), "UTF-8"))
+        return if (params.isNotEmpty()) "create_food?" + params.joinToString("&") else "create_food"
+    }
 }
 
 private fun getRouteIndex(route: String?): Int {
@@ -397,8 +402,8 @@ private fun FoodLabNavHost(
                 onFoodSelected = { foodId ->
                     navController.navigate(Routes.createFoodDetailRoute(foodId, mealType))
                 },
-                onNavigateToCreateFood = { barcode ->
-                    navController.navigate(Routes.createCreateFoodRoute(barcode))
+                onNavigateToCreateFood = { barcode, initialName ->
+                    navController.navigate(Routes.createCreateFoodRoute(barcode, initialName))
                 },
                 onNavigateToCreateRecipe = {
                     navController.navigate(Routes.CreateRecipe)
@@ -406,19 +411,36 @@ private fun FoodLabNavHost(
             )
         }
         composable(
-            route = "create_food?barcode={barcode}",
+            route = "create_food?barcode={barcode}&initialName={initialName}",
             arguments = listOf(
                 navArgument("barcode") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("initialName") {
                     type = NavType.StringType
                     defaultValue = ""
                 }
             )
         ) { backStackEntry ->
             val barcode = backStackEntry.arguments?.getString("barcode") ?: ""
+            val rawName = backStackEntry.arguments?.getString("initialName") ?: ""
+            val initialName = try {
+                java.net.URLDecoder.decode(rawName, "UTF-8")
+            } catch (_: Exception) {
+                rawName
+            }
             CreateFoodScreen(
                 viewModel = foodSearchViewModel,
                 onNavigateBack = { navController.popBackStack() },
-                initialBarcode = barcode
+                initialBarcode = barcode,
+                initialName = initialName
+            )
+        }
+        composable(Routes.CreateFood) {
+            CreateFoodScreen(
+                viewModel = foodSearchViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable(Routes.CreateRecipe) {

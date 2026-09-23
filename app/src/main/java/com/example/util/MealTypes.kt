@@ -26,4 +26,13 @@ object MealTypes {
             else -> type?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Pasto"
         }
     }
+
+    fun inferMealTypeFromHour(hour: Int): String {
+        return when (hour) {
+            in 4..10 -> BREAKFAST
+            in 11..14 -> LUNCH
+            in 18..22 -> DINNER
+            else -> SNACK
+        }
+    }
 }

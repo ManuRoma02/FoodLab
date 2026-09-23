@@ -47,7 +47,8 @@ enum class FoodInputMode {
 fun CreateFoodScreen(
     viewModel: FoodSearchViewModel, 
     onNavigateBack: () -> Unit,
-    initialBarcode: String = ""
+    initialBarcode: String = "",
+    initialName: String = ""
 ) {
     val soundManager = LocalSoundManager.current
     val context = LocalContext.current
@@ -55,7 +56,7 @@ fun CreateFoodScreen(
 
     var inputMode by remember { mutableStateOf(FoodInputMode.PER_100G) }
 
-    var name by remember { mutableStateOf("") }
+    var name by remember(initialName) { mutableStateOf(initialName) }
     var brand by remember { mutableStateOf("") }
     var barcodeText by remember(initialBarcode) { mutableStateOf(initialBarcode) }
     var isBarcodeSearching by remember { mutableStateOf(false) }

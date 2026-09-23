@@ -213,7 +213,7 @@ class Repository(
 
     suspend fun fetchProductByBarcode(barcode: String, tempId: Int = -1): BarcodeLookupResult {
         val cleanBarcode = barcode.filter(Char::isDigit).take(32)
-        if (cleanBarcode.length !in 8..32) return BarcodeLookupResult.NotFound
+        if (cleanBarcode.isBlank()) return BarcodeLookupResult.NotFound
 
         // 1. Check local database first
         val localFood = foodDao.getFoodByBarcode(cleanBarcode)
@@ -221,6 +221,9 @@ class Repository(
             val portions = portionDao.getPortionsForFood(localFood.id)
             return BarcodeLookupResult.Success(localFood, portions.firstOrNull())
         }
+
+        // Standard remote barcodes are between 6 (e.g. UPC-E) and 32 digits
+        if (cleanBarcode.length !in 6..32) return BarcodeLookupResult.NotFound
 
         // 2. Query remote Open Food Facts API
         val api = openFoodFactsApi ?: return BarcodeLookupResult.NetworkError("Remote API unavailable")

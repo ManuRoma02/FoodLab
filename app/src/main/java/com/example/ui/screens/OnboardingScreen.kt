@@ -15,6 +15,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -346,9 +348,9 @@ fun OnboardingScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("OBIETTIVO", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                     val goals = listOf(
-                        OnboardingGoalOption("LOSE_WEIGHT", "Perdita Peso (Deficit ~18%)", Icons.Default.TrendingDown, Color(0xFF38BDF8)),
+                        OnboardingGoalOption("LOSE_WEIGHT", "Perdita Peso (Deficit ~18%)", Icons.AutoMirrored.Filled.TrendingDown, Color(0xFF38BDF8)),
                         OnboardingGoalOption("MAINTAIN", "Mantenimento Peso (Pareggio)", Icons.Default.HorizontalRule, Color(0xFF22C55E)),
-                        OnboardingGoalOption("GAIN_MUSCLE", "Massa Muscolare (Surplus +10%)", Icons.Default.TrendingUp, Color(0xFFF59E0B))
+                        OnboardingGoalOption("GAIN_MUSCLE", "Massa Muscolare (Surplus +10%)", Icons.AutoMirrored.Filled.TrendingUp, Color(0xFFF59E0B))
                     )
                     goals.forEach { item ->
                         val isSelected = goal == item.key

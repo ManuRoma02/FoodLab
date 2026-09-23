@@ -203,7 +203,7 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
 
     suspend fun fetchProductByBarcode(barcode: String): BarcodeLookupResult {
         val cleanBarcode = barcode.filter(Char::isDigit).take(32)
-        if (cleanBarcode.length !in 8..32) return BarcodeLookupResult.NotFound
+        if (cleanBarcode.isBlank()) return BarcodeLookupResult.NotFound
         val result = repository.fetchProductByBarcode(cleanBarcode, nextOffId())
         if (result is BarcodeLookupResult.Success) {
             result.portion?.let { tempPortions[result.food.id] = listOf(it) }

@@ -57,7 +57,7 @@ fun SearchScreen(
     currentDate: String,
     onNavigateBack: () -> Unit,
     onFoodSelected: (Int) -> Unit,
-    onNavigateToCreateFood: (String) -> Unit,
+    onNavigateToCreateFood: (String, String) -> Unit,
     onNavigateToCreateRecipe: () -> Unit
 ) {
     val context = LocalContext.current
@@ -396,7 +396,7 @@ fun SearchScreen(
                                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
                                     .clickable {
                                         soundManager.playSound("click")
-                                        onNavigateToCreateFood("")
+                                        onNavigateToCreateFood("", "")
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -674,7 +674,12 @@ fun SearchScreen(
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                     Spacer(Modifier.height(12.dp))
-                                    Button(onClick = { onNavigateToCreateFood(if (searchQuery.all { it.isDigit() }) searchQuery else "") }) {
+                                    Button(onClick = {
+                                        val isBarcode = searchQuery.isNotBlank() && searchQuery.all { it.isDigit() }
+                                        val barcodeParam = if (isBarcode) searchQuery.trim() else ""
+                                        val nameParam = if (!isBarcode) searchQuery.trim() else ""
+                                        onNavigateToCreateFood(barcodeParam, nameParam)
+                                    }) {
                                         Text("CREA ALIMENTO")
                                     }
                                 }
@@ -901,7 +906,10 @@ fun SearchScreen(
                     TextButton(
                         onClick = {
                             showScannerDialog = false
-                            onNavigateToCreateFood(manualBarcodeQuery)
+                            val isBarcode = manualBarcodeQuery.isNotBlank() && manualBarcodeQuery.all { it.isDigit() }
+                            val barcodeParam = if (isBarcode) manualBarcodeQuery.trim() else ""
+                            val nameParam = if (!isBarcode) manualBarcodeQuery.trim() else ""
+                            onNavigateToCreateFood(barcodeParam, nameParam)
                         },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
