@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.*
 import com.example.util.LocalSoundManager
@@ -140,7 +141,7 @@ fun CreateRecipeScreen(
     ) {
         // Header Bar (ZERO ARROWS)
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = MaterialTheme.colorScheme.surfaceContainer,
             tonalElevation = 2.dp
         ) {
             Row(
@@ -153,7 +154,7 @@ fun CreateRecipeScreen(
                 IconButton(
                     onClick = onNavigateBack,
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
@@ -166,7 +167,7 @@ fun CreateRecipeScreen(
 
                 Text(
                     text = "Crea Nuova Ricetta",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
@@ -180,15 +181,16 @@ fun CreateRecipeScreen(
                         }
                     },
                     enabled = isSaveEnabled,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    )
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = "Salva",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
             }
@@ -213,10 +215,12 @@ fun CreateRecipeScreen(
                     label = { Text("Nome Ricetta (es. Carbonara)") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer
                     )
                 )
 
@@ -225,16 +229,17 @@ fun CreateRecipeScreen(
                     modifier = Modifier.width(130.dp)
                 ) {
                     Text(
-                        text = "Porzioni",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = "PORZIONI",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
                             .padding(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -271,9 +276,9 @@ fun CreateRecipeScreen(
             // Live Hero Macro Summary Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -287,7 +292,7 @@ fun CreateRecipeScreen(
                         Column {
                             Text(
                                 text = "VALORI NUTRIZIONALI (IN TEMPO REALE)",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
@@ -324,19 +329,19 @@ fun CreateRecipeScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         NutrientPill(
-                            label = "Protein",
+                            label = "Proteine",
                             value = perServingProtein,
                             color = ProteinGreen,
                             modifier = Modifier.weight(1f)
                         )
                         NutrientPill(
-                            label = "Carbs",
+                            label = "Carboidrati",
                             value = perServingCarbs,
                             color = CarbYellow,
                             modifier = Modifier.weight(1f)
                         )
                         NutrientPill(
-                            label = "Fat",
+                            label = "Grassi",
                             value = perServingFat,
                             color = FatGrey,
                             modifier = Modifier.weight(1f)
@@ -353,8 +358,8 @@ fun CreateRecipeScreen(
             ) {
                 Text(
                     text = "INGREDIENTI SELEZIONATI (${selectedIngredients.size})",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -362,8 +367,9 @@ fun CreateRecipeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
                         .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -381,8 +387,8 @@ fun CreateRecipeScreen(
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                         ) {
                             Column(
@@ -397,7 +403,7 @@ fun CreateRecipeScreen(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = food.name,
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         if (food.brand.isNotEmpty()) {
@@ -434,7 +440,7 @@ fun CreateRecipeScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(14.dp))
                                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                         .padding(horizontal = 8.dp, vertical = 6.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -449,7 +455,7 @@ fun CreateRecipeScreen(
                                         },
                                         modifier = Modifier.height(36.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Text("-10g", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -470,7 +476,7 @@ fun CreateRecipeScreen(
                                         },
                                         modifier = Modifier.height(36.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(10.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                                     ) {
                                         Text("+10g", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onPrimaryContainer)
@@ -486,8 +492,8 @@ fun CreateRecipeScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "AGGIUNGI INGREDIENTI DA DATABASE",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // Search Bar
@@ -498,7 +504,13 @@ fun CreateRecipeScreen(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
 
             // Search Results List
@@ -512,8 +524,8 @@ fun CreateRecipeScreen(
                             safePlaySound("coin")
                             selectedIngredients = selectedIngredients + (food to 100)
                         },
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (isAlreadyAdded) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isAlreadyAdded) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
                             if (isAlreadyAdded) ProteinGreen.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
@@ -530,7 +542,7 @@ fun CreateRecipeScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = food.name,
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 if (food.brand.isNotEmpty()) {
@@ -558,12 +570,12 @@ fun CreateRecipeScreen(
                                         safePlaySound("coin")
                                         selectedIngredients = selectedIngredients + (food to 100)
                                     },
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                    shape = RoundedCornerShape(10.dp)
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(Icons.Default.Add, contentDescription = "Aggiungi", modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Aggiungi", style = MaterialTheme.typography.labelSmall)
+                                    Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                                 }
                             }
                         }

@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.*
 import com.example.ui.SessionManager
@@ -66,13 +67,13 @@ fun RecipesScreen(
     ) {
         // Top Bar Header (NO ARROW ICONS)
         Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = MaterialTheme.colorScheme.surfaceContainer,
             tonalElevation = 2.dp
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -84,7 +85,7 @@ fun RecipesScreen(
                     IconButton(
                         onClick = onNavigateBack,
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     ) {
@@ -97,7 +98,7 @@ fun RecipesScreen(
                     Column {
                         Text(
                             text = "Le Mie Ricette",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -118,8 +119,8 @@ fun RecipesScreen(
                         soundManager.playSound("click")
                         onNavigateToCreateRecipe()
                     },
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(
@@ -145,41 +146,50 @@ fun RecipesScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(32.dp),
+                    .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Text(
-                        text = "Nessuna ricetta salvata",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Crea un piatto composto combinando più ingredienti per registrarlo in 1 tap nei tuoi pasti.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            soundManager.playSound("click")
-                            onNavigateToCreateRecipe()
-                        },
-                        shape = RoundedCornerShape(12.dp)
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("+ CREA PRIMA RICETTA", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = null,
+                            modifier = Modifier.size(56.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Text(
+                            text = "Nessuna ricetta salvata",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Crea un piatto composto combinando più ingredienti per registrarlo in 1 tap nei tuoi pasti.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Button(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                soundManager.playSound("click")
+                                onNavigateToCreateRecipe()
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.height(48.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("CREA PRIMA RICETTA", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        }
                     }
                 }
             }
@@ -273,9 +283,9 @@ private fun RecipeCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -289,7 +299,7 @@ private fun RecipeCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = recipeWithItems.template.name,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
@@ -344,8 +354,8 @@ private fun RecipeCard(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
                     Text(
-                        text = "Riepilogo nutrizionale:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        text = "RIEPILOGO NUTRIZIONALE",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
@@ -361,8 +371,8 @@ private fun RecipeCard(
 
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Ingredienti:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        text = "INGREDIENTI",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     recipeWithItems.items.forEach { item ->
@@ -386,8 +396,8 @@ private fun RecipeCard(
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Registra 1 Porzione in 1-Tap:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        text = "REGISTRA 1 PORZIONE IN 1-TAP",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Row(
@@ -397,7 +407,7 @@ private fun RecipeCard(
                         listOf(MealTypes.BREAKFAST, MealTypes.LUNCH, MealTypes.DINNER, MealTypes.SNACK).forEach { meal ->
                             AssistChip(
                                 onClick = { onLogToMeal(meal) },
-                                label = { Text(meal, style = MaterialTheme.typography.labelSmall) },
+                                label = { Text(meal, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Add,
@@ -405,7 +415,7 @@ private fun RecipeCard(
                                         modifier = Modifier.size(12.dp)
                                     )
                                 },
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(12.dp)
                             )
                         }
                     }
@@ -419,9 +429,9 @@ private fun RecipeCard(
 private fun MacroPill(label: String, color: Color) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(color.copy(alpha = 0.15f))
-            .border(1.dp, color.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+            .border(1.dp, color.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(

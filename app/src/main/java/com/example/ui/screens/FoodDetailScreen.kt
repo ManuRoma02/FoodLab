@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.activity.compose.BackHandler
 import com.example.R
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -246,14 +247,14 @@ fun FoodDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                        .border(1.dp, servingAccent.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(5.dp)
+                            .height(4.dp)
                             .background(
                                 androidx.compose.ui.graphics.Brush.horizontalGradient(
                                     listOf(mealAccent, calorieAccent)
@@ -263,21 +264,21 @@ fun FoodDetailScreen(
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         Row(
                             modifier = Modifier
-                                .background(mealAccent.copy(alpha = 0.14f), RoundedCornerShape(20.dp))
-                                .border(1.dp, mealAccent.copy(alpha = 0.48f), RoundedCornerShape(20.dp))
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                .background(mealAccent.copy(alpha = 0.14f), RoundedCornerShape(14.dp))
+                                .border(1.dp, mealAccent.copy(alpha = 0.40f), RoundedCornerShape(14.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(mealIcon(mealType), contentDescription = null, tint = mealAccent, modifier = Modifier.size(16.dp))
+                            Icon(mealIcon(mealType), contentDescription = null, tint = mealAccent, modifier = Modifier.size(15.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(MealTypes.displayName(mealType).uppercase(Locale.getDefault()), style = MaterialTheme.typography.labelMedium, color = mealAccent)
+                            Text(MealTypes.displayName(mealType).uppercase(Locale.getDefault()), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.2.sp), color = mealAccent)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(currentFood.name, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(currentFood.name, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp), color = MaterialTheme.colorScheme.onSurface)
                                 if (currentFood.brand.isNotEmpty()) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Verified, contentDescription = "Verificato", tint = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.Verified, contentDescription = "Verificato", tint = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(15.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(currentFood.brand, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
@@ -298,13 +299,13 @@ fun FoodDetailScreen(
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .background(calorieAccent.copy(alpha = if (overAfterLog > 0) 0.18f else 0.14f), RoundedCornerShape(20.dp))
-                                    .border(1.dp, calorieAccent.copy(alpha = 0.75f), RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                                    .background(calorieAccent.copy(alpha = if (overAfterLog > 0) 0.18f else 0.14f), RoundedCornerShape(16.dp))
+                                    .border(1.dp, calorieAccent.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("$currentCalories", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = calorieAccent)
-                                    Text("KCAL", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("$currentCalories", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = calorieAccent)
+                                    Text("KCAL", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.2.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -324,8 +325,9 @@ fun FoodDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(servingAccent.copy(alpha = 0.08f), RoundedCornerShape(20.dp))
-                        .border(1.dp, servingAccent.copy(alpha = 0.42f), RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
                         .padding(16.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -334,10 +336,10 @@ fun FoodDetailScreen(
                         val stepSize = if (isGramPortion) 10f else 0.5f
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("PORZIONE E QUANTITÀ", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+                            Text("PORZIONE E QUANTITÀ", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp), color = MaterialTheme.colorScheme.onSurface)
                             Text(
                                 text = if (isGramPortion) "${quantity.toInt()} G" else "${if (quantity == quantity.toInt().toFloat()) "${quantity.toInt()}" else String.format(Locale.getDefault(), "%.2f", quantity)} x ${selectedPortion.name} (${totalGrams.toInt()}g)",
-                                style = MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = servingAccent
                             )
                         }
@@ -352,25 +354,25 @@ fun FoodDetailScreen(
                                 val isSelected = selectedPortion == portion
                                 Box(
                                     modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
                                         .background(
-                                            if (isSelected) servingAccent.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            RoundedCornerShape(20.dp)
+                                            if (isSelected) servingAccent.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerHigh
                                         )
                                         .border(
                                             1.dp,
                                             if (isSelected) servingAccent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                                            RoundedCornerShape(20.dp)
+                                            RoundedCornerShape(14.dp)
                                         )
                                         .clickable {
                                             selectedPortion = portion
                                             soundManager.playRandomSelect()
                                         }
-                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        .padding(horizontal = 14.dp, vertical = 7.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = portion.name,
-                                        style = MaterialTheme.typography.labelMedium,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                         color = if (isSelected) servingAccent else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -427,9 +429,9 @@ fun FoodDetailScreen(
                                 val p = quickPresets[idx]
                                 val isCurrent = quantity == p
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(14.dp),
                                     color = if (isCurrent) servingAccent.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isCurrent) servingAccent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isCurrent) servingAccent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                                     modifier = Modifier.clickable { updateQuantity(p) }
                                 ) {
                                     Text(
@@ -443,9 +445,9 @@ fun FoodDetailScreen(
                             if (isGramPortion) {
                                 item {
                                     Surface(
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                                         modifier = Modifier.clickable { updateQuantity((quantity + 25f).coerceAtMost(5000f)) }
                                     ) {
                                         Text(
@@ -458,9 +460,9 @@ fun FoodDetailScreen(
                                 }
                                 item {
                                     Surface(
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                                         modifier = Modifier.clickable { updateQuantity((quantity + 50f).coerceAtMost(5000f)) }
                                     ) {
                                         Text(
@@ -483,7 +485,7 @@ fun FoodDetailScreen(
                                     val minQty = if (isGramPortion) 1f else 0.1f
                                     updateQuantity((quantity - stepSize).coerceAtLeast(minQty))
                                 },
-                                modifier = Modifier.size(48.dp)
+                                modifier = Modifier.size(44.dp)
                             ) {
                                 Text("-", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = servingAccent)
                             }
@@ -512,7 +514,7 @@ fun FoodDetailScreen(
                                     val maxQty = if (isGramPortion) 5000f else 100f
                                     updateQuantity((quantity + stepSize).coerceAtMost(maxQty))
                                 },
-                                modifier = Modifier.size(48.dp)
+                                modifier = Modifier.size(44.dp)
                             ) {
                                 Text("+", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = servingAccent)
                             }
@@ -521,7 +523,7 @@ fun FoodDetailScreen(
                         // Real-time live macro calculator preview
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, servingAccent.copy(alpha = 0.3f))
                         ) {
@@ -532,19 +534,19 @@ fun FoodDetailScreen(
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Calorie", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("$currentCalories kcal", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = calorieAccent)
+                                    Text("$currentCalories kcal", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = calorieAccent)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Proteine", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${String.format(Locale.US, "%.1f", currentPro)}g", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF22C55E))
+                                    Text("${String.format(Locale.US, "%.1f", currentPro)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFF22C55E))
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Carboidrati", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${String.format(Locale.US, "%.1f", currentCarbs)}g", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFFF59E0B))
+                                    Text("${String.format(Locale.US, "%.1f", currentCarbs)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFF59E0B))
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Grassi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${String.format(Locale.US, "%.1f", currentFat)}g", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF06B6D4))
+                                    Text("${String.format(Locale.US, "%.1f", currentFat)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFF06B6D4))
                                 }
                             }
                         }
@@ -556,9 +558,9 @@ fun FoodDetailScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
                     .navigationBarsPadding()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)))
                     .padding(16.dp)
             ) {
                 val ctaOverAfterLog = (currentCalories - remainingCalories).coerceAtLeast(0)
@@ -573,13 +575,13 @@ fun FoodDetailScreen(
                         onMealLogged()
                     },
                     enabled = quantity.isFinite() && totalGrams in 1f..5_000f,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ctaColor, contentColor = ctaContentColor)
                 ) {
-                    Icon(Icons.Default.CheckCircle, contentDescription = "Registra")
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Registra", modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("REGISTRA IN ${MealTypes.displayName(mealType).uppercase()}", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text("REGISTRA IN ${MealTypes.displayName(mealType).uppercase()}", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                 }
             }
         }

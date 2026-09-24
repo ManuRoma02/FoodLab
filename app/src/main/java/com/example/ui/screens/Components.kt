@@ -354,15 +354,15 @@ fun ImprovedTagButton(
     Box(
         modifier = Modifier
             .applePressEffect(pressedScale = 0.94f, onClick = onClick)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(animatedBg)
-            .border(1.dp, animatedBorder, RoundedCornerShape(20.dp))
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
+            .padding(horizontal = 14.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium.copy(
+            style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.3.sp
             ),
@@ -428,8 +428,8 @@ fun SearchResultCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = food.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
                         letterSpacing = (-0.2).sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface,

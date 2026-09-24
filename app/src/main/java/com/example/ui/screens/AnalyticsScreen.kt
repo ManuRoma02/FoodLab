@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -339,8 +340,9 @@ private fun CalorieDeficitSummaryCard(dailyIntakes: List<DayCalorieData>) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -355,7 +357,7 @@ private fun CalorieDeficitSummaryCard(dailyIntakes: List<DayCalorieData>) {
             ) {
                 Text(
                     "Bilancio Energetico (7 Giorni)",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Surface(
@@ -421,8 +423,9 @@ private fun MetricColumn(label: String, value: String, color: Color) {
 private fun CalorieBarChartCard(dailyIntakes: List<DayCalorieData>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -431,8 +434,8 @@ private fun CalorieBarChartCard(dailyIntakes: List<DayCalorieData>) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "7-Day Calorie Intake vs Target",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                "Calorie ultimi 7 giorni vs Obiettivo",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                 color = MaterialTheme.colorScheme.onSurface
             )
 
@@ -538,8 +541,9 @@ private fun MacroDistributionCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -553,12 +557,12 @@ private fun MacroDistributionCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Today's Macro Breakdown",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    "Distribuzione Macro di Oggi",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    "100% Total",
+                    "100% Totale",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -602,17 +606,17 @@ private fun MacroDistributionCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MacroPillLegend("Protein", "$proteinPct%", Color(0xFF22C55E))
-                MacroPillLegend("Carbs", "$carbsPct%", Color(0xFFF59E0B))
-                MacroPillLegend("Fat", "$fatPct%", Color(0xFF06B6D4))
+                MacroPillLegend("Proteine", "$proteinPct%", Color(0xFF22C55E))
+                MacroPillLegend("Carboidrati", "$carbsPct%", Color(0xFFF59E0B))
+                MacroPillLegend("Grassi", "$fatPct%", Color(0xFF06B6D4))
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
             // Summary of Daily Averages (Riepilogo delle medie giornaliere)
             Text(
-                "7-Day Daily Averages",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                "Medie giornaliere (7 giorni)",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -621,17 +625,17 @@ private fun MacroDistributionCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 MetricColumn(
-                    label = "Avg Protein",
+                    label = "Media Proteine",
                     value = "${avgProtein.roundToInt()}g / ${targetProtein}g",
                     color = Color(0xFF22C55E)
                 )
                 MetricColumn(
-                    label = "Avg Carbs",
+                    label = "Media Carboidrati",
                     value = "${avgCarbs.roundToInt()}g / ${targetCarbs}g",
                     color = Color(0xFFF59E0B)
                 )
                 MetricColumn(
-                    label = "Avg Fat",
+                    label = "Media Grassi",
                     value = "${avgFat.roundToInt()}g / ${targetFat}g",
                     color = Color(0xFF06B6D4)
                 )
@@ -640,7 +644,7 @@ private fun MacroDistributionCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
             MacroProgressRow(
-                name = "Protein",
+                name = "Proteine",
                 currentGrams = protein.toInt(),
                 targetGrams = targetProtein,
                 percentage = proteinPct,
@@ -648,7 +652,7 @@ private fun MacroDistributionCard(
             )
 
             MacroProgressRow(
-                name = "Carbs",
+                name = "Carboidrati",
                 currentGrams = carbs.toInt(),
                 targetGrams = targetCarbs,
                 percentage = carbsPct,
@@ -656,7 +660,7 @@ private fun MacroDistributionCard(
             )
 
             MacroProgressRow(
-                name = "Fat",
+                name = "Grassi",
                 currentGrams = fat.toInt(),
                 targetGrams = targetFat,
                 percentage = fatPct,
@@ -737,8 +741,9 @@ private fun IndividualMacroTrendCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -753,11 +758,11 @@ private fun IndividualMacroTrendCard(
             ) {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    "Target: ${targetValue.toInt()}$unit",
+                    "Obiettivo: ${targetValue.toInt()}$unit",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = lineColor
                 )
@@ -858,8 +863,9 @@ private fun ActivityStepsCard(
     val estimatedKcal = (currentSteps * 0.04f).toInt().coerceAtLeast(0)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -874,7 +880,7 @@ private fun ActivityStepsCard(
             ) {
                 Text(
                     "Attività e Passi Giornalieri",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Icon(
@@ -914,8 +920,9 @@ private fun SlimeCalendarGrid(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -930,7 +937,7 @@ private fun SlimeCalendarGrid(
             ) {
                 Text(
                     "Registro e Serie (14 Giorni)",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 val loggedDaysCount = last14Days.count { (mealsByDate[it] ?: emptyList()).isNotEmpty() }
@@ -991,9 +998,9 @@ private fun DayStatusCell(
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(cellColor.copy(alpha = 0.2f))
-                .border(1.dp, cellColor, RoundedCornerShape(10.dp)),
+                .border(1.dp, cellColor, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -1017,8 +1024,9 @@ private fun WeightProgressionCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(
             modifier = Modifier
@@ -1034,7 +1042,7 @@ private fun WeightProgressionCard(
                 Column {
                     Text(
                         "Andamento Peso",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     sortedWeights.lastOrNull()?.let { last ->
@@ -1232,8 +1240,8 @@ private fun CustomizationBottomSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "Personalizza Dashboard Analitica",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                "Personalizza Dashboard",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
@@ -1241,7 +1249,7 @@ private fun CustomizationBottomSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
 
             val items = listOf(
                 Triple("Deficit Calorico", "show_calorie_deficit", showCalorieDeficit),
@@ -1259,14 +1267,14 @@ private fun CustomizationBottomSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .clickable { prefsManager.setCardVisibility(key, !checked) }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
                     Switch(
                         checked = checked,
                         onCheckedChange = { prefsManager.setCardVisibility(key, it) }

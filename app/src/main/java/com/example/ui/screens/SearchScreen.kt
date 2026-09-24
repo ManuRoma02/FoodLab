@@ -371,8 +371,8 @@ fun SearchScreen(
             ) {
                 Text(
                     text = if (searchQuery.isBlank()) "RECENTI E PREFERITI" else "${displayedResults.size} RISULTATI",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = if (searchQuery.isBlank()) "Subito disponibili" else "Ordinati per pertinenza",
@@ -404,7 +404,7 @@ fun SearchScreen(
                                     RoundedCornerShape(16.dp)
                                 ),
                             shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLow
+                            color = MaterialTheme.colorScheme.surfaceContainer
                         ) {
                             Column(
                                 modifier = Modifier
@@ -591,15 +591,15 @@ fun SearchScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp))
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(18.dp))
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
                                     .padding(32.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         "NESSUNA COMBINAZIONE SALVATA",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
@@ -623,8 +623,8 @@ fun SearchScreen(
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
-                                shape = RoundedCornerShape(16.dp),
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
+                                shape = RoundedCornerShape(18.dp),
                                 color = MaterialTheme.colorScheme.surfaceContainer
                             ) {
                                 Column(
@@ -637,7 +637,7 @@ fun SearchScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(t.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                            Text(t.name, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
                                             Text("${templateFoodList.size} alimenti  •  ${templateFoodList.sumOf { (it.caloriesPer100g * it.quantityGrams) / 100 }} kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
