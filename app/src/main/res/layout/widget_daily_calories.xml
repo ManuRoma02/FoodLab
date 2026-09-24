@@ -6,8 +6,9 @@
     android:background="@drawable/widget_surface_bg"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="6dp">
+    android:padding="7dp">
 
+    <!-- Top / Hero Section: Stats + Mascot -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -15,36 +16,38 @@
         android:background="@drawable/widget_mascot_halo_bg"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="6dp"
-        android:paddingVertical="2dp"
-        android:layout_marginBottom="3dp">
-
-        <ImageView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.44"
-            android:contentDescription="@string/widget_mascot_status"
-            android:padding="2dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/foodlab_mascot_duo" />
+        android:paddingHorizontal="7dp"
+        android:paddingVertical="3dp">
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginStart="7dp"
-            android:layout_weight="0.56"
+            android:layout_weight="0.58"
             android:gravity="center_vertical"
             android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.06"
+                android:singleLine="true"
+                android:text="CALORIE"
+                android:textColor="#8E8E93"
+                android:textSize="10sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/calories_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="sans-serif"
                 android:includeFontPadding="false"
+                android:singleLine="true"
                 android:text="1850"
-                android:textColor="#F8FAFC"
-                android:textSize="26sp"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -53,29 +56,52 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif"
                 android:includeFontPadding="false"
-                android:text="of 2500 kcal"
-                android:textColor="#CBD5E1"
+                android:singleLine="true"
+                android:text="su 2500 kcal"
+                android:textColor="#8E8E93"
                 android:textSize="10sp" />
         </LinearLayout>
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="4dp"
+            android:layout_weight="0.42"
+            android:contentDescription="@string/widget_mascot_status"
+            android:padding="2dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/foodlab_mascot_duo" />
     </LinearLayout>
 
+    <!-- Bottom Action Button: Apple Pill -->
     <LinearLayout
         android:id="@+id/btn_add_food"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="5dp"
         android:layout_weight="0.75"
         android:background="@drawable/widget_cta_bg"
-        android:gravity="center">
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp">
+
+        <ImageView
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_widget_add"
+            android:tint="#30D158" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
             android:fontFamily="sans-serif-medium"
             android:includeFontPadding="false"
-            android:text="+  ADD FOOD"
-            android:textColor="#DCFCE7"
+            android:singleLine="true"
+            android:text="+ AGGIUNGI"
+            android:textColor="#30D158"
             android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>
-

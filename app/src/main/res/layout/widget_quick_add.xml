@@ -3,18 +3,36 @@
     android:id="@+id/widget_quick_add_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_quick_add_bg"
+    android:background="@drawable/widget_surface_bg"
     android:gravity="center"
-    android:padding="8dp"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="8dp">
 
-    <ImageView
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:padding="8dp"
-        android:src="@android:drawable/ic_menu_add"
-        android:contentDescription="@string/widget_add_food"
-        android:tint="#FFFFFF" />
+    <!-- Apple Quick Action Green Circle -->
+    <FrameLayout
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@drawable/widget_quick_add_btn_bg"
+        android:padding="10dp">
 
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/widget_add_food"
+            android:src="@drawable/ic_widget_add"
+            android:tint="#000000" />
+    </FrameLayout>
+
+    <!-- Label -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:fontFamily="sans-serif-medium"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:text="Aggiungi"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold" />
 </LinearLayout>
-

@@ -3,18 +3,17 @@
     <item>
         <shape
             android:shape="ring"
-            android:thicknessRatio="8"
+            android:thickness="6dp"
             android:useLevel="false">
-            <solid android:color="#333333" />
+            <solid android:color="#2C2C2E" />
         </shape>
     </item>
     <item>
         <shape
             android:shape="ring"
-            android:thicknessRatio="8"
+            android:thickness="6dp"
             android:useLevel="true">
-            <solid android:color="#00DDFF" />
+            <solid android:color="#FF9500" />
         </shape>
     </item>
 </layer-list>
-

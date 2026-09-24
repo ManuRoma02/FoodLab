@@ -132,11 +132,11 @@ internal suspend fun updateWidget(context: Context, appWidgetManager: AppWidgetM
         val effectiveTarget = targetCalories + burned
 
         views.setTextViewText(R.id.calories_text, caloriesConsumed.toString())
-        views.setTextViewText(R.id.daily_target_text, if (burned > 0) "of $targetCalories (+$burned) kcal" else "of $targetCalories kcal")
+        views.setTextViewText(R.id.daily_target_text, if (burned > 0) "su $targetCalories (+$burned) kcal" else "su $targetCalories kcal")
         appWidgetManager.updateAppWidget(appWidgetId, views)
     } catch (e: Exception) {
         views.setTextViewText(R.id.calories_text, "—")
-        views.setTextViewText(R.id.daily_target_text, "Open FoodLab")
+        views.setTextViewText(R.id.daily_target_text, "Apri FoodLab")
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 }

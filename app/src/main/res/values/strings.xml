@@ -1,11 +1,11 @@
 <resources>
     <string name="app_name">FoodLab</string>
-    <string name="widget_mascot_status">Mascot Status</string>
-    <string name="widget_steps_title">Daily Steps</string>
+    <string name="widget_mascot_status">Stato Mascotte</string>
+    <string name="widget_steps_title">Passi del giorno</string>
     <string name="widget_value_placeholder">--</string>
-    <string name="widget_refresh_steps">Refresh Steps</string>
+    <string name="widget_refresh_steps">Aggiorna passi</string>
     <string name="widget_protein_placeholder">0g</string>
     <string name="widget_carbs_placeholder">0g</string>
     <string name="widget_fat_placeholder">0g</string>
-    <string name="widget_add_food">Add Food</string>
+    <string name="widget_add_food">Aggiungi cibo</string>
 </resources>

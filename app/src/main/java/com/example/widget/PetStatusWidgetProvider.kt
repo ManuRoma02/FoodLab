@@ -126,16 +126,16 @@ internal suspend fun updatePetWidget(context: Context, appWidgetManager: AppWidg
         val isOverTarget = caloriesConsumed > effectiveTarget
 
         views.setTextViewText(R.id.pet_hp_text, caloriesConsumed.toString())
-        views.setTextViewText(R.id.pet_target_text, "of $targetCals kcal")
+        views.setTextViewText(R.id.pet_target_text, if (burned > 0) "su $targetCals (+$burned) kcal" else "su $targetCals kcal")
         views.setTextViewText(R.id.protein_text, "${proConsumed}g")
         views.setTextViewText(R.id.carbs_text, "${carbConsumed}g")
         views.setTextViewText(R.id.fat_text, "${fatConsumed}g")
-        views.setContentDescription(R.id.protein_text, "Protein: $proConsumed grams")
-        views.setContentDescription(R.id.carbs_text, "Carbohydrates: $carbConsumed grams")
-        views.setContentDescription(R.id.fat_text, "Fat: $fatConsumed grams")
+        views.setContentDescription(R.id.protein_text, "Proteine: $proConsumed grammi")
+        views.setContentDescription(R.id.carbs_text, "Carboidrati: $carbConsumed grammi")
+        views.setContentDescription(R.id.fat_text, "Grassi: $fatConsumed grammi")
         if (isOverTarget) {
-            views.setTextViewText(R.id.pet_status_text, "OVER")
-            views.setTextColor(R.id.pet_status_text, 0xFFF87171.toInt())
+            views.setTextViewText(R.id.pet_status_text, "ECCESSO")
+            views.setTextColor(R.id.pet_status_text, 0xFFFF453A.toInt())
         } else {
             views.setTextViewText(R.id.pet_status_text, "")
         }
@@ -143,7 +143,7 @@ internal suspend fun updatePetWidget(context: Context, appWidgetManager: AppWidg
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
     } catch (e: Exception) {
-        views.setTextViewText(R.id.pet_status_text, "OPEN APP")
+        views.setTextViewText(R.id.pet_status_text, "APRI APP")
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 }
