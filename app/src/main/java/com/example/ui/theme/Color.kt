@@ -2,44 +2,78 @@ package com.example.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.example.util.ThemeSkin
 
-// --- Default Retro Dark Palette ---
-val Surface = Color(0xFF0D0D0D)
-val SurfaceContainerLow = Color(0xFF141414)
-val SurfaceContainer = Color(0xFF1A1A1A)
-val SurfaceContainerHigh = Color(0xFF262626)
-val SurfaceContainerHighest = Color(0xFF333333)
-val OnSurface = Color(0xFFFFFFFF)
-val OnSurfaceVariant = Color(0xFFAAAAAA)
-val Outline = Color(0xFF666666)
-val OutlineVariant = Color(0xFF333333)
+// --- Apple System Accents ---
+val AppleBlue = Color(0xFF0A84FF)
+val AppleGreen = Color(0xFF30D158)
+val AppleOrange = Color(0xFFFF9F0A)
+val AppleRed = Color(0xFFFF453A)
+val ApplePurple = Color(0xFFBF5AF2)
+val AppleYellow = Color(0xFFFFD60A)
+val AppleTeal = Color(0xFF64D2FF)
+val ApplePink = Color(0xFFFF375F)
+val AppleGray = Color(0xFF8E8E93)
+val AppleGray2 = Color(0xFF636366)
+val AppleGray3 = Color(0xFF48484A)
+val AppleGray4 = Color(0xFF3A3A3C)
+val AppleGray5 = Color(0xFF2C2C2E)
+val AppleGray6 = Color(0xFF1C1C1E)
 
-val Primary = Color(0xFFFF0055) // Neon Red/Pink for HP
-val OnPrimary = Color(0xFF000000)
-val PrimaryContainer = Color(0xFF880022)
-val OnPrimaryContainer = Color(0xFFFF99BB)
+// Specular highlight border gradient
+val SpecularBorderGradient = Brush.verticalGradient(
+    colors = listOf(
+        Color.White.copy(alpha = 0.20f),
+        Color.Transparent
+    )
+)
 
-val Secondary = Color(0xFF00FF66) // Neon Green
-val OnSecondary = Color(0xFF000000)
-val SecondaryContainer = Color(0xFF006622)
-val OnSecondaryContainer = Color(0xFF99FFBB)
+fun specularBorderGradient(alphaTop: Float = 0.20f, alphaBottom: Float = 0.0f): Brush {
+    return Brush.verticalGradient(
+        colors = listOf(
+            Color.White.copy(alpha = alphaTop),
+            Color.White.copy(alpha = alphaBottom)
+        )
+    )
+}
 
-val Tertiary = Color(0xFF00DDFF) // Neon Blue
-val OnTertiary = Color(0xFF000000)
-val TertiaryContainer = Color(0xFF005566)
-val OnTertiaryContainer = Color(0xFF99EEFF)
-
-val Error = Color(0xFFFF0000)
-val OnError = Color(0xFFFFFFFF)
-val ErrorContainer = Color(0xFF93000A)
-val OnErrorContainer = Color(0xFFFFDAD6)
-val Background = Color(0xFF050505)
+// --- Cupertino Dark Palette ---
+val Background = Color(0xFF000000) // Pure OLED Dark
 val OnBackground = Color(0xFFFFFFFF)
+val Surface = Color(0xFF000000)
+val OnSurface = Color(0xFFFFFFFF)
+val SurfaceContainerLow = Color(0xFF141416)
+val SurfaceContainer = Color(0xFF1C1C1E) // Inset Grouped Surface
+val SurfaceContainerHigh = Color(0xFF2C2C2E)
+val SurfaceContainerHighest = Color(0xFF3A3A3C)
+val OnSurfaceVariant = Color(0xFF8E8E93)
+val Outline = Color(0xFF545458)
+val OutlineVariant = Color(0x59545458)
 
-// 1. RETRO_DARK: Cyberpunk tactical neon palette
-val RetroDarkColorScheme = darkColorScheme(
+val Primary = AppleBlue
+val OnPrimary = Color(0xFFFFFFFF)
+val PrimaryContainer = Color(0xFF0040DD)
+val OnPrimaryContainer = Color(0xFFD0E1FD)
+
+val Secondary = AppleGreen
+val OnSecondary = Color(0xFF000000)
+val SecondaryContainer = Color(0xFF0F5B24)
+val OnSecondaryContainer = Color(0xFFB4F3C6)
+
+val Tertiary = AppleOrange
+val OnTertiary = Color(0xFF000000)
+val TertiaryContainer = Color(0xFF6B3E00)
+val OnTertiaryContainer = Color(0xFFFFD8A8)
+
+val Error = AppleRed
+val OnError = Color(0xFFFFFFFF)
+val ErrorContainer = Color(0xFF8C1D18)
+val OnErrorContainer = Color(0xFFFFD4D1)
+
+// Cupertino Dark Color Scheme
+val CupertinoDarkColorScheme = darkColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryContainer,
@@ -69,6 +103,9 @@ val RetroDarkColorScheme = darkColorScheme(
     outline = Outline,
     outlineVariant = OutlineVariant
 )
+
+// Default scheme is Cupertino Dark
+val RetroDarkColorScheme = CupertinoDarkColorScheme
 
 // 2. MATRIX: Phosphor terminal green & dark digital rain
 val MatrixColorScheme = darkColorScheme(

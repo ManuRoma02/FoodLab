@@ -285,7 +285,11 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         } else {
-                            Box(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.background)
+                            ) {
                                 FoodLabNavHost(
                                     navController = navController,
                                     dashboardViewModel = dashboardViewModel,
@@ -294,7 +298,9 @@ class MainActivity : ComponentActivity() {
                                     currentDate = currentDate,
                                     onDateChange = { currentDateState.value = it },
                                     hasCompletedOnboarding = hasCompletedOnboarding,
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
                                 )
                                 if (showBottomBar && !isWideScreen) {
                                     BottomNavBar(

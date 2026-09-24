@@ -4,6 +4,24 @@ import com.example.ui.SessionManager
 import java.text.SimpleDateFormat
 import kotlin.math.roundToInt
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import com.example.ui.foundation.appleSpring
+import com.example.ui.foundation.AppleSprings
+import com.example.ui.foundation.rememberAppleHaptics
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import com.example.ui.theme.AppleBlue
+import com.example.ui.theme.AppleGreen
+import com.example.ui.theme.AppleOrange
+import com.example.ui.theme.AppleRed
+import com.example.ui.theme.ApplePurple
+import com.example.ui.theme.AppleCornerRadiusCard
+import com.example.ui.theme.AppleCardShape
 
 
 import androidx.compose.foundation.Image
@@ -118,12 +136,12 @@ fun CompactWeightChip(
 ) {
     Row(
         modifier = modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = 44.dp)
             .applePressEffect(pressedScale = 0.94f, onClick = onClick)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -260,9 +278,9 @@ fun SmoothProgressRail(
 ) {
     val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = androidx.compose.animation.core.spring(
-            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
-            stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+        animationSpec = appleSpring(
+            dampingRatio = 0.75f,
+            stiffness = 300f
         ),
         label = "SmoothProgressRail"
     )
@@ -395,11 +413,18 @@ fun MealItemRow(
         }
     )
 
+    val isSwiping = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
+    LaunchedEffect(isSwiping) {
+        if (isSwiping) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
     SwipeToDismissBox(
         state = dismissState,
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true,
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         backgroundContent = {
             val color = when (dismissState.targetValue) {
                 SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
@@ -408,9 +433,8 @@ fun MealItemRow(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp))
                     .background(color)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
@@ -424,11 +448,10 @@ fun MealItemRow(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .heightIn(min = 52.dp)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .clickable { onClick() }
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .applePressEffect(pressedScale = 0.985f, onClick = onClick)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -439,26 +462,63 @@ fun MealItemRow(
                     Box(
                         modifier = Modifier
                             .width(4.dp)
-                            .height(20.dp)
+                            .height(28.dp)
                             .background(accentColor, RoundedCornerShape(99.dp))
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                meal.foodName,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                " (${meal.quantityGrams}g)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            MacroBadge(
+                                label = "P",
+                                value = "${meal.protein.roundToInt()}g",
+                                color = AppleBlue
+                            )
+                            MacroBadge(
+                                label = "C",
+                                value = "${meal.carbs.roundToInt()}g",
+                                color = AppleGreen
+                            )
+                            MacroBadge(
+                                label = "F",
+                                value = "${meal.fat.roundToInt()}g",
+                                color = ApplePurple
+                            )
+                        }
+                    }
+                }
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
                     Text(
-                        meal.foodName,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        "${meal.calories}",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        " (${meal.quantityGrams}g)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        "KCAL",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                        color = accentColor
                     )
                 }
-                Text(
-                    "${meal.calories} KCAL",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = accentColor
-                )
             }
         }
     )
@@ -512,11 +572,11 @@ fun QuickFavoritesRow(
                             soundManager.playSound("power_up")
                             onQuickLog(food)
                         },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
                     )
                 ) {
                     Row(
@@ -560,9 +620,9 @@ fun AnimatedMacroLineChart(title: String, data: List<Float>, labels: List<String
         reveal.snapTo(0f)
         reveal.animateTo(
             targetValue = 1f,
-            animationSpec = androidx.compose.animation.core.tween(
-                durationMillis = 700,
-                easing = androidx.compose.animation.core.FastOutSlowInEasing
+            animationSpec = appleSpring(
+                dampingRatio = 0.75f,
+                stiffness = 300f
             )
         )
     }
@@ -791,11 +851,13 @@ fun HorizontalDatePicker(
             ) {
                 Box(
                     modifier = Modifier
+                        .heightIn(min = 44.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFFFEF08A).copy(alpha = 0.18f))
                         .border(1.dp, Color(0xFFFEF08A).copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                        .clickable { onOpenStreakCalendar() }
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .applePressEffect(pressedScale = 0.94f, onClick = onOpenStreakCalendar)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text("🔥 ${streakCount}D STREAK", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFFEF08A))
                 }
@@ -807,7 +869,9 @@ fun HorizontalDatePicker(
 
             IconButton(
                 onClick = onOpenStreakCalendar,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier
+                    .size(44.dp)
+                    .applePressEffect(pressedScale = 0.90f)
             ) {
                 Icon(
                     imageVector = Icons.Default.DateRange,
@@ -832,28 +896,29 @@ fun HorizontalDatePicker(
 
             val animatedBg by androidx.compose.animation.animateColorAsState(
                 targetValue = if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent,
-                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "dayBg"
             )
             val animatedBorder by androidx.compose.animation.animateColorAsState(
                 targetValue = if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent,
-                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "dayBorder"
             )
             val animatedDayTextColor by androidx.compose.animation.animateColorAsState(
                 targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "dayTextColor"
             )
             val animatedNumTextColor by androidx.compose.animation.animateColorAsState(
                 targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "numTextColor"
             )
 
             Column(
                 modifier = Modifier
                     .width(44.dp)
+                    .heightIn(min = 54.dp)
                     .applePressEffect(pressedScale = 0.92f) { onDateChange(date) }
                     .clip(RoundedCornerShape(14.dp))
                     .background(animatedBg)
@@ -879,6 +944,135 @@ fun HorizontalDatePicker(
 }
 
 @Composable
+fun AppleCalorieMacroRings(
+    calorieProgress: Float,
+    proteinProgress: Float,
+    carbsProgress: Float,
+    fatProgress: Float,
+    calorieColor: Color = AppleOrange,
+    proteinColor: Color = AppleBlue,
+    carbsColor: Color = AppleGreen,
+    fatColor: Color = ApplePurple,
+    modifier: Modifier = Modifier,
+    strokeWidth: androidx.compose.ui.unit.Dp = 7.dp,
+    ringGap: androidx.compose.ui.unit.Dp = 3.dp,
+    centerContent: (@Composable () -> Unit)? = null
+) {
+    val animCalorieProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = calorieProgress.coerceIn(0f, 1f),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "animCalorieRing"
+    )
+    val animProteinProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = proteinProgress.coerceIn(0f, 1f),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "animProteinRing"
+    )
+    val animCarbsProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = carbsProgress.coerceIn(0f, 1f),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "animCarbsRing"
+    )
+    val animFatProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = fatProgress.coerceIn(0f, 1f),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "animFatRing"
+    )
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokePx = strokeWidth.toPx()
+            val gapPx = ringGap.toPx()
+            val step = strokePx + gapPx
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val baseRadius = (minOf(size.width, size.height) / 2f) - strokePx / 2f
+
+            val rings = listOf(
+                Triple(calorieColor, animCalorieProgress, baseRadius),
+                Triple(proteinColor, animProteinProgress, baseRadius - step),
+                Triple(carbsColor, animCarbsProgress, baseRadius - 2f * step),
+                Triple(fatColor, animFatProgress, baseRadius - 3f * step)
+            )
+
+            rings.forEach { (color, progress, radius) ->
+                if (radius > strokePx / 2f) {
+                    val stroke = Stroke(width = strokePx, cap = StrokeCap.Round)
+                    val diameter = radius * 2f
+                    val topLeft = Offset(center.x - radius, center.y - radius)
+                    val arcSize = androidx.compose.ui.geometry.Size(diameter, diameter)
+
+                    // Draw muted background track
+                    drawCircle(
+                        color = color.copy(alpha = 0.16f),
+                        radius = radius,
+                        center = center,
+                        style = stroke
+                    )
+
+                    // Draw animated progress arc
+                    if (progress > 0.005f) {
+                        drawArc(
+                            color = color,
+                            startAngle = -90f,
+                            sweepAngle = progress * 360f,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = stroke
+                        )
+                    }
+                }
+            }
+        }
+        centerContent?.invoke()
+    }
+}
+
+@Composable
+private fun AppleMacroMetricLine(
+    dotColor: Color,
+    label: String,
+    consumed: Int,
+    target: Int
+) {
+    val progress = if (target > 0) (consumed.toFloat() / target).coerceIn(0f, 1f) else 0f
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(dotColor)
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = "${consumed}g / ${target}g",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        SmoothProgressRail(
+            progress = progress,
+            color = dotColor,
+            modifier = Modifier.fillMaxWidth().height(4.dp)
+        )
+    }
+}
+
+@Composable
 fun UnifiedHeroHeader(
     remainingCalories: Int,
     targetCalories: Int,
@@ -898,10 +1092,29 @@ fun UnifiedHeroHeader(
     onStepClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val totalBudget = targetCalories + burnedCalories
+    val calorieProgress = if (totalBudget > 0) loggedCalories.toFloat() / totalBudget.toFloat() else 0f
+    val proteinProgress = if (proteinTarget > 0) proteinConsumed / proteinTarget else 0f
+    val carbsProgress = if (carbsTarget > 0) carbsConsumed / carbsTarget else 0f
+    val fatProgress = if (fatTarget > 0) fatConsumed / fatTarget else 0f
+    val calorieColor = if (remainingCalories < 0) AppleRed else AppleOrange
+    var isBudgetExpanded by remember { mutableStateOf(false) }
+    val appleHaptics = rememberAppleHaptics()
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f), RoundedCornerShape(24.dp)),
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = Color.Black.copy(alpha = 0.22f),
+                ambientColor = Color.Black.copy(alpha = 0.12f)
+            )
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                RoundedCornerShape(24.dp)
+            ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
@@ -917,103 +1130,258 @@ fun UnifiedHeroHeader(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Text(
                             text = if (remainingCalories >= 0) "$remainingCalories" else "${-remainingCalories}",
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 30.sp,
-                                letterSpacing = (-0.5).sp
+                                fontSize = 34.sp,
+                                letterSpacing = (-1.2).sp
                             ),
-                            color = if (remainingCalories < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                            color = if (remainingCalories < 0) AppleRed else MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "KCAL",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (remainingCalories < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 3.dp)
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = if (remainingCalories < 0) AppleRed else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(99.dp))
-                                .background(if (remainingCalories < 0) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .background(
+                                    if (remainingCalories < 0) AppleRed.copy(alpha = 0.15f)
+                                    else AppleGreen.copy(alpha = 0.15f)
+                                )
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                                 .align(Alignment.CenterVertically)
                         ) {
                             Text(
                                 text = if (remainingCalories >= 0) "RIMASTE" else "IN ECCESSO",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                                color = if (remainingCalories < 0) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = if (remainingCalories < 0) AppleRed else AppleGreen
                             )
                         }
                     }
-                    Text(
-                        text = "Obiettivo $targetCalories • Assunte $loggedCalories • Bruciate $burnedCalories",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
                 CompactWeightChip(weightText = weightText, onClick = onWeightClick)
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
-
-            // Brand duo on the left, daily macro readout on the right.
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Expandable Total Budget Card (Apple Health style)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .applePressEffect(pressedScale = 0.99f) {
+                        appleHaptics.tactileClick()
+                        isBudgetExpanded = !isBudgetExpanded
+                    }
+                    .border(
+                        0.5.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        RoundedCornerShape(16.dp)
+                    ),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow
             ) {
                 Column(
-                    modifier = Modifier.weight(0.44f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    AnimatedFoodLabMascot(
-                        state = when {
-                            remainingCalories < 0 -> MascotState.OverTarget
-                            isMascotTyping -> MascotState.Typing
-                            else -> MascotState.Idle
-                        },
-                        modifier = Modifier.size(125.dp)
-                    )
-                }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Budget: $totalBudget kcal ($targetCalories base + $burnedCalories passi)",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Assunte: $loggedCalories kcal",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
 
-                Column(
-                    modifier = Modifier.weight(0.56f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    MacroProgressLine(
-                        label = "PROTEINE",
-                        consumed = proteinConsumed.toInt(),
-                        target = proteinTarget.toInt(),
-                        color = Color(0xFF22C55E)
+                    // Fluid linear consumption rail
+                    SmoothProgressRail(
+                        progress = if (totalBudget > 0) (loggedCalories.toFloat() / totalBudget.toFloat()).coerceIn(0f, 1f) else 0f,
+                        color = if (remainingCalories < 0) AppleRed else AppleOrange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
                     )
-                    MacroProgressLine(
-                        label = "CARBOIDRATI",
-                        consumed = carbsConsumed.toInt(),
-                        target = carbsTarget.toInt(),
-                        color = Color(0xFFF59E0B)
-                    )
-                    MacroProgressLine(
-                        label = "GRASSI",
-                        consumed = fatConsumed.toInt(),
-                        target = fatTarget.toInt(),
-                        color = Color(0xFF06B6D4)
-                    )
+
+                    // Expandable breakdown animated with spring
+                    AnimatedVisibility(
+                        visible = isBudgetExpanded,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                                thickness = 0.5.dp
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Obiettivo nutrizionale base",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "$targetCalories kcal",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Bonus attività ($steps passi)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "+$burnedCalories kcal",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                    color = AppleGreen
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Calorie registrate oggi",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "-$loggedCalories kcal",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), thickness = 0.5.dp)
+
+            // Middle Section: Concentric Rings on Left, Mascot + Macro Legend on Right
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Concentric Calorie & Macro Rings
+                AppleCalorieMacroRings(
+                    calorieProgress = calorieProgress,
+                    proteinProgress = proteinProgress,
+                    carbsProgress = carbsProgress,
+                    fatProgress = fatProgress,
+                    calorieColor = calorieColor,
+                    proteinColor = AppleBlue,
+                    carbsColor = AppleGreen,
+                    fatColor = ApplePurple,
+                    modifier = Modifier.size(130.dp),
+                    strokeWidth = 7.dp,
+                    ringGap = 3.dp,
+                    centerContent = {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = "Calorie",
+                            tint = calorieColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                )
+
+                // Harmonious Mascot + Macro Metrics Readout
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        AnimatedFoodLabMascot(
+                            state = when {
+                                remainingCalories < 0 -> MascotState.OverTarget
+                                isMascotTyping -> MascotState.Typing
+                                else -> MascotState.Idle
+                            },
+                            modifier = Modifier.size(76.dp)
+                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            AppleMacroMetricLine(
+                                dotColor = AppleBlue,
+                                label = "Proteine",
+                                consumed = proteinConsumed.roundToInt(),
+                                target = proteinTarget.roundToInt()
+                            )
+                            AppleMacroMetricLine(
+                                dotColor = AppleGreen,
+                                label = "Carboidrati",
+                                consumed = carbsConsumed.roundToInt(),
+                                target = carbsTarget.roundToInt()
+                            )
+                            AppleMacroMetricLine(
+                                dotColor = ApplePurple,
+                                label = "Grassi",
+                                consumed = fatConsumed.roundToInt(),
+                                target = fatTarget.roundToInt()
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), thickness = 0.5.dp)
 
             // Bottom Section: Integrated Steps Rail
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .applePressEffect(pressedScale = 0.97f, onClick = onStepClick)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .heightIn(min = 44.dp)
+                    .applePressEffect(pressedScale = 0.98f, onClick = onStepClick)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                        RoundedCornerShape(16.dp)
+                    )
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -1022,44 +1390,32 @@ fun UnifiedHeroHeader(
                     Icon(
                         Icons.AutoMirrored.Filled.DirectionsWalk,
                         contentDescription = "Passi",
-                        tint = Color(0xFF3B82F6),
+                        tint = AppleBlue,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
-                        Text("PASSI GIORNALIERI", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
-                        Text("$steps / $stepsTarget passi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            "PASSI GIORNALIERI",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            "$steps / $stepsTarget passi",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 Box(modifier = Modifier.width(90.dp)) {
                     SmoothProgressRail(
                         progress = (steps.toFloat() / stepsTarget.coerceAtLeast(1)).coerceIn(0f, 1f),
-                        color = Color(0xFF3B82F6),
+                        color = AppleBlue,
                         modifier = Modifier.fillMaxWidth().height(8.dp)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun MacroProgressLine(
-    label: String,
-    consumed: Int,
-    target: Int,
-    color: Color
-) {
-    val progress = if (target > 0) consumed.toFloat() / target else 0f
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(label, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = color)
-            Text("${consumed}g / ${target}g", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        SmoothProgressRail(progress = progress, color = color, modifier = Modifier.fillMaxWidth().height(6.dp))
     }
 }
 
@@ -1088,107 +1444,170 @@ fun UnifiedMealsCard(
     )
     val haptic = LocalHapticFeedback.current
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 "PASTI DI OGGI",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.3.sp
+                ),
                 color = MaterialTheme.colorScheme.onSurface
             )
+        }
 
-            if (favoriteFoods.isNotEmpty() && onQuickLog != null) {
-                QuickFavoritesRow(
-                    favoriteFoods = favoriteFoods,
-                    onQuickLog = onQuickLog
-                )
-            }
+        if (favoriteFoods.isNotEmpty() && onQuickLog != null) {
+            QuickFavoritesRow(
+                favoriteFoods = favoriteFoods,
+                onQuickLog = onQuickLog
+            )
+        }
 
-            mealTypes.forEach { (typeKey, title, icon, accentColor) ->
-                val meals = mealsByType[typeKey] ?: emptyList()
-                val totalCals = meals.sumOf { it.calories }
+        mealTypes.forEach { (typeKey, title, icon, accentColor) ->
+            val meals = mealsByType[typeKey] ?: emptyList()
+            val totalCals = meals.sumOf { it.calories }
 
-                Column(
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Section Contextual Header
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
-                        .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(accentColor.copy(alpha = 0.18f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(icon, contentDescription = title, tint = accentColor, modifier = Modifier.size(18.dp))
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(
-                                    title,
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = accentColor
-                                )
-                                Text(
-                                    if (meals.isNotEmpty()) "${meals.size} ${if (meals.size == 1) "alimento" else "alimenti"}" else "Nessun alimento",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(accentColor.copy(alpha = 0.16f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(icon, contentDescription = title, tint = accentColor, modifier = Modifier.size(16.dp))
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (meals.isNotEmpty()) {
                             Text(
-                                if (meals.isNotEmpty()) "$totalCals KCAL" else "0 KCAL",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = if (meals.isNotEmpty()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                                "(${meals.size})",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Box(
-                                modifier = Modifier
-                                    .applePressEffect(pressedScale = 0.92f) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onAddMealClick(typeKey)
-                                    }
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(accentColor.copy(alpha = 0.18f))
-                                    .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 14.dp, vertical = 6.dp)
-                            ) {
-                                Text("+ Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = accentColor)
-                            }
                         }
                     }
 
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            if (meals.isNotEmpty()) "$totalCals KCAL" else "0 KCAL",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = if (meals.isNotEmpty()) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Box(
+                            modifier = Modifier
+                                .heightIn(min = 44.dp)
+                                .applePressEffect(pressedScale = 0.92f) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onAddMealClick(typeKey)
+                                }
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(accentColor.copy(alpha = 0.15f))
+                                .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
+                                Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = accentColor)
+                            }
+                        }
+                    }
+                }
+
+                // Cupertino Inset Grouped Container
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            spotColor = Color.Black.copy(alpha = 0.18f),
+                            ambientColor = Color.Black.copy(alpha = 0.10f)
+                        )
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            RoundedCornerShape(24.dp)
+                        ),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                ) {
                     if (meals.isNotEmpty()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            meals.forEach { meal ->
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            meals.forEachIndexed { index, meal ->
                                 MealItemRow(
                                     meal = meal,
                                     accentColor = accentColor,
                                     onClick = { onMealClick(meal) },
                                     onDelete = { onDeleteMeal?.invoke(meal) }
                                 )
+                                if (index < meals.lastIndex) {
+                                    HorizontalDivider(
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                                        thickness = 0.5.dp,
+                                        modifier = Modifier.padding(start = 28.dp, end = 14.dp)
+                                    )
+                                }
                             }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 52.dp)
+                                .applePressEffect(pressedScale = 0.98f) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onAddMealClick(typeKey)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.AddCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                "Nessun alimento registrato • Tocca per aggiungere",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
                         }
                     }
                 }
@@ -1736,17 +2155,17 @@ fun MacroDistributionBar(
 ) {
     val animProtein by androidx.compose.animation.core.animateFloatAsState(
         targetValue = protein.coerceAtLeast(0f),
-        animationSpec = androidx.compose.animation.core.tween(360, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "animProtein"
     )
     val animCarbs by androidx.compose.animation.core.animateFloatAsState(
         targetValue = carbs.coerceAtLeast(0f),
-        animationSpec = androidx.compose.animation.core.tween(360, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "animCarbs"
     )
     val animFat by androidx.compose.animation.core.animateFloatAsState(
         targetValue = fat.coerceAtLeast(0f),
-        animationSpec = androidx.compose.animation.core.tween(360, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "animFat"
     )
     val total = (animProtein + animCarbs + animFat).coerceAtLeast(0f)

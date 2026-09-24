@@ -113,6 +113,12 @@ class PedometerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun resetTodaySteps(dateString: String = StepCounterStore.today()) {
+        StepCounterStore.resetStepsForDate(appContext, dateString)
+        _steps.value = 0
+        com.example.util.WidgetUpdater.updateAllWidgets(appContext)
+    }
+
     override fun onResume(owner: LifecycleOwner) {
         refresh()
         startTracking()

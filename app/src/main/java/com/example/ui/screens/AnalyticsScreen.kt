@@ -286,7 +286,7 @@ fun AnalyticsScreen(
                 SlimeCalendarGrid(allMeals = allMeals, targetCalories = defaultTargetCalories)
             }
 
-            Spacer(modifier = Modifier.height(110.dp))
+            Spacer(modifier = Modifier.height(112.dp))
         }
     }
 

@@ -184,8 +184,7 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
                     Log.w(TAG, "Open Food Facts search failed", e)
                     if (SearchOptimizer.isResponseForActiveQuery(activeQuery, _searchQuery.value)) {
                         _isOffline.value = true
-                        _searchError.value = "Online search unavailable. Check connection, then retry."
-                        _offResults.value = emptyList()
+                        _searchError.value = "Ricerca online non disponibile. Verifica la connessione e riprova."
                     }
                 } finally {
                     if (SearchOptimizer.isResponseForActiveQuery(activeQuery, _searchQuery.value)) {
@@ -198,6 +197,15 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
             _isSearchLoading.value = false
             _searchError.value = null
             _isOffline.value = false
+        }
+    }
+
+    fun retryOnlineSearch() {
+        val current = _searchQuery.value
+        if (current.isNotBlank()) {
+            _searchError.value = null
+            _isOffline.value = false
+            updateSearchQuery(current)
         }
     }
 

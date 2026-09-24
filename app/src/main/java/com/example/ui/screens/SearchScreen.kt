@@ -3,9 +3,20 @@ package com.example.ui.screens
 import android.content.Context
 import android.util.Log
 import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import com.example.ui.foundation.rememberAppleHaptics
+import com.example.ui.theme.AppleOrange
+import com.example.ui.theme.AppleBlue
+import com.example.ui.theme.AppleGreen
+import com.example.ui.theme.AppleRed
 import androidx.compose.foundation.Image
 import com.example.R
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +44,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.*
 import com.example.ui.DashboardViewModel
@@ -70,10 +82,17 @@ fun SearchScreen(
     val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
     val templates by viewModel.allTemplates.collectAsStateWithLifecycle()
     val loggedMeals by viewModel.getLoggedMealsForDate(currentDate).collectAsStateWithLifecycle(initialValue = emptyList())
+    val mealsInThisCategory = remember(loggedMeals, mealType) {
+        val canon = MealTypes.canonicalize(mealType)
+        loggedMeals.filter { MealTypes.canonicalize(it.mealType) == canon }
+    }
+    val totalCategoryCalories = remember(mealsInThisCategory) { mealsInThisCategory.sumOf { it.calories } }
 
     var showSaveTemplateDialog by remember { mutableStateOf(false) }
     var templateNameInput by remember { mutableStateOf("") }
     var mealToEdit by remember { mutableStateOf<MealEntry?>(null) }
+    var isLoggedMealsExpanded by remember { mutableStateOf(false) }
+    val appleHaptics = rememberAppleHaptics()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var showScannerDialog by remember { mutableStateOf(false) }
     var manualBarcodeQuery by remember { mutableStateOf("") }
@@ -164,19 +183,19 @@ fun SearchScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Search Input
+            // Search Input - Apple Spotlight Style
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = MaterialTheme.colorScheme.primary) },
                 trailingIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (searchQuery.isNotBlank()) {
                             IconButton(
                                 onClick = {
-                                    soundManager.playSound("click")
+                                    appleHaptics.tactileClick()
                                     viewModel.updateSearchQuery("")
                                 },
                                 modifier = Modifier.applePressEffect(pressedScale = 0.85f)
@@ -190,7 +209,7 @@ fun SearchScreen(
                         }
                         IconButton(
                             onClick = {
-                                soundManager.playSound("click")
+                                appleHaptics.tactileClick()
                                 scanError = null
                                 startCameraScan()
                             },
@@ -208,38 +227,127 @@ fun SearchScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
                     unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
-                supportingText = {
-                    Text(
-                        text = if (searchQuery.isBlank()) "Digita almeno 2 caratteri per la ricerca online."
-                        else if (isOffline) "Modalità offline attiva. Mostrati solo gli alimenti locali salvati."
-                        else searchError ?: "Ricerca tra i cibi salvati e Open Food Facts.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (searchError != null || isOffline) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(18.dp)
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Graceful Non-blocking Offline Banner
+            AnimatedVisibility(
+                visible = isOffline || searchError != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .border(0.5.dp, AppleOrange.copy(alpha = 0.4f), RoundedCornerShape(14.dp)),
+                    shape = RoundedCornerShape(14.dp),
+                    color = AppleOrange.copy(alpha = 0.12f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WifiOff,
+                                contentDescription = "Offline",
+                                tint = AppleOrange,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Offline: mostrati i cibi salvati in locale",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        TextButton(
+                            onClick = {
+                                appleHaptics.tactileClick()
+                                viewModel.retryOnlineSearch()
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "Riprova",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = AppleOrange
+                            )
+                        }
+                    }
+                }
+            }
 
-            // Categories
-            val filterOptions = listOf("TUTTI", "I MIEI CIBI", "RICETTE", "PREFERITI", "COMBINAZIONI")
-            Text("FILTRI", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Apple-style Compact Segmented Control
+            val filterOptions = listOf("TUTTI", "PREFERITI", "I MIEI CIBI", "RICETTE", "COMBINAZIONI")
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .height(38.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
             ) {
-                filterOptions.forEach { filter ->
-                    ImprovedTagButton(filter, selectedFilter == filter) { selectedFilter = filter }
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    filterOptions.forEach { filter ->
+                        val isSelected = selectedFilter == filter
+                        val displayLabel = when(filter) {
+                            "TUTTI" -> "Tutti"
+                            "PREFERITI" -> "Preferiti"
+                            "I MIEI CIBI" -> "Miei Cibi"
+                            "RICETTE" -> "Ricette"
+                            "COMBINAZIONI" -> "Combo"
+                            else -> filter
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.surface
+                                    else Color.Transparent
+                                )
+                                .border(
+                                    width = if (isSelected) 0.5.dp else 0.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f) else Color.Transparent,
+                                    shape = RoundedCornerShape(9.dp)
+                                )
+                                .applePressEffect(pressedScale = 0.96f) {
+                                    appleHaptics.selectionTick()
+                                    selectedFilter = filter
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = displayLabel,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 11.sp
+                                ),
+                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
 
@@ -280,78 +388,137 @@ fun SearchScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Already Logged Section
-                if (loggedMeals.isNotEmpty()) {
+                // Compact Collapsible Already Logged Section
+                if (mealsInThisCategory.isNotEmpty()) {
                     item {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(
-                                text = "REGISTRATI IN ${mealType.uppercase()}", 
-                                style = MaterialTheme.typography.titleSmall, 
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                            
-                            loggedMeals.forEach { meal ->
-                                val accent = mealAccentColor(mealType)
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), RoundedCornerShape(16.dp)),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainer
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .applePressEffect(pressedScale = 0.99f) {
+                                    appleHaptics.tactileClick()
+                                    isLoggedMealsExpanded = !isLoggedMealsExpanded
+                                }
+                                .border(
+                                    0.5.dp,
+                                    mealAccentColor(mealType).copy(alpha = 0.35f),
+                                    RoundedCornerShape(16.dp)
+                                ),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(4.dp)
+                                                .height(18.dp)
+                                                .background(mealAccentColor(mealType), RoundedCornerShape(99.dp))
+                                        )
+                                        Text(
+                                            text = "${MealTypes.displayName(mealType)}: ${mealsInThisCategory.size} alimenti (${totalCategoryCalories} kcal)",
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isLoggedMealsExpanded) "Nascondi" else "Mostra",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = mealAccentColor(mealType)
+                                        )
+                                        Icon(
+                                            imageVector = if (isLoggedMealsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                            contentDescription = if (isLoggedMealsExpanded) "Nascondi" else "Mostra",
+                                            tint = mealAccentColor(mealType),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                AnimatedVisibility(
+                                    visible = isLoggedMealsExpanded,
+                                    enter = fadeIn() + expandVertically(),
+                                    exit = fadeOut() + shrinkVertically()
+                                ) {
+                                    Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { mealToEdit = meal }
-                                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .padding(top = 10.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Row(
-                                            modifier = Modifier.weight(1f),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            // Left Accent Bar
-                                            Box(
+                                        mealsInThisCategory.forEach { meal ->
+                                            val accent = mealAccentColor(mealType)
+                                            Surface(
                                                 modifier = Modifier
-                                                    .width(4.dp)
-                                                    .height(36.dp)
-                                                    .background(accent, RoundedCornerShape(16.dp))
-                                            )
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                                Text(
-                                                    text = meal.foodName, 
-                                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), 
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = "${meal.quantityGrams}g  •  ${meal.calories} kcal  •  P: ${meal.protein.toInt()}g C: ${meal.carbs.toInt()}g F: ${meal.fat.toInt()}g", 
-                                                    style = MaterialTheme.typography.labelSmall, 
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            IconButton(
-                                                onClick = { 
-                                                    soundManager.playSound("click")
-                                                    mealToEdit = meal 
-                                                },
-                                                modifier = Modifier.size(48.dp)
+                                                    .fillMaxWidth()
+                                                    .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), RoundedCornerShape(14.dp)),
+                                                shape = RoundedCornerShape(14.dp),
+                                                color = MaterialTheme.colorScheme.surfaceContainer
                                             ) {
-                                                Icon(
-                                                    Icons.Default.Edit, 
-                                                    contentDescription = "Edit quantity", 
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    modifier = Modifier.size(18.dp)
-                                                )
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable { mealToEdit = meal }
+                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.weight(1f),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .width(3.dp)
+                                                                .height(30.dp)
+                                                                .background(accent, RoundedCornerShape(16.dp))
+                                                        )
+                                                        Spacer(modifier = Modifier.width(10.dp))
+                                                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                            Text(
+                                                                text = meal.foodName, 
+                                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), 
+                                                                color = MaterialTheme.colorScheme.onSurface,
+                                                                maxLines = 1,
+                                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                            )
+                                                            Text(
+                                                                text = "${meal.quantityGrams}g  •  ${meal.calories} kcal  •  P: ${meal.protein.toInt()}g C: ${meal.carbs.toInt()}g F: ${meal.fat.toInt()}g", 
+                                                                style = MaterialTheme.typography.labelSmall, 
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    }
+                                                    IconButton(
+                                                        onClick = { 
+                                                            soundManager.playSound("click")
+                                                            mealToEdit = meal 
+                                                        },
+                                                        modifier = Modifier.size(36.dp)
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.Edit, 
+                                                            contentDescription = "Edit quantity", 
+                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -364,97 +531,25 @@ fun SearchScreen(
                 // Results Container Header
                 item {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (searchQuery.isBlank()) "ALIMENTI, RECENTI E PREFERITI" else "RISULTATI RICERCA",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = if (searchQuery.isBlank()) "RECENTI E PREFERITI" else "RISULTATI RICERCA",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${displayedResults.size}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primaryContainer
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
 
-                // Bento-style Custom Dish & Recipe Buttons
-                if (selectedFilter != "COMBINAZIONI") {
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(54.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp))
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        soundManager.playSound("click")
-                                        onNavigateToCreateFood("", "")
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Restaurant,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        "+ Nuovo Alimento",
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        style = MaterialTheme.typography.labelLarge
-                                    )
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(54.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp))
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
-                                    .clickable {
-                                        soundManager.playSound("click")
-                                        onNavigateToCreateRecipe()
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Cookie,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        "+ Ricetta",
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        style = MaterialTheme.typography.labelLarge
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
                 if (selectedFilter == "COMBINAZIONI") {
-                    if (loggedMeals.isNotEmpty()) {
+                    if (mealsInThisCategory.isNotEmpty()) {
                         item {
                             Box(
                                 modifier = Modifier
@@ -508,7 +603,7 @@ fun SearchScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
-                                    if (loggedMeals.isEmpty()) {
+                                    if (mealsInThisCategory.isEmpty()) {
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
                                             "Aggiungi degli alimenti per salvarli insieme come combinazione rapida.",
@@ -584,56 +679,6 @@ fun SearchScreen(
                         }
                     }
                 } else {
-                    if ((isOffline || searchError != null) && searchQuery.isNotBlank()) {
-                        item(key = "search_offline_banner") {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f), RoundedCornerShape(16.dp)),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f))
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.WifiOff,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "RICERCA ONLINE NON DISPONIBILE",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.error,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = searchError ?: "Connessione assente. Risultati mostrati dal database locale.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
-                                    OutlinedButton(
-                                        onClick = { viewModel.updateSearchQuery(searchQuery) },
-                                        shape = RoundedCornerShape(12.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                                    ) {
-                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Riprova", style = MaterialTheme.typography.labelSmall)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     if (isSearchLoading) {
                         items(3) { index ->
                             val infiniteTransition = rememberInfiniteTransition(label = "skeletonPulse_$index")
@@ -674,12 +719,15 @@ fun SearchScreen(
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                     Spacer(Modifier.height(12.dp))
-                                    Button(onClick = {
-                                        val isBarcode = searchQuery.isNotBlank() && searchQuery.all { it.isDigit() }
-                                        val barcodeParam = if (isBarcode) searchQuery.trim() else ""
-                                        val nameParam = if (!isBarcode) searchQuery.trim() else ""
-                                        onNavigateToCreateFood(barcodeParam, nameParam)
-                                    }) {
+                                    Button(
+                                        onClick = {
+                                            val isBarcode = searchQuery.isNotBlank() && searchQuery.all { it.isDigit() }
+                                            val barcodeParam = if (isBarcode) searchQuery.trim() else ""
+                                            val nameParam = if (!isBarcode) searchQuery.trim() else ""
+                                            onNavigateToCreateFood(barcodeParam, nameParam)
+                                        },
+                                        shape = RoundedCornerShape(14.dp)
+                                    ) {
                                         Text("CREA ALIMENTO")
                                     }
                                 }
@@ -702,6 +750,80 @@ fun SearchScreen(
                                     android.widget.Toast.makeText(context, "${food.name} aggiunto a ${mealType.lowercase()}", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             )
+                        }
+
+                        // Quick create action footer at bottom of results
+                        if (selectedFilter != "COMBINAZIONI") {
+                            item(key = "bottom_quick_create") {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
+                                            .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                            .applePressEffect(pressedScale = 0.98f) {
+                                                appleHaptics.tactileClick()
+                                                onNavigateToCreateFood(searchQuery, "")
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Restaurant,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                "+ Nuovo Alimento",
+                                                color = MaterialTheme.colorScheme.primary,
+                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                                            )
+                                        }
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp)
+                                            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(14.dp))
+                                            .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+                                            .applePressEffect(pressedScale = 0.98f) {
+                                                appleHaptics.tactileClick()
+                                                onNavigateToCreateRecipe()
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Cookie,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                "+ Ricetta",
+                                                color = MaterialTheme.colorScheme.primary,
+                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -741,13 +863,13 @@ fun SearchScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text("SALVA COME COMBINAZIONE", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                    Text("Salva questi ${loggedMeals.size} alimenti come combinazione da riutilizzare rapidamente.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Salva questi ${mealsInThisCategory.size} alimenti di ${MealTypes.displayName(mealType)} come combinazione rapida.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     OutlinedTextField(
                         value = templateNameInput,
                         onValueChange = { templateNameInput = it },
                         label = { Text("NOME COMBINAZIONE") },
-                        placeholder = { Text("es. Colazione Proteica") },
+                        placeholder = { Text("es. ${MealTypes.displayName(mealType)} preferita") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -765,7 +887,7 @@ fun SearchScreen(
                             onClick = {
                                 if (templateNameInput.isNotBlank()) {
                                     soundManager.playSound("coin")
-                                    viewModel.saveMealGroupAsTemplate(templateNameInput.trim(), loggedMeals)
+                                    viewModel.saveMealGroupAsTemplate(templateNameInput.trim(), mealsInThisCategory)
                                     showSaveTemplateDialog = false
                                     templateNameInput = ""
                                 }

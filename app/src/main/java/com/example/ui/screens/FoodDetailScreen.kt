@@ -127,8 +127,17 @@ fun FoodDetailScreen(
     val caloriesBurned = remember(steps, latestWeight) {
         com.example.util.NutritionCalculator.calculateCaloriesBurned(steps, latestWeight?.weightKg)
     }
+    LaunchedEffect(currentDate) {
+        dashboardViewModel.setDate(currentDate)
+    }
+
     val consumedCalories = remember(dailyMeals) { dailyMeals.sumOf { it.calories } }
     val remainingCalories = remember(dailyTarget.targetCalories, consumedCalories, caloriesBurned) { dailyTarget.targetCalories - consumedCalories + caloriesBurned }
+    val mealsForCurrentCategory = remember(dailyMeals, mealType) {
+        val canon = MealTypes.canonicalize(mealType)
+        dailyMeals.filter { MealTypes.canonicalize(it.mealType) == canon }
+    }
+    val currentMealCalories = remember(mealsForCurrentCategory) { mealsForCurrentCategory.sumOf { it.calories } }
 
     var isFoodLoading by remember(foodId) { mutableStateOf(true) }
     val food by produceState<FoodItem?>(initialValue = null, foodId) {
@@ -278,6 +287,13 @@ fun FoodDetailScreen(
                                     style = MaterialTheme.typography.labelMedium,
                                     color = calorieAccent
                                 )
+                                if (currentMealCalories > 0) {
+                                    Text(
+                                        text = "$currentMealCalories kcal già registrate in ${MealTypes.displayName(mealType).lowercase()}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = mealAccent
+                                    )
+                                }
                             }
                             Box(
                                 contentAlignment = Alignment.Center,

@@ -117,6 +117,7 @@ fun DashboardScreen(
     var mealToEdit by remember { mutableStateOf<MealEntry?>(null) }
     var showWeightDialog by remember { mutableStateOf(false) }
     var showStreakCalendarDialog by remember { mutableStateOf(false) }
+    var showStepOptionsDialog by remember { mutableStateOf(false) }
 
     var hasActivityPermission by remember {
         mutableStateOf(
@@ -265,6 +266,9 @@ fun DashboardScreen(
                         onStepClick = {
                             if (!hasActivityPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                 permissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                            } else {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showStepOptionsDialog = true
                             }
                         }
                     )
@@ -338,6 +342,17 @@ fun DashboardScreen(
                 viewModel.deleteMealEntry(meal.id)
                 mealToEdit = null
             }
+        )
+    }
+
+    if (showStepOptionsDialog) {
+        StepOptionsDialog(
+            currentSteps = currentLiveSteps,
+            stepGoal = stepGoal,
+            onResetTodaySteps = {
+                pedometerViewModel.resetTodaySteps()
+            },
+            onDismiss = { showStepOptionsDialog = false }
         )
     }
 }

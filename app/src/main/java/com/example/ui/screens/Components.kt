@@ -20,15 +20,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.Routes
+import com.example.ui.foundation.appleSpring
 import com.example.util.LocalSoundManager
 
 
@@ -50,19 +55,19 @@ fun BottomNavBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 8.dp,
+                    elevation = 12.dp,
                     shape = RoundedCornerShape(32.dp),
-                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                    ambientColor = Color.Black.copy(alpha = 0.20f)
+                    spotColor = Color.Black.copy(alpha = 0.35f),
+                    ambientColor = Color.Black.copy(alpha = 0.25f)
                 ),
             shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.70f),
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
             border = BorderStroke(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+                        Color.White.copy(alpha = 0.22f),
+                        Color.Transparent
                     )
                 )
             )
@@ -208,133 +213,120 @@ fun NavBarItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val animatedBgColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) primaryColor else unselectedColor,
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "nav_item_color"
+    )
+    val bgPillColor by animateColorAsState(
+        targetValue = if (isSelected) primaryColor.copy(alpha = 0.14f) else Color.Transparent,
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "nav_item_bg"
     )
-    val animatedBorderColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f) else Color.Transparent,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "nav_item_border"
-    )
-    val animatedContentColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "nav_item_tint"
-    )
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.12f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
+        targetValue = if (isSelected) 1.08f else 1.0f,
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "nav_icon_scale"
     )
 
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(animatedBgColor)
-            .border(
-                width = 1.dp,
-                color = animatedBorderColor,
-                shape = RoundedCornerShape(24.dp)
-            )
-            .applePressEffect(pressedScale = 0.92f, onClick = onClick)
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                )
-            )
-            .padding(horizontal = if (isSelected) 14.dp else 12.dp, vertical = 8.dp),
+            .defaultMinSize(minWidth = 56.dp, minHeight = 44.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(bgPillColor)
+            .applePressEffect(pressedScale = 0.94f, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = animatedContentColor,
+                tint = contentColor,
                 modifier = Modifier
-                    .size(24.dp)
-                    .scale(iconScale)
+                    .size(22.dp)
+                    .graphicsLayer {
+                        scaleX = iconScale
+                        scaleY = iconScale
+                    }
             )
-            AnimatedVisibility(
-                visible = isSelected,
-                enter = fadeIn(animationSpec = tween(180)) + expandHorizontally(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessMediumLow
-                    )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    fontSize = 10.sp,
+                    lineHeight = 12.sp
                 ),
-                exit = fadeOut(animationSpec = tween(120)) + shrinkHorizontally(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                )
-            ) {
-                Row {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = animatedContentColor,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-            }
+                color = contentColor,
+                maxLines = 1
+            )
         }
     }
 }
 
-@Composable
 fun Modifier.applePressEffect(
     pressedScale: Float = 0.96f,
     onClick: (() -> Unit)? = null
-): Modifier {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
+): Modifier = composed {
+    val haptic = LocalHapticFeedback.current
+    val currentOnClick by rememberUpdatedState(onClick)
+    var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) pressedScale else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "applePressScale"
     )
-    val haptic = LocalHapticFeedback.current
 
-    LaunchedEffect(isPressed) {
-        if (isPressed) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-        }
+    val scaleModifier = this.graphicsLayer {
+        scaleX = scale
+        scaleY = scale
     }
 
-    return this
-        .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
+    if (onClick != null) {
+        scaleModifier.pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    isPressed = true
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    val released = try {
+                        tryAwaitRelease()
+                    } catch (_: Exception) {
+                        false
+                    }
+                    isPressed = false
+                    if (released) {
+                        currentOnClick?.invoke()
+                    }
+                }
+            )
         }
-        .then(
-            if (onClick != null) {
-                Modifier.clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick
-                )
-            } else {
-                Modifier
+    } else {
+        scaleModifier.pointerInput(Unit) {
+            awaitPointerEventScope {
+                try {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val down = event.changes.firstOrNull { it.pressed }
+                        if (down != null && !isPressed) {
+                            isPressed = true
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        } else if (isPressed && event.changes.all { !it.pressed }) {
+                            isPressed = false
+                        }
+                    }
+                } finally {
+                    isPressed = false
+                }
             }
-        )
+        }
+    }
 }
 
 @Composable

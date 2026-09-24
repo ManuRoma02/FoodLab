@@ -38,47 +38,23 @@ object StepCounterStore {
         var offset = savedOffset
 
         if (baseline == -1) {
-            if (globalLastDate == yesterday && globalLastRaw >= 0) {
-                if (rawSensorSteps >= globalLastRaw) {
-                    // Normal transition from yesterday to today with no reboot
-                    baseline = globalLastRaw
-                    offset = savedTotal
-                } else {
-                    // Device rebooted between yesterday's last event and today's first event
-                    val startOfDayMillis = try {
-                        val cal = java.util.Calendar.getInstance().apply {
-                            time = SessionManager.parseDateString(dateString)
-                            set(java.util.Calendar.HOUR_OF_DAY, 0)
-                            set(java.util.Calendar.MINUTE, 0)
-                            set(java.util.Calendar.SECOND, 0)
-                            set(java.util.Calendar.MILLISECOND, 0)
-                        }
-                        cal.timeInMillis
-                    } catch (_: Exception) { 0L }
-                    val bootTimeMillis = System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime()
-
-                    if (startOfDayMillis > 0L && bootTimeMillis >= startOfDayMillis) {
-                        // Reboot occurred today: sensor steps since reboot belong to today
-                        baseline = 0
-                        offset = savedTotal
-                    } else {
-                        // Reboot occurred before today: old steps belong to prior days, so start today from 0
-                        baseline = rawSensorSteps
-                        offset = savedTotal
-                    }
-                }
+            // New day initialization
+            if (globalLastDate == yesterday && globalLastRaw in 0..rawSensorSteps) {
+                // Smooth transition from yesterday to today with no reboot
+                baseline = globalLastRaw
+                offset = 0
             } else {
-                // First initialization, or skipped 1+ days: start today's counter cleanly from current sensor reading
+                // First initialization, device rebooted, or skipped days: start today's counter cleanly at 0
                 baseline = rawSensorSteps
-                offset = savedTotal
+                offset = 0
             }
         } else if (rawSensorSteps < baseline || (lastRaw >= 0 && rawSensorSteps < lastRaw)) {
-            // Device rebooted on the current day while app was tracking
+            // Device rebooted on the current day while app was tracking: retain steps counted before reboot
             offset = maxOf(savedTotal, savedOffset)
             baseline = rawSensorSteps
         }
 
-        val totalSteps = (offset + (rawSensorSteps - baseline).coerceAtLeast(0)).coerceAtLeast(savedTotal)
+        val totalSteps = (offset + (rawSensorSteps - baseline).coerceAtLeast(0)).coerceAtLeast(0)
 
         prefs.edit {
             putInt(baselineKey, baseline)
@@ -101,20 +77,42 @@ object StepCounterStore {
         val globalLastDate = prefs.getString(KEY_GLOBAL_LAST_DATE, null)
         val yesterday = SessionManager.getPreviousDay(dateString, 1)
 
-        val savedBaseline = prefs.getInt(baselineKey, -1)
-        if (savedBaseline == -1) {
-            val baseline = if (globalLastDate == yesterday && globalLastRaw >= 0) {
-                globalLastRaw
+        val baseline = if (globalLastDate == yesterday && globalLastRaw >= 0) {
+            globalLastRaw
+        } else {
+            -1 // Will be set to current rawSensorSteps on next sensor event
+        }
+
+        prefs.edit {
+            if (baseline >= 0) {
+                putInt(baselineKey, baseline)
             } else {
-                -1
+                remove(baselineKey)
             }
-            prefs.edit {
-                if (baseline >= 0) {
-                    putInt(baselineKey, baseline)
-                }
-                putInt(totalKey, 0)
-                putInt(offsetKey, 0)
+            putInt(totalKey, 0)
+            putInt(offsetKey, 0)
+        }
+        return 0
+    }
+
+    fun resetStepsForDate(context: Context, dateString: String = today()): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val baselineKey = baselineKey(dateString)
+        val totalKey = totalKey(dateString)
+        val offsetKey = offsetKey(dateString)
+        val lastRawKey = lastRawKey(dateString)
+        val lastRaw = prefs.getInt(lastRawKey, -1)
+        val globalLastRaw = prefs.getInt(KEY_GLOBAL_LAST_RAW, -1)
+        val currentRaw = if (lastRaw >= 0) lastRaw else globalLastRaw
+
+        prefs.edit {
+            if (currentRaw >= 0) {
+                putInt(baselineKey, currentRaw)
+            } else {
+                remove(baselineKey)
             }
+            putInt(totalKey, 0)
+            putInt(offsetKey, 0)
         }
         return 0
     }
