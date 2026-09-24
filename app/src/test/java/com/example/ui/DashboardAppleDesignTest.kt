@@ -168,8 +168,15 @@ class DashboardAppleDesignTest {
 
         // Hero Typography
         composeTestRule.onNodeWithText("1450").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Budget: 2350 kcal (2200 base + 150 passi)").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Assunte: 750 kcal").assertIsDisplayed()
+        composeTestRule.onNodeWithText("RIMASTE").assertIsDisplayed()
+
+        // 3 Macro Metrics
+        composeTestRule.onNodeWithText("Proteine").assertIsDisplayed()
+        composeTestRule.onNodeWithText("65g / 150g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Carboidrati").assertIsDisplayed()
+        composeTestRule.onNodeWithText("90g / 240g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Grassi").assertIsDisplayed()
+        composeTestRule.onNodeWithText("28g / 70g").assertIsDisplayed()
 
         // Weight chip
         composeTestRule.onNodeWithText("72.4 KG").assertIsDisplayed()

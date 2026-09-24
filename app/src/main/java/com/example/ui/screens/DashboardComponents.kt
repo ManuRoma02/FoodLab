@@ -1036,7 +1036,7 @@ private fun AppleMacroMetricLine(
     target: Int
 ) {
     val progress = if (target > 0) (consumed.toFloat() / target).coerceIn(0f, 1f) else 0f
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1044,30 +1044,30 @@ private fun AppleMacroMetricLine(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(6.dp)
+                        .size(7.dp)
                         .clip(RoundedCornerShape(99.dp))
                         .background(dotColor)
                 )
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 11.sp),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = "${consumed}g / ${target}g",
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         SmoothProgressRail(
             progress = progress,
             color = dotColor,
-            modifier = Modifier.fillMaxWidth().height(4.dp)
+            modifier = Modifier.fillMaxWidth().height(5.dp)
         )
     }
 }
@@ -1092,15 +1092,6 @@ fun UnifiedHeroHeader(
     onStepClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val totalBudget = targetCalories + burnedCalories
-    val calorieProgress = if (totalBudget > 0) loggedCalories.toFloat() / totalBudget.toFloat() else 0f
-    val proteinProgress = if (proteinTarget > 0) proteinConsumed / proteinTarget else 0f
-    val carbsProgress = if (carbsTarget > 0) carbsConsumed / carbsTarget else 0f
-    val fatProgress = if (fatTarget > 0) fatConsumed / fatTarget else 0f
-    val calorieColor = if (remainingCalories < 0) AppleRed else AppleOrange
-    var isBudgetExpanded by remember { mutableStateOf(false) }
-    val appleHaptics = rememberAppleHaptics()
-
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -1175,195 +1166,60 @@ fun UnifiedHeroHeader(
                 CompactWeightChip(weightText = weightText, onClick = onWeightClick)
             }
 
-            // Expandable Total Budget Card (Apple Health style)
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .applePressEffect(pressedScale = 0.99f) {
-                        appleHaptics.tactileClick()
-                        isBudgetExpanded = !isBudgetExpanded
-                    }
-                    .border(
-                        0.5.dp,
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                        RoundedCornerShape(16.dp)
-                    ),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerLow
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Budget: $totalBudget kcal ($targetCalories base + $burnedCalories passi)",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Assunte: $loggedCalories kcal",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    // Fluid linear consumption rail
-                    SmoothProgressRail(
-                        progress = if (totalBudget > 0) (loggedCalories.toFloat() / totalBudget.toFloat()).coerceIn(0f, 1f) else 0f,
-                        color = if (remainingCalories < 0) AppleRed else AppleOrange,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                    )
-
-                    // Expandable breakdown animated with spring
-                    AnimatedVisibility(
-                        visible = isBudgetExpanded,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                                thickness = 0.5.dp
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Obiettivo nutrizionale base",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "$targetCalories kcal",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Bonus attività ($steps passi)",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "+$burnedCalories kcal",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                    color = AppleGreen
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Calorie registrate oggi",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "-$loggedCalories kcal",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), thickness = 0.5.dp)
 
-            // Middle Section: Concentric Rings on Left, Mascot + Macro Legend on Right
+            // Middle Section: Mascot on Left, 3 Macro Metric Lines on Right
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Concentric Calorie & Macro Rings
-                AppleCalorieMacroRings(
-                    calorieProgress = calorieProgress,
-                    proteinProgress = proteinProgress,
-                    carbsProgress = carbsProgress,
-                    fatProgress = fatProgress,
-                    calorieColor = calorieColor,
-                    proteinColor = AppleBlue,
-                    carbsColor = AppleGreen,
-                    fatColor = ApplePurple,
-                    modifier = Modifier.size(130.dp),
-                    strokeWidth = 7.dp,
-                    ringGap = 3.dp,
-                    centerContent = {
-                        Icon(
-                            imageVector = Icons.Default.LocalFireDepartment,
-                            contentDescription = "Calorie",
-                            tint = calorieColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                )
+                // FoodLab Mascot in styled Apple glass container
+                Box(
+                    modifier = Modifier
+                        .size(86.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f))
+                        .border(
+                            0.5.dp,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            RoundedCornerShape(22.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedFoodLabMascot(
+                        state = when {
+                            remainingCalories < 0 -> MascotState.OverTarget
+                            isMascotTyping -> MascotState.Typing
+                            else -> MascotState.Idle
+                        },
+                        modifier = Modifier.size(76.dp)
+                    )
+                }
 
-                // Harmonious Mascot + Macro Metrics Readout
+                // 3 Macro Lines: Proteine, Carboidrati, Grassi
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        AnimatedFoodLabMascot(
-                            state = when {
-                                remainingCalories < 0 -> MascotState.OverTarget
-                                isMascotTyping -> MascotState.Typing
-                                else -> MascotState.Idle
-                            },
-                            modifier = Modifier.size(76.dp)
-                        )
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            AppleMacroMetricLine(
-                                dotColor = AppleBlue,
-                                label = "Proteine",
-                                consumed = proteinConsumed.roundToInt(),
-                                target = proteinTarget.roundToInt()
-                            )
-                            AppleMacroMetricLine(
-                                dotColor = AppleGreen,
-                                label = "Carboidrati",
-                                consumed = carbsConsumed.roundToInt(),
-                                target = carbsTarget.roundToInt()
-                            )
-                            AppleMacroMetricLine(
-                                dotColor = ApplePurple,
-                                label = "Grassi",
-                                consumed = fatConsumed.roundToInt(),
-                                target = fatTarget.roundToInt()
-                            )
-                        }
-                    }
+                    AppleMacroMetricLine(
+                        dotColor = AppleBlue,
+                        label = "Proteine",
+                        consumed = proteinConsumed.roundToInt(),
+                        target = proteinTarget.roundToInt()
+                    )
+                    AppleMacroMetricLine(
+                        dotColor = AppleGreen,
+                        label = "Carboidrati",
+                        consumed = carbsConsumed.roundToInt(),
+                        target = carbsTarget.roundToInt()
+                    )
+                    AppleMacroMetricLine(
+                        dotColor = ApplePurple,
+                        label = "Grassi",
+                        consumed = fatConsumed.roundToInt(),
+                        target = fatTarget.roundToInt()
+                    )
                 }
             }
 

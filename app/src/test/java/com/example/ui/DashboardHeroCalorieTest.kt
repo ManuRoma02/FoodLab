@@ -29,7 +29,7 @@ class DashboardHeroCalorieTest {
     private val soundManager: SoundManager by lazy { SoundManager(context) }
 
     @Test
-    fun testUnifiedHeroHeader_displaysTotalBudgetWithStepsBurnedBreakdown() {
+    fun testUnifiedHeroHeader_displaysRemainingCaloriesAndMacroMetrics() {
         var weightClicked = false
         var stepClicked = false
 
@@ -60,9 +60,18 @@ class DashboardHeroCalorieTest {
         // Primary Display
         composeTestRule.onNodeWithText("1600").assertIsDisplayed()
         composeTestRule.onNodeWithText("RIMASTE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("73.0 KG").assertIsDisplayed()
 
-        // Total Budget Breakdown Card (2000 base + 250 passi = 2250 kcal budget)
-        composeTestRule.onNodeWithText("Budget: 2250 kcal (2000 base + 250 passi)").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Assunte: 650 kcal").assertIsDisplayed()
+        // 3 Macro Metrics
+        composeTestRule.onNodeWithText("Proteine").assertIsDisplayed()
+        composeTestRule.onNodeWithText("50g / 140g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Carboidrati").assertIsDisplayed()
+        composeTestRule.onNodeWithText("70g / 200g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Grassi").assertIsDisplayed()
+        composeTestRule.onNodeWithText("20g / 65g").assertIsDisplayed()
+
+        // Steps
+        composeTestRule.onNodeWithText("PASSI GIORNALIERI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("6200 / 10000 passi").assertIsDisplayed()
     }
 }

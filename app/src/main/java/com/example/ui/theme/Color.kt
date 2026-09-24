@@ -107,140 +107,150 @@ val CupertinoDarkColorScheme = darkColorScheme(
 // Default scheme is Cupertino Dark
 val RetroDarkColorScheme = CupertinoDarkColorScheme
 
-// 2. MATRIX: Phosphor terminal green & dark digital rain
-val MatrixColorScheme = darkColorScheme(
-    primary = Color(0xFF00FF41),
-    onPrimary = Color(0xFF002208),
-    primaryContainer = Color(0xFF004D14),
-    onPrimaryContainer = Color(0xFF66FF8E),
-    secondary = Color(0xFF00C832),
-    onSecondary = Color(0xFF002208),
-    secondaryContainer = Color(0xFF00380D),
-    onSecondaryContainer = Color(0xFF88FFA9),
-    tertiary = Color(0xFF39FF14),
-    onTertiary = Color(0xFF002208),
-    tertiaryContainer = Color(0xFF0D4405),
-    onTertiaryContainer = Color(0xFFA5FFA0),
-    error = Color(0xFFFF5252),
-    onError = Color(0xFF000000),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF030A04),
-    onBackground = Color(0xFFD6FFDC),
-    surface = Color(0xFF081209),
-    onSurface = Color(0xFFD6FFDC),
-    surfaceVariant = Color(0xFF1B381F),
-    onSurfaceVariant = Color(0xFF75B37D),
-    surfaceContainerLow = Color(0xFF0B170C),
-    surfaceContainer = Color(0xFF0F1E10),
-    surfaceContainerHigh = Color(0xFF162A18),
-    surfaceContainerHighest = Color(0xFF1F3821),
-    outline = Color(0xFF2A6832),
-    outlineVariant = Color(0xFF163E1B)
-)
-
-// 3. GAMEBOY: Classic 90s DMG handheld monochrome olive green & dark slate
-val GameboyColorScheme = darkColorScheme(
-    primary = Color(0xFF8BAC0F),
-    onPrimary = Color(0xFF0F380F),
-    primaryContainer = Color(0xFF306230),
-    onPrimaryContainer = Color(0xFF9BBC0F),
-    secondary = Color(0xFFAB47BC), // DMG A/B button purple
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFF4A148C),
-    onSecondaryContainer = Color(0xFFE1BEE7),
-    tertiary = Color(0xFF9BBC0F),
-    onTertiary = Color(0xFF0F380F),
-    tertiaryContainer = Color(0xFF1B401B),
-    onTertiaryContainer = Color(0xFFCADF75),
-    error = Color(0xFFEF5350),
-    onError = Color(0xFF000000),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF111417),
-    onBackground = Color(0xFFE4EBD4),
-    surface = Color(0xFF171B20),
-    onSurface = Color(0xFFE4EBD4),
-    surfaceVariant = Color(0xFF353D45),
-    onSurfaceVariant = Color(0xFFA0ABA0),
-    surfaceContainerLow = Color(0xFF1D2228),
-    surfaceContainer = Color(0xFF232A31),
-    surfaceContainerHigh = Color(0xFF2B333B),
-    surfaceContainerHighest = Color(0xFF353E47),
-    outline = Color(0xFF56626D),
-    outlineVariant = Color(0xFF303942)
-)
-
-// 4. CYBERPUNK: Night City electric yellow, hot magenta & neon cyan
-val CyberpunkColorScheme = darkColorScheme(
-    primary = Color(0xFFFCEE0A),
-    onPrimary = Color(0xFF000000),
-    primaryContainer = Color(0xFF6B6500),
-    onPrimaryContainer = Color(0xFFFFF780),
-    secondary = Color(0xFF00F0FF),
+// 2. TITANIUM: Apple Style Pro Titanium with electric cyan/blue and graphite
+val TitaniumColorScheme = darkColorScheme(
+    primary = Color(0xFF2997FF),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF00458E),
+    onPrimaryContainer = Color(0xFFD6E9FF),
+    secondary = AppleGreen,
     onSecondary = Color(0xFF000000),
-    secondaryContainer = Color(0xFF004D54),
-    onSecondaryContainer = Color(0xFF80F7FF),
-    tertiary = Color(0xFFFF003C),
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFF7A001D),
-    onTertiaryContainer = Color(0xFFFF8A9E),
-    error = Color(0xFFFF1744),
+    secondaryContainer = Color(0xFF0F5B24),
+    onSecondaryContainer = Color(0xFFB4F3C6),
+    tertiary = Color(0xFFE5A93C),
+    onTertiary = Color(0xFF2E1C00),
+    tertiaryContainer = Color(0xFF5A3B00),
+    onTertiaryContainer = Color(0xFFFFE0A3),
+    error = AppleRed,
     onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF070913),
-    onBackground = Color(0xFFF0F3FF),
-    surface = Color(0xFF0C101F),
-    onSurface = Color(0xFFF0F3FF),
-    surfaceVariant = Color(0xFF253052),
-    onSurfaceVariant = Color(0xFFA2AEC9),
-    surfaceContainerLow = Color(0xFF11172A),
-    surfaceContainer = Color(0xFF161D35),
-    surfaceContainerHigh = Color(0xFF1E2745),
-    surfaceContainerHighest = Color(0xFF29355C),
-    outline = Color(0xFF4C5D8B),
-    outlineVariant = Color(0xFF222B47)
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Color(0xFFFFD4D1),
+    background = Color(0xFF121316),
+    onBackground = Color(0xFFF5F5F7),
+    surface = Color(0xFF181A1E),
+    onSurface = Color(0xFFF5F5F7),
+    surfaceVariant = Color(0xFF2A2E36),
+    onSurfaceVariant = Color(0xFFA1A1A6),
+    surfaceContainerLow = Color(0xFF15171A),
+    surfaceContainer = Color(0xFF1E2025),
+    surfaceContainerHigh = Color(0xFF262930),
+    surfaceContainerHighest = Color(0xFF30343C),
+    outline = Color(0xFF484C55),
+    outlineVariant = Color(0xFF2A2D34)
 )
 
-// 5. AMBER_CRT: Vintage mainframe amber glowing phosphor CRT
-val AmberCrtColorScheme = darkColorScheme(
-    primary = Color(0xFFFFB000),
-    onPrimary = Color(0xFF331D00),
-    primaryContainer = Color(0xFF6E4000),
-    onPrimaryContainer = Color(0xFFFFDC8F),
-    secondary = Color(0xFFFF8500),
-    onSecondary = Color(0xFF301300),
-    secondaryContainer = Color(0xFF612600),
-    onSecondaryContainer = Color(0xFFFFBE85),
-    tertiary = Color(0xFFFFCC00),
-    onTertiary = Color(0xFF332600),
-    tertiaryContainer = Color(0xFF594500),
-    onTertiaryContainer = Color(0xFFFFEC99),
-    error = Color(0xFFFF5252),
-    onError = Color(0xFF000000),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-    background = Color(0xFF0B0802),
-    onBackground = Color(0xFFFFEED4),
-    surface = Color(0xFF130E05),
-    onSurface = Color(0xFFFFEED4),
-    surfaceVariant = Color(0xFF3B2E18),
-    onSurfaceVariant = Color(0xFFC4AD89),
-    surfaceContainerLow = Color(0xFF191307),
-    surfaceContainer = Color(0xFF20190B),
-    surfaceContainerHigh = Color(0xFF2A2110),
-    surfaceContainerHighest = Color(0xFF382D18),
-    outline = Color(0xFF6E562F),
-    outlineVariant = Color(0xFF3B2D17)
+// 3. NORD: Nordic Frost - Polar Night, Frost Ice Blue & Snow Storm
+val NordColorScheme = darkColorScheme(
+    primary = Color(0xFF88C0D0),
+    onPrimary = Color(0xFF242933),
+    primaryContainer = Color(0xFF3B5663),
+    onPrimaryContainer = Color(0xFFD8EEF4),
+    secondary = Color(0xFFA3BE8C),
+    onSecondary = Color(0xFF242933),
+    secondaryContainer = Color(0xFF3E5434),
+    onSecondaryContainer = Color(0xFFE2F0D9),
+    tertiary = Color(0xFFEBCB8B),
+    onTertiary = Color(0xFF2E2413),
+    tertiaryContainer = Color(0xFF5E4F28),
+    onTertiaryContainer = Color(0xFFFFF0D4),
+    error = Color(0xFFBF616A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFF5C292E),
+    onErrorContainer = Color(0xFFFFD8DC),
+    background = Color(0xFF242933),
+    onBackground = Color(0xFFECEFF4),
+    surface = Color(0xFF2E3440),
+    onSurface = Color(0xFFECEFF4),
+    surfaceVariant = Color(0xFF434C5E),
+    onSurfaceVariant = Color(0xFFD8DEE9),
+    surfaceContainerLow = Color(0xFF292E3A),
+    surfaceContainer = Color(0xFF3B4252),
+    surfaceContainerHigh = Color(0xFF434C5E),
+    surfaceContainerHighest = Color(0xFF4C566A),
+    outline = Color(0xFF616E85),
+    outlineVariant = Color(0xFF3B4252)
 )
+
+// 4. CATPPUCCIN: Deep Mauve / Catppuccin Mocha velvety pastel dark
+val CatppuccinColorScheme = darkColorScheme(
+    primary = Color(0xFFCBA6F7),
+    onPrimary = Color(0xFF181825),
+    primaryContainer = Color(0xFF553B82),
+    onPrimaryContainer = Color(0xFFF1E4FD),
+    secondary = Color(0xFFA6E3A1),
+    onSecondary = Color(0xFF181825),
+    secondaryContainer = Color(0xFF325430),
+    onSecondaryContainer = Color(0xFFDCF8DA),
+    tertiary = Color(0xFFFAB387),
+    onTertiary = Color(0xFF2E190E),
+    tertiaryContainer = Color(0xFF633A20),
+    onTertiaryContainer = Color(0xFFFFE3D1),
+    error = Color(0xFFF38BA8),
+    onError = Color(0xFF181825),
+    errorContainer = Color(0xFF6B2939),
+    onErrorContainer = Color(0xFFFFD9E2),
+    background = Color(0xFF181825),
+    onBackground = Color(0xFFCDD6F4),
+    surface = Color(0xFF1E1E2E),
+    onSurface = Color(0xFFCDD6F4),
+    surfaceVariant = Color(0xFF313244),
+    onSurfaceVariant = Color(0xFFA6ADC8),
+    surfaceContainerLow = Color(0xFF1B1B2A),
+    surfaceContainer = Color(0xFF252538),
+    surfaceContainerHigh = Color(0xFF313244),
+    surfaceContainerHighest = Color(0xFF45475A),
+    outline = Color(0xFF585B70),
+    outlineVariant = Color(0xFF313244)
+)
+
+// 5. WARM_EMBER: Cozy roast espresso & warm terracotta ember
+val WarmEmberColorScheme = darkColorScheme(
+    primary = Color(0xFFF08C54),
+    onPrimary = Color(0xFF2D1600),
+    primaryContainer = Color(0xFF6E3612),
+    onPrimaryContainer = Color(0xFFFFDCBE),
+    secondary = Color(0xFF7CB88B),
+    onSecondary = Color(0xFF122817),
+    secondaryContainer = Color(0xFF2A5034),
+    onSecondaryContainer = Color(0xFFCEECD6),
+    tertiary = Color(0xFFE6BA67),
+    onTertiary = Color(0xFF2E2000),
+    tertiaryContainer = Color(0xFF5E4717),
+    onTertiaryContainer = Color(0xFFFFEBBF),
+    error = Color(0xFFE55959),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFF6B2222),
+    onErrorContainer = Color(0xFFFFD7D7),
+    background = Color(0xFF161311),
+    onBackground = Color(0xFFF5EBE1),
+    surface = Color(0xFF1F1A17),
+    onSurface = Color(0xFFF5EBE1),
+    surfaceVariant = Color(0xFF332B25),
+    onSurfaceVariant = Color(0xFFC4B6AA),
+    surfaceContainerLow = Color(0xFF1A1613),
+    surfaceContainer = Color(0xFF26201C),
+    surfaceContainerHigh = Color(0xFF322B25),
+    surfaceContainerHighest = Color(0xFF3F3730),
+    outline = Color(0xFF5E5248),
+    outlineVariant = Color(0xFF332B25)
+)
+
+fun themePreviewColor(skin: ThemeSkin): Color {
+    return when (skin) {
+        ThemeSkin.RETRO_DARK -> AppleBlue
+        ThemeSkin.TITANIUM -> Color(0xFF2997FF)
+        ThemeSkin.NORD -> Color(0xFF88C0D0)
+        ThemeSkin.CATPPUCCIN -> Color(0xFFCBA6F7)
+        ThemeSkin.WARM_EMBER -> Color(0xFFF08C54)
+    }
+}
 
 fun colorSchemeForSkin(skin: ThemeSkin): ColorScheme {
     return when (skin) {
         ThemeSkin.RETRO_DARK -> RetroDarkColorScheme
-        ThemeSkin.MATRIX -> MatrixColorScheme
-        ThemeSkin.GAMEBOY -> GameboyColorScheme
-        ThemeSkin.CYBERPUNK -> CyberpunkColorScheme
-        ThemeSkin.AMBER_CRT -> AmberCrtColorScheme
+        ThemeSkin.TITANIUM -> TitaniumColorScheme
+        ThemeSkin.NORD -> NordColorScheme
+        ThemeSkin.CATPPUCCIN -> CatppuccinColorScheme
+        ThemeSkin.WARM_EMBER -> WarmEmberColorScheme
     }
 }

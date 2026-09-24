@@ -463,14 +463,25 @@ fun SettingsScreen(
                                     .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
                                     .padding(horizontal = 14.dp, vertical = 10.dp)
                             ) {
-                                Text(
-                                    text = option.name,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        letterSpacing = 0.2.sp
-                                    ),
-                                    color = animatedText
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(androidx.compose.foundation.shape.CircleShape)
+                                            .background(com.example.ui.theme.themePreviewColor(option))
+                                    )
+                                    Text(
+                                        text = option.displayName,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.2.sp
+                                        ),
+                                        color = animatedText
+                                    )
+                                }
                             }
                         }
                     }

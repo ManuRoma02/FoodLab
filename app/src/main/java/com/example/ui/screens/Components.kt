@@ -444,29 +444,39 @@ fun SearchResultCard(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    // Line 1: Calories & Protein
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "${food.caloriesPer100g} kcal/100g",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = (-0.1).sp
-                            ),
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                        ) {
+                            Text(
+                                text = "${food.caloriesPer100g} kcal/100g",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = (-0.1).sp
+                                ),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                            )
+                        }
+
+                        MacroBadge(label = "P", value = "${food.proteinPer100g}g", color = Color(0xFF22C55E))
                     }
 
-                    MacroBadge(label = "P", value = "${food.proteinPer100g}g", color = Color(0xFF22C55E))
-                    MacroBadge(label = "C", value = "${food.carbsPer100g}g", color = Color(0xFFF59E0B))
-                    MacroBadge(label = "F", value = "${food.fatPer100g}g", color = Color(0xFF06B6D4))
+                    // Line 2: Carbs & Fats
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        MacroBadge(label = "C", value = "${food.carbsPer100g}g", color = Color(0xFFF59E0B))
+                        MacroBadge(label = "F", value = "${food.fatPer100g}g", color = Color(0xFF06B6D4))
+                    }
                 }
             }
 
