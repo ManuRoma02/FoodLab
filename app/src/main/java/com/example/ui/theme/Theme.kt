@@ -42,15 +42,20 @@ private val DarkColorScheme = darkColorScheme(
 fun MyApplicationTheme(
     darkTheme: Boolean = true, // Force dark theme for tactical feel
     dynamicColor: Boolean = false,
-    themeSkin: ThemeSkin = ThemeSkin.RETRO_DARK,
+    themeSkin: ThemeSkin = ThemeSkin.ORIGINAL,
     content: @Composable () -> Unit
 ) {
     val colorScheme = colorSchemeForSkin(themeSkin)
+    val macroColors = macroColorsForSkin(themeSkin)
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = Shapes,
-        content = content
-    )
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalMacroColors provides macroColors
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = Shapes,
+            content = content
+        )
+    }
 }

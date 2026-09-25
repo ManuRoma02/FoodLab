@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.scale
+import com.example.ui.theme.macroColors
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -178,9 +181,9 @@ fun SettingsScreen(
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             FoodLabScreenHeader(
                 title = "Impostazioni",
@@ -191,13 +194,13 @@ fun SettingsScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
                         "OBIETTIVI NUTRIZIONALI",
@@ -216,16 +219,16 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.primary
                         ),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp)
+                            .height(40.dp)
                     ) {
-                        Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             "CALCOLA IL TUO FABBISOGNO (TDEE)",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                         )
                     }
 
@@ -242,26 +245,26 @@ fun SettingsScreen(
                     )
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(options.size) { index ->
                             val option = options[index]
                             val isSelected = option == selectedTargetKey
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(14.dp))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
                                     .clickable { selectedTargetKey = option }
                                     .border(
                                         1.dp,
                                         if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                                        RoundedCornerShape(14.dp)
+                                        RoundedCornerShape(10.dp)
                                     )
-                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 Text(
                                     text = dayNamesItalian[option] ?: option.take(3),
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                                 )
                             }
@@ -271,20 +274,20 @@ fun SettingsScreen(
                     // Dynamic Macro Breakdown Badge
                     Surface(
                         color = if (isExact100) Color(0xFF15803D).copy(alpha = 0.15f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, if (isExact100) Color(0xFF22C55E) else MaterialTheme.colorScheme.error),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
                                 imageVector = if (isExact100) Icons.Default.Check else Icons.Default.Info,
                                 contentDescription = null,
                                 tint = if (isExact100) Color(0xFF22C55E) else MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(
@@ -293,18 +296,18 @@ fun SettingsScreen(
                                 ) {
                                     Text(
                                         text = if (isExact100) "100% Totale" else "$totalMacroPct% Totale",
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                         color = if (isExact100) Color(0xFF22C55E) else MaterialTheme.colorScheme.error
                                     )
                                     Text(
-                                        text = "($proteinPct% P • $carbsPct% C • $fatPct% F)",
+                                        text = "($carbsPct% C • $proteinPct% P • $fatPct% F)",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                                 Text(
                                     text = if (isExact100) {
-                                        "Somma macro bilanciata! Le calorie da P, C e F coprono esattamente il 100% dell'obiettivo calorico (${totalMacroCals.roundToInt()} kcal)."
+                                        "Somma macro bilanciata! Le calorie da C, P e F coprono esattamente il 100% dell'obiettivo calorico (${totalMacroCals.roundToInt()} kcal)."
                                     } else if (totalMacroPct > 100) {
                                         "Avviso: Le calorie dei macro (${totalMacroCals.roundToInt()} kcal) superano l'obiettivo impostato (${calories.roundToInt()} kcal)."
                                     } else {
@@ -327,29 +330,29 @@ fun SettingsScreen(
                         onValueChange = { calories = it }
                     )
                     ModernTargetSlider(
-                        label = "PROTEINE",
-                        value = protein,
-                        valueRange = 50f..300f,
-                        stepSize = 5f,
-                        accentColor = Color(0xFF22C55E),
-                        unit = "g",
-                        onValueChange = { protein = it }
-                    )
-                    ModernTargetSlider(
                         label = "CARBOIDRATI",
                         value = carbs,
                         valueRange = 50f..400f,
                         stepSize = 5f,
-                        accentColor = Color(0xFFEAB308),
+                        accentColor = MaterialTheme.macroColors.carbs,
                         unit = "g",
                         onValueChange = { carbs = it }
+                    )
+                    ModernTargetSlider(
+                        label = "PROTEINE",
+                        value = protein,
+                        valueRange = 50f..300f,
+                        stepSize = 5f,
+                        accentColor = MaterialTheme.macroColors.protein,
+                        unit = "g",
+                        onValueChange = { protein = it }
                     )
                     ModernTargetSlider(
                         label = "GRASSI",
                         value = fat,
                         valueRange = 20f..200f,
                         stepSize = 5f,
-                        accentColor = Color(0xFF06B6D4),
+                        accentColor = MaterialTheme.macroColors.fat,
                         unit = "g",
                         onValueChange = { fat = it }
                     )
@@ -366,14 +369,14 @@ fun SettingsScreen(
                             )
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
+                            .height(42.dp)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("SALVA OBIETTIVI", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("SALVA OBIETTIVI", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
@@ -382,13 +385,13 @@ fun SettingsScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
                         "OBIETTIVI ATTIVITÀ",
@@ -415,13 +418,13 @@ fun SettingsScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
                         "TEMA & SUONI",
@@ -432,7 +435,7 @@ fun SettingsScreen(
                     val themeOptions = ThemeSkin.values()
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(themeOptions.size) { index ->
                             val option = themeOptions[index]
@@ -458,24 +461,24 @@ fun SettingsScreen(
                                         soundManager.playSound("click")
                                         preferencesManager.setThemeSkin(option)
                                     }
-                                    .clip(RoundedCornerShape(14.dp))
+                                    .clip(RoundedCornerShape(10.dp))
                                     .background(animatedBg)
-                                    .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
-                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                                    .border(1.dp, animatedBorder, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .size(8.dp)
-                                            .clip(androidx.compose.foundation.shape.CircleShape)
+                                            .clip(CircleShape)
                                             .background(com.example.ui.theme.themePreviewColor(option))
                                     )
                                     Text(
                                         text = option.displayName,
-                                        style = MaterialTheme.typography.labelMedium.copy(
+                                        style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = FontWeight.Bold,
                                             letterSpacing = 0.2.sp
                                         ),
@@ -490,7 +493,7 @@ fun SettingsScreen(
 
                     ModernSwitchTile(
                         title = "Effetti sonori",
-                        subtitle = "Feedback audio ai tocchi (disattivato di default)",
+                        subtitle = "Feedback audio ai tocchi",
                         checked = soundEffectsEnabled,
                         onCheckedChange = { preferencesManager.setSoundEnabled(it) }
                     )
@@ -528,13 +531,13 @@ fun SettingsScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
                         "PRIVACY & DATA GOVERNANCE",
@@ -544,24 +547,24 @@ fun SettingsScreen(
 
                     // Local-first zero telemetry badge (GDPR Art. 13)
                     Surface(
-                        color = Color(0xFF22C55E).copy(alpha = 0.12f),
+                        color = MaterialTheme.macroColors.protein.copy(alpha = 0.12f),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, Color(0xFF22C55E).copy(alpha = 0.35f)),
+                        border = BorderStroke(1.dp, MaterialTheme.macroColors.protein.copy(alpha = 0.35f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
                                 Icons.Default.Info,
                                 contentDescription = null,
-                                tint = Color(0xFF22C55E),
-                                modifier = Modifier.size(20.dp)
+                                tint = MaterialTheme.macroColors.protein,
+                                modifier = Modifier.size(18.dp)
                             )
                             Text(
-                                text = "100% Locale & Offline: Tutti i tuoi dati personali (pasti, peso, passi e obiettivi nutrizionali) risiedono esclusivamente nel database SQLite del tuo dispositivo. Zero telemetria cloud o tracciamento di terze parti.",
+                                text = "100% Locale & Offline: Tutti i tuoi dati personali risiedono esclusivamente nel database SQLite del tuo dispositivo. Zero telemetria cloud o tracciamento.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -579,10 +582,10 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.primary
                         ),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(40.dp)
                     ) {
-                        Text("ESPORTA DATI (CSV / PORTABILITÀ)", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Text("ESPORTA DATI (CSV / PORTABILITÀ)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
 
                     // Wipe All Data Button (GDPR Art. 17 Right to Erasure)
@@ -595,10 +598,10 @@ fun SettingsScreen(
                             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                         ),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(40.dp)
                     ) {
-                        Text("CANCELLA TUTTI I DATI (RESET)", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Text("CANCELLA TUTTI I DATI (RESET)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
@@ -623,71 +626,98 @@ private fun ModernTargetSlider(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(vertical = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.2.sp), color = accentColor)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        val newValue = (value - stepSize).coerceIn(valueRange.start, valueRange.endInclusive)
-                        textValue = newValue.roundToInt().toString()
-                        onValueChange(newValue)
-                    },
+                Box(
                     modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(accentColor)
+                )
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.2.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // Compact Apple-style Stepper Pill
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+                    .height(30.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clickable {
+                            val newValue = (value - stepSize).coerceIn(valueRange.start, valueRange.endInclusive)
+                            textValue = newValue.roundToInt().toString()
+                            onValueChange(newValue)
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Text("-", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 }
 
-                OutlinedTextField(
-                    value = textValue,
-                    onValueChange = { input ->
-                        textValue = input
-                        val parsed = input.toFloatOrNull()
-                        if (parsed != null) {
-                            onValueChange(parsed.coerceIn(valueRange.start, valueRange.endInclusive))
-                        }
-                    },
+                Box(
                     modifier = Modifier
-                        .width(72.dp)
-                        .height(44.dp),
-                    textStyle = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp)
-                )
+                        .width(50.dp)
+                        .padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = textValue,
+                        onValueChange = { input ->
+                            textValue = input
+                            val parsed = input.toFloatOrNull()
+                            if (parsed != null) {
+                                onValueChange(parsed.coerceIn(valueRange.start, valueRange.endInclusive))
+                            }
+                        },
+                        textStyle = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        singleLine = true,
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(accentColor),
+                        modifier = Modifier.width(42.dp)
+                    )
+                }
 
-                IconButton(
-                    onClick = {
-                        val newValue = (value + stepSize).coerceIn(valueRange.start, valueRange.endInclusive)
-                        textValue = newValue.roundToInt().toString()
-                        onValueChange(newValue)
-                    },
+                Box(
                     modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                        .size(30.dp)
+                        .clickable {
+                            val newValue = (value + stepSize).coerceIn(valueRange.start, valueRange.endInclusive)
+                            textValue = newValue.roundToInt().toString()
+                            onValueChange(newValue)
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Text("+", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
                 }
-
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(unit, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+
         Slider(
             value = value.coerceIn(valueRange.start, valueRange.endInclusive),
             onValueChange = {
@@ -695,6 +725,9 @@ private fun ModernTargetSlider(
                 onValueChange(it)
             },
             valueRange = valueRange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(28.dp),
             colors = SliderDefaults.colors(
                 thumbColor = accentColor,
                 activeTrackColor = accentColor,
@@ -722,13 +755,13 @@ private fun ModernSwitchTile(
                 soundManager.playSound("click")
                 onCheckedChange(!checked)
             }
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
             Text(title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
             Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -739,6 +772,7 @@ private fun ModernSwitchTile(
                 soundManager.playSound("click")
                 onCheckedChange(it)
             },
+            modifier = Modifier.scale(0.85f),
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                 checkedTrackColor = MaterialTheme.colorScheme.primary,

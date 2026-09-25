@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class ThemeSkin(val displayName: String) {
+    ORIGINAL("Originale"),
     RETRO_DARK("Midnight"),
     TITANIUM("Titanium Pro"),
     NORD("Nordic Frost"),
@@ -16,12 +17,13 @@ enum class ThemeSkin(val displayName: String) {
     companion object {
         fun fromString(name: String?): ThemeSkin {
             return when (name) {
+                "ORIGINAL" -> ORIGINAL
                 "MATRIX", "TITANIUM" -> TITANIUM
                 "GAMEBOY", "NORD" -> NORD
                 "CYBERPUNK", "CATPPUCCIN" -> CATPPUCCIN
                 "AMBER_CRT", "WARM_EMBER" -> WARM_EMBER
                 "RETRO_DARK" -> RETRO_DARK
-                else -> values().firstOrNull { it.name == name } ?: RETRO_DARK
+                else -> values().firstOrNull { it.name == name } ?: ORIGINAL
             }
         }
     }
@@ -105,7 +107,7 @@ class PreferencesManager private constructor(context: Context) {
     }
 
     private fun loadThemeSkin(): ThemeSkin {
-        val name = prefs.getString("theme_skin", ThemeSkin.RETRO_DARK.name)
+        val name = prefs.getString("theme_skin", ThemeSkin.ORIGINAL.name)
         return ThemeSkin.fromString(name)
     }
 

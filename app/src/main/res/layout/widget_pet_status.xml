@@ -83,29 +83,11 @@
         android:layout_weight="0.75"
         android:orientation="horizontal">
 
-        <!-- Protein Pill -->
-        <TextView
-            android:id="@+id/protein_text"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@drawable/widget_macro_protein_bg"
-            android:contentDescription="@string/widget_protein_placeholder"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:singleLine="true"
-            android:text="145g"
-            android:textColor="#30D158"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
         <!-- Carbs Pill -->
         <TextView
             android:id="@+id/carbs_text"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginStart="3dp"
             android:layout_weight="1"
             android:background="@drawable/widget_macro_carbs_bg"
             android:contentDescription="@string/widget_carbs_placeholder"
@@ -115,6 +97,24 @@
             android:singleLine="true"
             android:text="210g"
             android:textColor="#FFD60A"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <!-- Protein Pill -->
+        <TextView
+            android:id="@+id/protein_text"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="3dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_macro_protein_bg"
+            android:contentDescription="@string/widget_protein_placeholder"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:text="145g"
+            android:textColor="#30D158"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -132,7 +132,7 @@
             android:includeFontPadding="false"
             android:singleLine="true"
             android:text="68g"
-            android:textColor="#CBD5E1"
+            android:textColor="#FFFFFF"
             android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>

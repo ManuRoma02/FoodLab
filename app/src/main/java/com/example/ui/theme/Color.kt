@@ -1,7 +1,10 @@
 package com.example.ui.theme
 
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.example.util.ThemeSkin
@@ -106,6 +109,38 @@ val CupertinoDarkColorScheme = darkColorScheme(
 
 // Default scheme is Cupertino Dark
 val RetroDarkColorScheme = CupertinoDarkColorScheme
+
+// 1. ORIGINAL: Pure OLED Black with Orange (calories), Green (protein), Yellow (carbs), White (fat)
+val OriginalColorScheme = darkColorScheme(
+    primary = Color(0xFFFF9500),
+    onPrimary = Color(0xFF000000),
+    primaryContainer = Color(0xFF6B3E00),
+    onPrimaryContainer = Color(0xFFFFD8A8),
+    secondary = Color(0xFF30D158),
+    onSecondary = Color(0xFF000000),
+    secondaryContainer = Color(0xFF0F5B24),
+    onSecondaryContainer = Color(0xFFB4F3C6),
+    tertiary = Color(0xFFFFD60A),
+    onTertiary = Color(0xFF000000),
+    tertiaryContainer = Color(0xFF5A4800),
+    onTertiaryContainer = Color(0xFFFFF0A3),
+    error = AppleRed,
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFF8C1D18),
+    onErrorContainer = Color(0xFFFFD4D1),
+    background = Background,
+    onBackground = OnBackground,
+    surface = Surface,
+    onSurface = OnSurface,
+    surfaceVariant = SurfaceContainerHighest,
+    onSurfaceVariant = OnSurfaceVariant,
+    surfaceContainerLow = SurfaceContainerLow,
+    surfaceContainer = SurfaceContainer,
+    surfaceContainerHigh = SurfaceContainerHigh,
+    surfaceContainerHighest = SurfaceContainerHighest,
+    outline = Outline,
+    outlineVariant = OutlineVariant
+)
 
 // 2. TITANIUM: Apple Style Pro Titanium with electric cyan/blue and graphite
 val TitaniumColorScheme = darkColorScheme(
@@ -237,6 +272,7 @@ val WarmEmberColorScheme = darkColorScheme(
 
 fun themePreviewColor(skin: ThemeSkin): Color {
     return when (skin) {
+        ThemeSkin.ORIGINAL -> Color(0xFFFF9500)
         ThemeSkin.RETRO_DARK -> AppleBlue
         ThemeSkin.TITANIUM -> Color(0xFF2997FF)
         ThemeSkin.NORD -> Color(0xFF88C0D0)
@@ -247,6 +283,7 @@ fun themePreviewColor(skin: ThemeSkin): Color {
 
 fun colorSchemeForSkin(skin: ThemeSkin): ColorScheme {
     return when (skin) {
+        ThemeSkin.ORIGINAL -> OriginalColorScheme
         ThemeSkin.RETRO_DARK -> RetroDarkColorScheme
         ThemeSkin.TITANIUM -> TitaniumColorScheme
         ThemeSkin.NORD -> NordColorScheme
@@ -254,3 +291,60 @@ fun colorSchemeForSkin(skin: ThemeSkin): ColorScheme {
         ThemeSkin.WARM_EMBER -> WarmEmberColorScheme
     }
 }
+
+data class MacroColors(
+    val calories: Color,
+    val carbs: Color,
+    val protein: Color,
+    val fat: Color
+)
+
+fun macroColorsForSkin(skin: ThemeSkin): MacroColors {
+    return when (skin) {
+        ThemeSkin.ORIGINAL -> MacroColors(
+            calories = Color(0xFFFF9500),
+            carbs = Color(0xFFFFD60A),
+            protein = Color(0xFF30D158),
+            fat = Color(0xFFFFFFFF)
+        )
+        ThemeSkin.RETRO_DARK -> MacroColors(
+            calories = AppleOrange,
+            carbs = AppleYellow,
+            protein = AppleGreen,
+            fat = Color(0xFF64D2FF)
+        )
+        ThemeSkin.TITANIUM -> MacroColors(
+            calories = Color(0xFF2997FF),
+            carbs = Color(0xFFE5A93C),
+            protein = AppleGreen,
+            fat = Color(0xFFA1A1A6)
+        )
+        ThemeSkin.NORD -> MacroColors(
+            calories = Color(0xFF88C0D0),
+            carbs = Color(0xFFEBCB8B),
+            protein = Color(0xFFA3BE8C),
+            fat = Color(0xFFD8DEE9)
+        )
+        ThemeSkin.CATPPUCCIN -> MacroColors(
+            calories = Color(0xFFCBA6F7),
+            carbs = Color(0xFFFAB387),
+            protein = Color(0xFFA6E3A1),
+            fat = Color(0xFFCDD6F4)
+        )
+        ThemeSkin.WARM_EMBER -> MacroColors(
+            calories = Color(0xFFF08C54),
+            carbs = Color(0xFFE6BA67),
+            protein = Color(0xFF7CB88B),
+            fat = Color(0xFFF5EBE1)
+        )
+    }
+}
+
+val LocalMacroColors = staticCompositionLocalOf {
+    macroColorsForSkin(ThemeSkin.ORIGINAL)
+}
+
+val MaterialTheme.macroColors: MacroColors
+    @Composable
+    get() = LocalMacroColors.current
+

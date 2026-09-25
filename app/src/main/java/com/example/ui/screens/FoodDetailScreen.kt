@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.activity.compose.BackHandler
 import com.example.R
+import com.example.ui.theme.macroColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -534,19 +535,19 @@ fun FoodDetailScreen(
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Calorie", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("$currentCalories kcal", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = calorieAccent)
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Proteine", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${String.format(Locale.US, "%.1f", currentPro)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFF22C55E))
+                                    Text("$currentCalories kcal", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.macroColors.calories)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Carboidrati", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${String.format(Locale.US, "%.1f", currentCarbs)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFF59E0B))
+                                    Text("${String.format(Locale.US, "%.1f", currentCarbs)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.macroColors.carbs)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Proteine", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${String.format(Locale.US, "%.1f", currentPro)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.macroColors.protein)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Grassi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${String.format(Locale.US, "%.1f", currentFat)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFF06B6D4))
+                                    Text("${String.format(Locale.US, "%.1f", currentFat)}g", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.macroColors.fat)
                                 }
                             }
                         }

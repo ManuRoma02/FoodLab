@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.macroColors
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -445,7 +446,7 @@ fun SearchResultCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    // Line 1: Calories & Protein
+                    // Line 1: Calories
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -465,17 +466,16 @@ fun SearchResultCard(
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                             )
                         }
-
-                        MacroBadge(label = "P", value = "${food.proteinPer100g}g", color = Color(0xFF22C55E))
                     }
 
-                    // Line 2: Carbs & Fats
+                    // Line 2: Carbs, Protein & Fats (C -> P -> F)
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        MacroBadge(label = "C", value = "${food.carbsPer100g}g", color = Color(0xFFF59E0B))
-                        MacroBadge(label = "F", value = "${food.fatPer100g}g", color = Color(0xFF06B6D4))
+                        MacroBadge(label = "C", value = "${food.carbsPer100g}g", color = MaterialTheme.macroColors.carbs)
+                        MacroBadge(label = "P", value = "${food.proteinPer100g}g", color = MaterialTheme.macroColors.protein)
+                        MacroBadge(label = "F", value = "${food.fatPer100g}g", color = MaterialTheme.macroColors.fat)
                     }
                 }
             }

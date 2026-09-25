@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import com.example.ui.theme.macroColors
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -229,37 +230,37 @@ fun AnalyticsScreen(
                 )
             }
 
-            // 4. Individual Protein Trend Chart Card (Green)
-            AnimatedVisibility(visible = showProteinChart) {
-                IndividualMacroTrendCard(
-                    title = "Trend Proteine (7 giorni)",
-                    macroName = "Proteine",
-                    unit = "g",
-                    lineColor = Color(0xFF22C55E),
-                    targetValue = defaultTargetProtein.toFloat(),
-                    dailyData = dailyIntakes.map { it.date to it.protein }
-                )
-            }
-
-            // 5. Individual Carbs Trend Chart Card (Amber)
+            // 4. Individual Carbs Trend Chart Card
             AnimatedVisibility(visible = showCarbsChart) {
                 IndividualMacroTrendCard(
                     title = "Trend Carboidrati (7 giorni)",
                     macroName = "Carboidrati",
                     unit = "g",
-                    lineColor = Color(0xFFF59E0B),
+                    lineColor = MaterialTheme.macroColors.carbs,
                     targetValue = defaultTargetCarbs.toFloat(),
                     dailyData = dailyIntakes.map { it.date to it.carbs }
                 )
             }
 
-            // 6. Individual Fat Trend Chart Card (Cyan)
+            // 5. Individual Protein Trend Chart Card
+            AnimatedVisibility(visible = showProteinChart) {
+                IndividualMacroTrendCard(
+                    title = "Trend Proteine (7 giorni)",
+                    macroName = "Proteine",
+                    unit = "g",
+                    lineColor = MaterialTheme.macroColors.protein,
+                    targetValue = defaultTargetProtein.toFloat(),
+                    dailyData = dailyIntakes.map { it.date to it.protein }
+                )
+            }
+
+            // 6. Individual Fat Trend Chart Card
             AnimatedVisibility(visible = showFatChart) {
                 IndividualMacroTrendCard(
                     title = "Trend Grassi (7 giorni)",
                     macroName = "Grassi",
                     unit = "g",
-                    lineColor = Color(0xFF06B6D4),
+                    lineColor = MaterialTheme.macroColors.fat,
                     targetValue = defaultTargetFat.toFloat(),
                     dailyData = dailyIntakes.map { it.date to it.fat }
                 )
@@ -577,27 +578,27 @@ private fun MacroDistributionCard(
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                val pWeight = proteinPct.toFloat().coerceAtLeast(0.1f)
                 val cWeight = carbsPct.toFloat().coerceAtLeast(0.1f)
+                val pWeight = proteinPct.toFloat().coerceAtLeast(0.1f)
                 val fWeight = fatPct.toFloat().coerceAtLeast(0.1f)
 
                 Box(
                     modifier = Modifier
-                        .weight(pWeight)
+                        .weight(cWeight)
                         .fillMaxHeight()
-                        .background(Color(0xFF22C55E))
+                        .background(MaterialTheme.macroColors.carbs)
                 )
                 Box(
                     modifier = Modifier
-                        .weight(cWeight)
+                        .weight(pWeight)
                         .fillMaxHeight()
-                        .background(Color(0xFFF59E0B))
+                        .background(MaterialTheme.macroColors.protein)
                 )
                 Box(
                     modifier = Modifier
                         .weight(fWeight)
                         .fillMaxHeight()
-                        .background(Color(0xFF06B6D4))
+                        .background(MaterialTheme.macroColors.fat)
                 )
             }
 
@@ -606,9 +607,9 @@ private fun MacroDistributionCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MacroPillLegend("Proteine", "$proteinPct%", Color(0xFF22C55E))
-                MacroPillLegend("Carboidrati", "$carbsPct%", Color(0xFFF59E0B))
-                MacroPillLegend("Grassi", "$fatPct%", Color(0xFF06B6D4))
+                MacroPillLegend("Carboidrati", "$carbsPct%", MaterialTheme.macroColors.carbs)
+                MacroPillLegend("Proteine", "$proteinPct%", MaterialTheme.macroColors.protein)
+                MacroPillLegend("Grassi", "$fatPct%", MaterialTheme.macroColors.fat)
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
@@ -625,38 +626,38 @@ private fun MacroDistributionCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 MetricColumn(
-                    label = "Media Proteine",
-                    value = "${avgProtein.roundToInt()}g / ${targetProtein}g",
-                    color = Color(0xFF22C55E)
-                )
-                MetricColumn(
                     label = "Media Carboidrati",
                     value = "${avgCarbs.roundToInt()}g / ${targetCarbs}g",
-                    color = Color(0xFFF59E0B)
+                    color = MaterialTheme.macroColors.carbs
+                )
+                MetricColumn(
+                    label = "Media Proteine",
+                    value = "${avgProtein.roundToInt()}g / ${targetProtein}g",
+                    color = MaterialTheme.macroColors.protein
                 )
                 MetricColumn(
                     label = "Media Grassi",
                     value = "${avgFat.roundToInt()}g / ${targetFat}g",
-                    color = Color(0xFF06B6D4)
+                    color = MaterialTheme.macroColors.fat
                 )
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
             MacroProgressRow(
-                name = "Proteine",
-                currentGrams = protein.toInt(),
-                targetGrams = targetProtein,
-                percentage = proteinPct,
-                color = Color(0xFF22C55E)
-            )
-
-            MacroProgressRow(
                 name = "Carboidrati",
                 currentGrams = carbs.toInt(),
                 targetGrams = targetCarbs,
                 percentage = carbsPct,
-                color = Color(0xFFF59E0B)
+                color = MaterialTheme.macroColors.carbs
+            )
+
+            MacroProgressRow(
+                name = "Proteine",
+                currentGrams = protein.toInt(),
+                targetGrams = targetProtein,
+                percentage = proteinPct,
+                color = MaterialTheme.macroColors.protein
             )
 
             MacroProgressRow(
@@ -664,7 +665,7 @@ private fun MacroDistributionCard(
                 currentGrams = fat.toInt(),
                 targetGrams = targetFat,
                 percentage = fatPct,
-                color = Color(0xFF06B6D4)
+                color = MaterialTheme.macroColors.fat
             )
         }
     }
@@ -1255,8 +1256,8 @@ private fun CustomizationBottomSheet(
                 Triple("Deficit Calorico", "show_calorie_deficit", showCalorieDeficit),
                 Triple("Grafico Calorie", "show_calorie_chart", showCalorieChart),
                 Triple("Ripartizione Macro", "show_macro_breakdown", showMacroBreakdown),
-                Triple("Grafico Proteine", "show_protein_chart", showProteinChart),
                 Triple("Grafico Carboidrati", "show_carbs_chart", showCarbsChart),
+                Triple("Grafico Proteine", "show_protein_chart", showProteinChart),
                 Triple("Grafico Grassi", "show_fat_chart", showFatChart),
                 Triple("Grafico Peso", "show_weight_chart", showWeightChart),
                 Triple("Grafico Passi", "show_steps_chart", showStepsChart),

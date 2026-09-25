@@ -22,6 +22,7 @@ import com.example.ui.theme.AppleRed
 import com.example.ui.theme.ApplePurple
 import com.example.ui.theme.AppleCornerRadiusCard
 import com.example.ui.theme.AppleCardShape
+import com.example.ui.theme.macroColors
 
 
 import androidx.compose.foundation.Image
@@ -540,19 +541,19 @@ fun MealItemRow(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             MacroBadge(
-                                label = "P",
-                                value = "${meal.protein.roundToInt()}g",
-                                color = AppleBlue
-                            )
-                            MacroBadge(
                                 label = "C",
                                 value = "${meal.carbs.roundToInt()}g",
-                                color = AppleGreen
+                                color = MaterialTheme.macroColors.carbs
+                            )
+                            MacroBadge(
+                                label = "P",
+                                value = "${meal.protein.roundToInt()}g",
+                                color = MaterialTheme.macroColors.protein
                             )
                             MacroBadge(
                                 label = "F",
                                 value = "${meal.fat.roundToInt()}g",
-                                color = ApplePurple
+                                color = MaterialTheme.macroColors.fat
                             )
                         }
                     }
@@ -1250,25 +1251,25 @@ fun UnifiedHeroHeader(
                     )
                 }
 
-                // 3 Macro Lines: Proteine, Carboidrati, Grassi
+                // 3 Macro Lines: Carboidrati, Proteine, Grassi
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     AppleMacroMetricLine(
-                        dotColor = AppleBlue,
-                        label = "Proteine",
-                        consumed = proteinConsumed.roundToInt(),
-                        target = proteinTarget.roundToInt()
-                    )
-                    AppleMacroMetricLine(
-                        dotColor = AppleGreen,
+                        dotColor = MaterialTheme.macroColors.carbs,
                         label = "Carboidrati",
                         consumed = carbsConsumed.roundToInt(),
                         target = carbsTarget.roundToInt()
                     )
                     AppleMacroMetricLine(
-                        dotColor = ApplePurple,
+                        dotColor = MaterialTheme.macroColors.protein,
+                        label = "Proteine",
+                        consumed = proteinConsumed.roundToInt(),
+                        target = proteinTarget.roundToInt()
+                    )
+                    AppleMacroMetricLine(
+                        dotColor = MaterialTheme.macroColors.fat,
                         label = "Grassi",
                         consumed = fatConsumed.roundToInt(),
                         target = fatTarget.roundToInt()
@@ -1867,9 +1868,9 @@ fun MonthlyStreakDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                MiniNutrientChip("Proteine", "${selProtein.roundToInt()}g", Color(0xFF22C55E), Modifier.weight(1f))
-                                MiniNutrientChip("Carboidrati", "${selCarbs.roundToInt()}g", Color(0xFFF59E0B), Modifier.weight(1f))
-                                MiniNutrientChip("Grassi", "${selFat.roundToInt()}g", Color(0xFF06B6D4), Modifier.weight(1f))
+                                MiniNutrientChip("Carboidrati", "${selCarbs.roundToInt()}g", MaterialTheme.macroColors.carbs, Modifier.weight(1f))
+                                MiniNutrientChip("Proteine", "${selProtein.roundToInt()}g", MaterialTheme.macroColors.protein, Modifier.weight(1f))
+                                MiniNutrientChip("Grassi", "${selFat.roundToInt()}g", MaterialTheme.macroColors.fat, Modifier.weight(1f))
                             }
 
                             // Grouped Meals Breakdown
@@ -2047,38 +2048,38 @@ fun MacroPreviewCard(
             }
             Text("$calories kcal", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = accent)
         }
-        MacroDistributionBar(protein = protein, carbs = carbs, fat = fat)
+        MacroDistributionBar(carbs = carbs, protein = protein, fat = fat)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NutrientPill("Proteine", protein, Color(0xFF22C55E), Modifier.weight(1f))
-            NutrientPill("Carboidrati", carbs, Color(0xFFF59E0B), Modifier.weight(1f))
-            NutrientPill("Grassi", fat, Color(0xFF06B6D4), Modifier.weight(1f))
+            NutrientPill("Carboidrati", carbs, MaterialTheme.macroColors.carbs, Modifier.weight(1f))
+            NutrientPill("Proteine", protein, MaterialTheme.macroColors.protein, Modifier.weight(1f))
+            NutrientPill("Grassi", fat, MaterialTheme.macroColors.fat, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
 fun MacroDistributionBar(
-    protein: Float,
     carbs: Float,
+    protein: Float,
     fat: Float,
     modifier: Modifier = Modifier
 ) {
-    val animProtein by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = protein.coerceAtLeast(0f),
-        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
-        label = "animProtein"
-    )
     val animCarbs by androidx.compose.animation.core.animateFloatAsState(
         targetValue = carbs.coerceAtLeast(0f),
         animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "animCarbs"
+    )
+    val animProtein by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = protein.coerceAtLeast(0f),
+        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "animProtein"
     )
     val animFat by androidx.compose.animation.core.animateFloatAsState(
         targetValue = fat.coerceAtLeast(0f),
         animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "animFat"
     )
-    val total = (animProtein + animCarbs + animFat).coerceAtLeast(0f)
+    val total = (animCarbs + animProtein + animFat).coerceAtLeast(0f)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -2089,9 +2090,9 @@ fun MacroDistributionBar(
         if (total <= 0f) {
             Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)))
         } else {
-            if (animProtein > 0f) Box(modifier = Modifier.fillMaxHeight().weight(animProtein / total).background(Color(0xFF22C55E)))
-            if (animCarbs > 0f) Box(modifier = Modifier.fillMaxHeight().weight(animCarbs / total).background(Color(0xFFF59E0B)))
-            if (animFat > 0f) Box(modifier = Modifier.fillMaxHeight().weight(animFat / total).background(Color(0xFF06B6D4)))
+            if (animCarbs > 0f) Box(modifier = Modifier.fillMaxHeight().weight(animCarbs / total).background(MaterialTheme.macroColors.carbs))
+            if (animProtein > 0f) Box(modifier = Modifier.fillMaxHeight().weight(animProtein / total).background(MaterialTheme.macroColors.protein))
+            if (animFat > 0f) Box(modifier = Modifier.fillMaxHeight().weight(animFat / total).background(MaterialTheme.macroColors.fat))
         }
     }
 }

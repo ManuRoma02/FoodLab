@@ -415,20 +415,20 @@ fun CreateFoodScreen(
                         errorMessage = calError
                     )
                     FoodLabTextField(
-                        value = proteinText,
-                        onValueChange = { proteinText = sanitizeDecimalInput(it) },
-                        label = "Proteine (g / 100g)",
-                        keyboardType = KeyboardType.Decimal,
-                        isError = proteinError != null,
-                        errorMessage = proteinError
-                    )
-                    FoodLabTextField(
                         value = carbsText,
                         onValueChange = { carbsText = sanitizeDecimalInput(it) },
                         label = "Carboidrati (g / 100g)",
                         keyboardType = KeyboardType.Decimal,
                         isError = carbsError != null,
                         errorMessage = carbsError
+                    )
+                    FoodLabTextField(
+                        value = proteinText,
+                        onValueChange = { proteinText = sanitizeDecimalInput(it) },
+                        label = "Proteine (g / 100g)",
+                        keyboardType = KeyboardType.Decimal,
+                        isError = proteinError != null,
+                        errorMessage = proteinError
                     )
                     FoodLabTextField(
                         value = fatText,
@@ -456,20 +456,20 @@ fun CreateFoodScreen(
                         errorMessage = totalCalError
                     )
                     FoodLabTextField(
-                        value = totalProteinText,
-                        onValueChange = { totalProteinText = sanitizeDecimalInput(it) },
-                        label = "Proteine Totali Cibo (g)",
-                        keyboardType = KeyboardType.Decimal,
-                        isError = totalProError != null,
-                        errorMessage = totalProError
-                    )
-                    FoodLabTextField(
                         value = totalCarbsText,
                         onValueChange = { totalCarbsText = sanitizeDecimalInput(it) },
                         label = "Carboidrati Totali Cibo (g)",
                         keyboardType = KeyboardType.Decimal,
                         isError = totalCarbsError != null,
                         errorMessage = totalCarbsError
+                    )
+                    FoodLabTextField(
+                        value = totalProteinText,
+                        onValueChange = { totalProteinText = sanitizeDecimalInput(it) },
+                        label = "Proteine Totali Cibo (g)",
+                        keyboardType = KeyboardType.Decimal,
+                        isError = totalProError != null,
+                        errorMessage = totalProError
                     )
                     FoodLabTextField(
                         value = totalFatText,

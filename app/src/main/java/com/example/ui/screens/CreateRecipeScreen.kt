@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.*
 import com.example.util.LocalSoundManager
+import com.example.ui.theme.macroColors
 import kotlinx.coroutines.launch
 
 private val CalorieBlue = Color(0xFF38BDF8)
@@ -317,8 +318,8 @@ fun CreateRecipeScreen(
 
                     // Macro distribution bar
                     MacroDistributionBar(
-                        protein = totalProtein,
                         carbs = totalCarbs,
+                        protein = totalProtein,
                         fat = totalFat,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -329,21 +330,21 @@ fun CreateRecipeScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         NutrientPill(
-                            label = "Proteine",
-                            value = perServingProtein,
-                            color = ProteinGreen,
+                            label = "Carboidrati",
+                            value = perServingCarbs,
+                            color = MaterialTheme.macroColors.carbs,
                             modifier = Modifier.weight(1f)
                         )
                         NutrientPill(
-                            label = "Carboidrati",
-                            value = perServingCarbs,
-                            color = CarbYellow,
+                            label = "Proteine",
+                            value = perServingProtein,
+                            color = MaterialTheme.macroColors.protein,
                             modifier = Modifier.weight(1f)
                         )
                         NutrientPill(
                             label = "Grassi",
                             value = perServingFat,
-                            color = FatGrey,
+                            color = MaterialTheme.macroColors.fat,
                             modifier = Modifier.weight(1f)
                         )
                     }

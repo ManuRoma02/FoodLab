@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.macroColors
 import com.example.data.AppDatabase
 import com.example.data.DailyTarget
 import com.example.data.WeightLog
@@ -412,9 +413,9 @@ fun OnboardingScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
-                        OnboardingMacroBadge("PROTEINE", "${targetProtein}g", Color(0xFF22C55E))
-                        OnboardingMacroBadge("CARBO", "${targetCarbs}g", Color(0xFFF59E0B))
-                        OnboardingMacroBadge("GRASSI", "${targetFat}g", Color(0xFF38BDF8))
+                        OnboardingMacroBadge("CARBO", "${targetCarbs}g", MaterialTheme.macroColors.carbs)
+                        OnboardingMacroBadge("PROTEINE", "${targetProtein}g", MaterialTheme.macroColors.protein)
+                        OnboardingMacroBadge("GRASSI", "${targetFat}g", MaterialTheme.macroColors.fat)
                     }
                 }
             }
