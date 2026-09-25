@@ -160,10 +160,12 @@ fun GhostMealCard(
     meal: MealEntry,
     dragDropState: MealDragDropState,
     accentColor: Color,
+    containerOffset: Offset = Offset.Zero,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
-    val topLeft = dragDropState.dragPosition - dragDropState.fingerGrabOffset
+    val localDragPos = dragDropState.dragPosition - containerOffset
+    val topLeft = localDragPos - dragDropState.fingerGrabOffset
 
     val targetWidth = if (dragDropState.itemWidthPx > 0f) {
         with(density) { dragDropState.itemWidthPx.toDp() }

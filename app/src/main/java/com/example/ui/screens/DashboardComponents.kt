@@ -1505,38 +1505,6 @@ fun UnifiedMealsCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        AnimatedVisibility(
-                            visible = isHoveredTarget,
-                            enter = fadeIn() + scaleIn(initialScale = 0.85f),
-                            exit = fadeOut() + scaleOut(targetScale = 0.85f)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(99.dp),
-                                color = accentColor.copy(alpha = 0.18f),
-                                border = BorderStroke(1.dp, accentColor.copy(alpha = 0.5f))
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.SwapVert,
-                                        contentDescription = null,
-                                        tint = accentColor,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        "Sposta qui",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 11.sp
-                                        ),
-                                        color = accentColor
-                                    )
-                                }
-                            }
-                        }
                     }
 
                     Row(

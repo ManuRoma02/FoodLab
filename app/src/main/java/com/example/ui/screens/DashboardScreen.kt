@@ -45,6 +45,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.delay
@@ -190,6 +193,7 @@ fun DashboardScreen(
     val density = LocalDensity.current
     val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
     val dragDropState = rememberMealDragDropState()
+    var dashboardTopLeftInRoot by remember { mutableStateOf(Offset.Zero) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
@@ -207,15 +211,15 @@ fun DashboardScreen(
     LaunchedEffect(dragDropState.isDragging) {
         if (!dragDropState.isDragging) return@LaunchedEffect
         while (dragDropState.isDragging) {
-            val y = dragDropState.dragPosition.y
+            val y = dragDropState.dragPosition.y - dashboardTopLeftInRoot.y
             if (y > 0f) {
-                val topThreshold = 220f
-                val bottomThreshold = screenHeightPx - 260f
+                val topThreshold = 180f
+                val bottomThreshold = screenHeightPx - 240f
                 if (y < topThreshold) {
                     val factor = ((topThreshold - y) / topThreshold).coerceIn(0f, 1f)
                     listState.scrollBy(-14f * factor)
                 } else if (y > bottomThreshold) {
-                    val factor = ((y - bottomThreshold) / 260f).coerceIn(0f, 1f)
+                    val factor = ((y - bottomThreshold) / 240f).coerceIn(0f, 1f)
                     listState.scrollBy(14f * factor)
                 }
             }
@@ -226,6 +230,9 @@ fun DashboardScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onGloballyPositioned { coords ->
+                dashboardTopLeftInRoot = coords.positionInRoot()
+            }
             .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
@@ -361,7 +368,8 @@ fun DashboardScreen(
             GhostMealCard(
                 meal = dragDropState.draggedMeal!!,
                 dragDropState = dragDropState,
-                accentColor = sourceAccentColor
+                accentColor = sourceAccentColor,
+                containerOffset = dashboardTopLeftInRoot
             )
         }
     }
