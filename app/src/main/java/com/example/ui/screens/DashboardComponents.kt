@@ -23,7 +23,22 @@ import com.example.ui.theme.ApplePurple
 import com.example.ui.theme.AppleCornerRadiusCard
 import com.example.ui.theme.AppleCardShape
 import com.example.ui.theme.macroColors
-
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 import androidx.compose.foundation.Image
 import android.util.Log
@@ -452,9 +467,13 @@ fun MealItemRow(
     accentColor: Color,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dragDropState: MealDragDropState? = null
 ) {
     val haptic = LocalHapticFeedback.current
+    var itemCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val isBeingDragged = dragDropState?.isDragging == true && dragDropState?.draggedMeal?.id == meal.id
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
@@ -503,7 +522,51 @@ fun MealItemRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 52.dp)
+                    .graphicsLayer {
+                        alpha = if (isBeingDragged) 0.30f else 1.0f
+                    }
                     .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .onGloballyPositioned { coords ->
+                        itemCoordinates = coords
+                    }
+                    .then(
+                        if (dragDropState != null) {
+                            Modifier.pointerInput(meal.id) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = { localOffset ->
+                                        itemCoordinates?.let { coords ->
+                                            val rootTopLeft = coords.positionInRoot()
+                                            val touchInRoot = rootTopLeft + localOffset
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            dragDropState.onDragStart(
+                                                meal = meal,
+                                                sourceMealType = meal.mealType,
+                                                itemTopLeftInRoot = rootTopLeft,
+                                                itemWidthPx = coords.size.width.toFloat(),
+                                                itemHeightPx = coords.size.height.toFloat(),
+                                                touchPositionInRoot = touchInRoot
+                                            )
+                                        }
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragDropState.onDrag(dragAmount)
+                                    },
+                                    onDragEnd = {
+                                        dragDropState.onDragEnd { droppedMeal, targetType ->
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            dragDropState.onDropListener?.invoke(droppedMeal, targetType)
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        dragDropState.onDragCancel()
+                                    }
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    )
                     .applePressEffect(pressedScale = 0.985f, onClick = onClick)
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1344,7 +1407,8 @@ fun UnifiedMealsCard(
     onMealClick: (MealEntry) -> Unit,
     onQuickLog: ((FoodItem) -> Unit)? = null,
     onDeleteMeal: ((MealEntry) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dragDropState: MealDragDropState? = null
 ) {
     val mealTypes = listOf(
         MealCategoryInfo(MealTypes.BREAKFAST, "Colazione 🌅", Icons.Default.EggAlt, Color(0xFF22C55E)),
@@ -1385,6 +1449,24 @@ fun UnifiedMealsCard(
         mealTypes.forEach { (typeKey, title, icon, accentColor) ->
             val meals = mealsByType[typeKey] ?: emptyList()
             val totalCals = meals.sumOf { it.calories }
+            val isHoveredTarget = dragDropState?.hoveredMealType == typeKey && dragDropState?.sourceMealType != typeKey
+
+            val cardBorderColor by animateColorAsState(
+                targetValue = if (isHoveredTarget) accentColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+                label = "targetMealBorderColor"
+            )
+            val cardBorderWidth by animateDpAsState(
+                targetValue = if (isHoveredTarget) 2.dp else 1.dp,
+                animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+                label = "targetMealBorderWidth"
+            )
+
+            DisposableEffect(typeKey) {
+                onDispose {
+                    dragDropState?.unregisterMealBounds(typeKey)
+                }
+            }
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -1422,6 +1504,38 @@ fun UnifiedMealsCard(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                        AnimatedVisibility(
+                            visible = isHoveredTarget,
+                            enter = fadeIn() + scaleIn(initialScale = 0.85f),
+                            exit = fadeOut() + scaleOut(targetScale = 0.85f)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(99.dp),
+                                color = accentColor.copy(alpha = 0.18f),
+                                border = BorderStroke(1.dp, accentColor.copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.SwapVert,
+                                        contentDescription = null,
+                                        tint = accentColor,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        "Sposta qui",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp
+                                        ),
+                                        color = accentColor
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -1462,15 +1576,18 @@ fun UnifiedMealsCard(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .onGloballyPositioned { coordinates ->
+                            dragDropState?.registerMealBounds(typeKey, coordinates.boundsInRoot())
+                        }
                         .shadow(
-                            elevation = 4.dp,
+                            elevation = if (isHoveredTarget) 10.dp else 4.dp,
                             shape = RoundedCornerShape(24.dp),
-                            spotColor = Color.Black.copy(alpha = 0.18f),
+                            spotColor = if (isHoveredTarget) accentColor.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f),
                             ambientColor = Color.Black.copy(alpha = 0.10f)
                         )
                         .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            cardBorderWidth,
+                            cardBorderColor,
                             RoundedCornerShape(24.dp)
                         ),
                     shape = RoundedCornerShape(24.dp),
@@ -1483,7 +1600,8 @@ fun UnifiedMealsCard(
                                     meal = meal,
                                     accentColor = accentColor,
                                     onClick = { onMealClick(meal) },
-                                    onDelete = { onDeleteMeal?.invoke(meal) }
+                                    onDelete = { onDeleteMeal?.invoke(meal) },
+                                    dragDropState = dragDropState
                                 )
                                 if (index < meals.lastIndex) {
                                     HorizontalDivider(

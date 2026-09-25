@@ -207,4 +207,13 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             com.example.util.WidgetUpdater.updateAllWidgets(getApplication())
         }
     }
+
+    fun moveMealToType(meal: MealEntry, targetMealType: String) {
+        if (meal.mealType == targetMealType) return
+        val updated = meal.copy(mealType = targetMealType)
+        viewModelScope.launch {
+            repository.insertMeal(updated)
+            com.example.util.WidgetUpdater.updateAllWidgets(getApplication())
+        }
+    }
 }

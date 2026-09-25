@@ -40,8 +40,14 @@ import com.example.util.LocalPreferencesManager
 import com.example.util.LocalSoundManager
 import com.example.util.MealTypes
 import com.example.util.StepCounterStore
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private data class NutritionSummary(
@@ -180,124 +186,183 @@ fun DashboardScreen(
         }
     }
 
-    Column(
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+    val dragDropState = rememberMealDragDropState()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(Unit) {
+        dragDropState.onDropListener = { meal, targetType ->
+            viewModel.moveMealToType(meal, targetType)
+            soundManager.playSound("click")
+            android.widget.Toast.makeText(
+                context,
+                "${meal.foodName} spostato in ${MealTypes.displayName(targetType).lowercase()}",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    LaunchedEffect(dragDropState.isDragging) {
+        if (!dragDropState.isDragging) return@LaunchedEffect
+        while (dragDropState.isDragging) {
+            val y = dragDropState.dragPosition.y
+            if (y > 0f) {
+                val topThreshold = 220f
+                val bottomThreshold = screenHeightPx - 260f
+                if (y < topThreshold) {
+                    val factor = ((topThreshold - y) / topThreshold).coerceIn(0f, 1f)
+                    listState.scrollBy(-14f * factor)
+                } else if (y > bottomThreshold) {
+                    val factor = ((y - bottomThreshold) / 260f).coerceIn(0f, 1f)
+                    listState.scrollBy(14f * factor)
+                }
+            }
+            delay(16)
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 1. Sticky Horizontal Date Picker at the top
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            HorizontalDatePicker(
-                currentDate = currentDate,
-                today = today,
-                streakCount = streakCount,
-                onOpenStreakCalendar = { showStreakCalendarDialog = true },
-                onDateChange = { selectedDate ->
-                    onDateChange(selectedDate)
-                }
-            )
-        }
-
-        // 2. Interactive Real-Time Horizontal Pager
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            beyondViewportPageCount = 0
-        ) { page ->
-            val pageDate = dateForPageIndex(page, today)
-            val pageMeals = remember(allMeals, pageDate) {
-                allMeals.filter { it.dateString == pageDate }
-            }
-            val pageSummary = remember(pageMeals) {
-                NutritionSummary(
-                    calories = pageMeals.sumOf { it.calories },
-                    protein = pageMeals.sumOf { it.protein.toDouble() }.toFloat(),
-                    carbs = pageMeals.sumOf { it.carbs.toDouble() }.toFloat(),
-                    fat = pageMeals.sumOf { it.fat.toDouble() }.toFloat(),
-                    mealsByType = pageMeals.groupBy { MealTypes.canonicalize(it.mealType) }
+            // 1. Sticky Horizontal Date Picker at the top
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                HorizontalDatePicker(
+                    currentDate = currentDate,
+                    today = today,
+                    streakCount = streakCount,
+                    onOpenStreakCalendar = { showStreakCalendarDialog = true },
+                    onDateChange = { selectedDate ->
+                        onDateChange(selectedDate)
+                    }
                 )
             }
-            val pageTarget = remember(allTargets, dailyTarget, pageDate) {
-                viewModel.resolveTargetForDateSync(pageDate, allTargets)
-            }
-            val pageSteps = if (pageDate == today) {
-                currentLiveSteps
-            } else {
-                remember(pageDate, syncStepsEnabled) {
-                    if (syncStepsEnabled) StepCounterStore.savedSteps(context, pageDate) else 0
+
+            // 2. Interactive Real-Time Horizontal Pager
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                userScrollEnabled = !dragDropState.isDragging,
+                beyondViewportPageCount = 0
+            ) { page ->
+                val pageDate = dateForPageIndex(page, today)
+                val pageMeals = remember(allMeals, pageDate) {
+                    allMeals.filter { it.dateString == pageDate }
                 }
-            }
+                val pageSummary = remember(pageMeals) {
+                    NutritionSummary(
+                        calories = pageMeals.sumOf { it.calories },
+                        protein = pageMeals.sumOf { it.protein.toDouble() }.toFloat(),
+                        carbs = pageMeals.sumOf { it.carbs.toDouble() }.toFloat(),
+                        fat = pageMeals.sumOf { it.fat.toDouble() }.toFloat(),
+                        mealsByType = pageMeals.groupBy { MealTypes.canonicalize(it.mealType) }
+                    )
+                }
+                val pageTarget = remember(allTargets, dailyTarget, pageDate) {
+                    viewModel.resolveTargetForDateSync(pageDate, allTargets)
+                }
+                val pageSteps = if (pageDate == today) {
+                    currentLiveSteps
+                } else {
+                    remember(pageDate, syncStepsEnabled) {
+                        if (syncStepsEnabled) StepCounterStore.savedSteps(context, pageDate) else 0
+                    }
+                }
 
-            val pageBurnedCalories = remember(pageSteps, latestWeight) {
-                com.example.util.NutritionCalculator.calculateCaloriesBurned(pageSteps, latestWeight?.weightKg)
-            }
-            val pageRemainingCalories = remember(pageTarget.targetCalories, pageSummary.calories, pageBurnedCalories) {
-                pageTarget.targetCalories - pageSummary.calories + pageBurnedCalories
-            }
+                val pageBurnedCalories = remember(pageSteps, latestWeight) {
+                    com.example.util.NutritionCalculator.calculateCaloriesBurned(pageSteps, latestWeight?.weightKg)
+                }
+                val pageRemainingCalories = remember(pageTarget.targetCalories, pageSummary.calories, pageBurnedCalories) {
+                    pageTarget.targetCalories - pageSummary.calories + pageBurnedCalories
+                }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Unified Hero Header
-                item(key = "hero_$pageDate") {
-                    UnifiedHeroHeader(
-                        remainingCalories = pageRemainingCalories,
-                        targetCalories = pageTarget.targetCalories,
-                        loggedCalories = pageSummary.calories,
-                        burnedCalories = pageBurnedCalories,
-                        proteinConsumed = pageSummary.protein,
-                        proteinTarget = pageTarget.targetProtein.toFloat(),
-                        carbsConsumed = pageSummary.carbs,
-                        carbsTarget = pageTarget.targetCarbs.toFloat(),
-                        fatConsumed = pageSummary.fat,
-                        fatTarget = pageTarget.targetFat.toFloat(),
-                        steps = pageSteps,
-                        stepsTarget = stepGoal,
-                        weightText = latestWeight?.let { String.format(Locale.getDefault(), "%.1f KG", it.weightKg) } ?: "+ Peso",
-                        onWeightClick = { showWeightDialog = true },
-                        onStepClick = {
-                            if (!hasActivityPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                permissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
-                            } else {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showStepOptionsDialog = true
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Unified Hero Header
+                    item(key = "hero_$pageDate") {
+                        UnifiedHeroHeader(
+                            remainingCalories = pageRemainingCalories,
+                            targetCalories = pageTarget.targetCalories,
+                            loggedCalories = pageSummary.calories,
+                            burnedCalories = pageBurnedCalories,
+                            proteinConsumed = pageSummary.protein,
+                            proteinTarget = pageTarget.targetProtein.toFloat(),
+                            carbsConsumed = pageSummary.carbs,
+                            carbsTarget = pageTarget.targetCarbs.toFloat(),
+                            fatConsumed = pageSummary.fat,
+                            fatTarget = pageTarget.targetFat.toFloat(),
+                            steps = pageSteps,
+                            stepsTarget = stepGoal,
+                            weightText = latestWeight?.let { String.format(Locale.getDefault(), "%.1f KG", it.weightKg) } ?: "+ Peso",
+                            onWeightClick = { showWeightDialog = true },
+                            onStepClick = {
+                                if (!hasActivityPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    permissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                                } else {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    showStepOptionsDialog = true
+                                }
                             }
-                        }
-                    )
-                }
+                        )
+                    }
 
-                // Unified Meals & Diet Log
-                item(key = "meals_$pageDate") {
-                    UnifiedMealsCard(
-                        mealsByType = pageSummary.mealsByType,
-                        favoriteFoods = favoriteFoods,
-                        onAddMealClick = { mealType ->
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onNavigateToSearch(mealType)
-                        },
-                        onMealClick = { meal -> mealToEdit = meal },
-                        onQuickLog = { food ->
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-                            val mealType = com.example.util.MealTypes.inferMealTypeFromHour(hour)
-                            viewModel.quickLogFood(food, mealType)
-                            android.widget.Toast.makeText(context, "${food.name} registrato in ${com.example.util.MealTypes.displayName(mealType).lowercase()}", android.widget.Toast.LENGTH_SHORT).show()
-                        },
-                        onDeleteMeal = { meal ->
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.deleteMealEntry(meal.id)
-                        }
-                    )
+                    // Unified Meals & Diet Log
+                    item(key = "meals_$pageDate") {
+                        UnifiedMealsCard(
+                            mealsByType = pageSummary.mealsByType,
+                            favoriteFoods = favoriteFoods,
+                            dragDropState = dragDropState,
+                            onAddMealClick = { mealType ->
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onNavigateToSearch(mealType)
+                            },
+                            onMealClick = { meal -> mealToEdit = meal },
+                            onQuickLog = { food ->
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+                                val mealType = com.example.util.MealTypes.inferMealTypeFromHour(hour)
+                                viewModel.quickLogFood(food, mealType)
+                                android.widget.Toast.makeText(context, "${food.name} registrato in ${com.example.util.MealTypes.displayName(mealType).lowercase()}", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            onDeleteMeal = { meal ->
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.deleteMealEntry(meal.id)
+                            }
+                        )
+                    }
                 }
             }
+        }
+
+        // 3. Floating Apple Ghost Card during drag
+        if (dragDropState.isDragging && dragDropState.draggedMeal != null) {
+            val sourceAccentColor = when (MealTypes.canonicalize(dragDropState.sourceMealType ?: "")) {
+                MealTypes.BREAKFAST -> Color(0xFF22C55E)
+                MealTypes.LUNCH -> Color(0xFF3B82F6)
+                MealTypes.DINNER -> Color(0xFFA855F7)
+                else -> Color(0xFFF59E0B)
+            }
+            GhostMealCard(
+                meal = dragDropState.draggedMeal!!,
+                dragDropState = dragDropState,
+                accentColor = sourceAccentColor
+            )
         }
     }
 
