@@ -41,8 +41,13 @@ import com.example.util.LocalSoundManager
 import com.example.util.MealTypes
 import com.example.util.StepCounterStore
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
@@ -194,7 +199,13 @@ fun DashboardScreen(
     val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
     val dragDropState = rememberMealDragDropState()
     var dashboardTopLeftInRoot by remember { mutableStateOf(Offset.Zero) }
-    val listState = rememberLazyListState()
+    val listStates = remember { mutableMapOf<Int, LazyListState>() }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            dragDropState.onDragCancel()
+        }
+    }
 
     LaunchedEffect(Unit) {
         dragDropState.onDropListener = { meal, targetType ->
@@ -215,12 +226,15 @@ fun DashboardScreen(
             if (y > 0f) {
                 val topThreshold = 180f
                 val bottomThreshold = screenHeightPx - 240f
-                if (y < topThreshold) {
-                    val factor = ((topThreshold - y) / topThreshold).coerceIn(0f, 1f)
-                    listState.scrollBy(-14f * factor)
-                } else if (y > bottomThreshold) {
-                    val factor = ((y - bottomThreshold) / 240f).coerceIn(0f, 1f)
-                    listState.scrollBy(14f * factor)
+                val activeListState = listStates[pagerState.currentPage]
+                if (activeListState != null) {
+                    if (y < topThreshold) {
+                        val factor = ((topThreshold - y) / topThreshold).coerceIn(0f, 1f)
+                        activeListState.scrollBy(-14f * factor)
+                    } else if (y > bottomThreshold) {
+                        val factor = ((y - bottomThreshold) / 240f).coerceIn(0f, 1f)
+                        activeListState.scrollBy(14f * factor)
+                    }
                 }
             }
             delay(16)
@@ -264,6 +278,16 @@ fun DashboardScreen(
                 userScrollEnabled = !dragDropState.isDragging,
                 beyondViewportPageCount = 0
             ) { page ->
+                val pageListState = rememberSaveable(page, saver = LazyListState.Saver) {
+                    LazyListState()
+                }
+                DisposableEffect(page, pageListState) {
+                    listStates[page] = pageListState
+                    onDispose {
+                        listStates.remove(page)
+                    }
+                }
+
                 val pageDate = dateForPageIndex(page, today)
                 val pageMeals = remember(allMeals, pageDate) {
                     allMeals.filter { it.dateString == pageDate }
@@ -296,7 +320,7 @@ fun DashboardScreen(
                 }
 
                 LazyColumn(
-                    state = listState,
+                    state = pageListState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -359,6 +383,17 @@ fun DashboardScreen(
 
         // 3. Floating Apple Ghost Card during drag
         if (dragDropState.isDragging && dragDropState.draggedMeal != null) {
+            // Safety backdrop: tapping anywhere cancels an active stuck drag
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            dragDropState.onDragCancel()
+                        })
+                    }
+            )
+
             val sourceAccentColor = when (MealTypes.canonicalize(dragDropState.sourceMealType ?: "")) {
                 MealTypes.BREAKFAST -> Color(0xFF22C55E)
                 MealTypes.LUNCH -> Color(0xFF3B82F6)

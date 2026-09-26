@@ -31,11 +31,13 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -474,6 +476,8 @@ fun MealItemRow(
     var itemCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val isBeingDragged = dragDropState?.isDragging == true && dragDropState?.draggedMeal?.id == meal.id
 
+    val isAnyDragging = dragDropState?.isDragging == true
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { dismissValue ->
             if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
@@ -496,7 +500,7 @@ fun MealItemRow(
     SwipeToDismissBox(
         state = dismissState,
         enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = true,
+        enableDismissFromEndToStart = !isBeingDragged && !isAnyDragging,
         modifier = modifier.fillMaxWidth(),
         backgroundContent = {
             val color = when (dismissState.targetValue) {
@@ -531,37 +535,48 @@ fun MealItemRow(
                     }
                     .then(
                         if (dragDropState != null) {
-                            Modifier.pointerInput(meal.id) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { localOffset ->
-                                        itemCoordinates?.let { coords ->
-                                            val rootTopLeft = coords.positionInRoot()
-                                            val touchInRoot = rootTopLeft + localOffset
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            dragDropState.onDragStart(
-                                                meal = meal,
-                                                sourceMealType = meal.mealType,
-                                                itemTopLeftInRoot = rootTopLeft,
-                                                itemWidthPx = coords.size.width.toFloat(),
-                                                itemHeightPx = coords.size.height.toFloat(),
-                                                touchPositionInRoot = touchInRoot
-                                            )
+                            Modifier.pointerInput(meal.id, isSwiping) {
+                                if (isSwiping) return@pointerInput
+                                try {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { localOffset ->
+                                            if (dismissState.currentValue != SwipeToDismissBoxValue.Settled ||
+                                                dismissState.targetValue != SwipeToDismissBoxValue.Settled) {
+                                                return@detectDragGesturesAfterLongPress
+                                            }
+                                            itemCoordinates?.let { coords ->
+                                                val rootTopLeft = coords.positionInRoot()
+                                                val touchInRoot = rootTopLeft + localOffset
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                dragDropState.onDragStart(
+                                                    meal = meal,
+                                                    sourceMealType = meal.mealType,
+                                                    itemTopLeftInRoot = rootTopLeft,
+                                                    itemWidthPx = coords.size.width.toFloat(),
+                                                    itemHeightPx = coords.size.height.toFloat(),
+                                                    touchPositionInRoot = touchInRoot
+                                                )
+                                            }
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragDropState.onDrag(dragAmount)
+                                        },
+                                        onDragEnd = {
+                                            dragDropState.onDragEnd { droppedMeal, targetType ->
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                dragDropState.onDropListener?.invoke(droppedMeal, targetType)
+                                            }
+                                        },
+                                        onDragCancel = {
+                                            dragDropState.onDragCancel()
                                         }
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        dragDropState.onDrag(dragAmount)
-                                    },
-                                    onDragEnd = {
-                                        dragDropState.onDragEnd { droppedMeal, targetType ->
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            dragDropState.onDropListener?.invoke(droppedMeal, targetType)
-                                        }
-                                    },
-                                    onDragCancel = {
+                                    )
+                                } finally {
+                                    if (dragDropState.isDragging && dragDropState.draggedMeal?.id == meal.id) {
                                         dragDropState.onDragCancel()
                                     }
-                                )
+                                }
                             }
                         } else {
                             Modifier
@@ -1564,19 +1579,36 @@ fun UnifiedMealsCard(
                     if (meals.isNotEmpty()) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             meals.forEachIndexed { index, meal ->
-                                MealItemRow(
-                                    meal = meal,
-                                    accentColor = accentColor,
-                                    onClick = { onMealClick(meal) },
-                                    onDelete = { onDeleteMeal?.invoke(meal) },
-                                    dragDropState = dragDropState
-                                )
-                                if (index < meals.lastIndex) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                                        thickness = 0.5.dp,
-                                        modifier = Modifier.padding(start = 28.dp, end = 14.dp)
-                                    )
+                                key(meal.id) {
+                                    var isDeleted by remember(meal.id) { mutableStateOf(false) }
+                                    AnimatedVisibility(
+                                        visible = !isDeleted,
+                                        exit = shrinkVertically(
+                                            animationSpec = appleSpring(dampingRatio = 0.85f, stiffness = 400f)
+                                        ) + fadeOut(
+                                            animationSpec = tween(durationMillis = 180)
+                                        )
+                                    ) {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            MealItemRow(
+                                                meal = meal,
+                                                accentColor = accentColor,
+                                                onClick = { onMealClick(meal) },
+                                                onDelete = {
+                                                    isDeleted = true
+                                                    onDeleteMeal?.invoke(meal)
+                                                },
+                                                dragDropState = dragDropState
+                                            )
+                                            if (index < meals.lastIndex) {
+                                                HorizontalDivider(
+                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                                                    thickness = 0.5.dp,
+                                                    modifier = Modifier.padding(start = 28.dp, end = 14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
