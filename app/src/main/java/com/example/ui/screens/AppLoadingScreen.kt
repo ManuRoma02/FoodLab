@@ -17,9 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +39,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
@@ -67,6 +67,45 @@ private val MacroFat = Color(0xFF06B6D4)
 private val TextPrimary = Color(0xFFF8FAFC)
 private val TextSecondary = Color(0xFF94A3B8)
 private val ProgressBarBg = Color(0xFF1E293B)
+
+private val AmbientGlowColors = listOf(
+    MacroProtein.copy(alpha = 0.15f),
+    MacroFat.copy(alpha = 0.08f),
+    Color.Transparent
+)
+
+private val ProteinPhotonColors = listOf(
+    Color.White,
+    MacroProtein.copy(alpha = 0.85f),
+    Color.Transparent
+)
+
+private val CarbPhotonColors = listOf(
+    Color.White,
+    MacroCarb.copy(alpha = 0.85f),
+    Color.Transparent
+)
+
+private val FatPhotonColors = listOf(
+    Color.White,
+    MacroFat.copy(alpha = 0.85f),
+    Color.Transparent
+)
+
+private val BloomColors = listOf(
+    Color.White,
+    MacroProtein.copy(alpha = 0.70f),
+    MacroFat.copy(alpha = 0.30f),
+    Color.Transparent
+)
+
+private val ProgressBarColors = listOf(
+    MacroProtein,
+    MacroFat,
+    MacroCarb
+)
+
+private val ProgressBarBrush = Brush.horizontalGradient(ProgressBarColors)
 
 /**
  * High-Precision Quantum Nutrient Orbit Startup Cinematic for FoodLab.
@@ -99,12 +138,13 @@ fun AppLoadingScreen(
     val bloomAlpha = remember { Animatable(0f) }
 
     // Ensure onLoadingComplete is called exactly once
+    val currentOnLoadingComplete by rememberUpdatedState(onLoadingComplete)
     var completedCalled by remember { mutableStateOf(false) }
-    val completeOnce = remember(onLoadingComplete) {
+    val completeOnce = remember {
         {
             if (!completedCalled) {
                 completedCalled = true
-                onLoadingComplete()
+                currentOnLoadingComplete()
             }
         }
     }
@@ -236,12 +276,57 @@ fun AppLoadingScreen(
         }
     }
 
-    // Cached stroke objects to eliminate draw allocations
+    // Cached stroke and brush objects to eliminate draw allocations
     val orbitStroke = remember(density) {
         Stroke(width = density.run { 1.5.dp.toPx() })
     }
     val cometStroke = remember(density) {
         Stroke(width = density.run { 2.2.dp.toPx() }, cap = StrokeCap.Round)
+    }
+
+    val glowRadiusPx = remember(density) { density.run { 140.dp.toPx() } }
+    val bloomRadiusPx = remember(density) { density.run { 130.dp.toPx() } }
+    val photonGlowRadiusPx = remember(density) { density.run { 8.5.dp.toPx() } }
+    val photonCoreRadiusPx = remember(density) { density.run { 2.6.dp.toPx() } }
+
+    val ambientGlowBrush = remember(density) {
+        Brush.radialGradient(
+            colors = AmbientGlowColors,
+            center = Offset.Zero,
+            radius = density.run { 140.dp.toPx() }
+        )
+    }
+
+    val bloomBrush = remember(density) {
+        Brush.radialGradient(
+            colors = BloomColors,
+            center = Offset.Zero,
+            radius = density.run { 130.dp.toPx() }
+        )
+    }
+
+    val proteinPhotonBrush = remember(density) {
+        Brush.radialGradient(
+            colors = ProteinPhotonColors,
+            center = Offset.Zero,
+            radius = density.run { 8.5.dp.toPx() }
+        )
+    }
+
+    val carbPhotonBrush = remember(density) {
+        Brush.radialGradient(
+            colors = CarbPhotonColors,
+            center = Offset.Zero,
+            radius = density.run { 8.5.dp.toPx() }
+        )
+    }
+
+    val fatPhotonBrush = remember(density) {
+        Brush.radialGradient(
+            colors = FatPhotonColors,
+            center = Offset.Zero,
+            radius = density.run { 8.5.dp.toPx() }
+        )
     }
 
     // Root Container running GPU transforms
@@ -272,27 +357,24 @@ fun AppLoadingScreen(
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val coreBobPx = (sin(t) * 4.dp.toPx())
                     val centerOffset = Offset(size.width / 2f, size.height / 2f + coreBobPx)
-                    val glowRadius = 140.dp.toPx()
                     val mult = orbitRadiusMultiplier.value
 
                     // 1. Volumetric Ambient Backlight
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                MacroProtein.copy(alpha = 0.15f * glowPulse),
-                                MacroFat.copy(alpha = 0.08f * glowPulse),
-                                Color.Transparent
-                            ),
-                            center = centerOffset,
-                            radius = glowRadius
-                        ),
-                        center = centerOffset,
-                        radius = glowRadius
-                    )
+                    withTransform({
+                        translate(centerOffset.x, centerOffset.y)
+                    }) {
+                        drawCircle(
+                            brush = ambientGlowBrush,
+                            radius = glowRadiusPx,
+                            center = Offset.Zero,
+                            alpha = glowPulse
+                        )
+                    }
 
                     // Helper to render an inclined quantum orbit
                     fun drawQuantumOrbit(
                         color: Color,
+                        photonBrush: Brush,
                         inclinationDeg: Float,
                         rxDp: Float,
                         ryDp: Float,
@@ -335,25 +417,21 @@ fun AppLoadingScreen(
                             val headY = centerOffset.y + (ry * sin(rad)).toFloat()
                             val headPos = Offset(headX, headY)
 
-                            val photonGlowRadius = 8.5.dp.toPx()
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        Color.White,
-                                        color.copy(alpha = 0.85f * mult),
-                                        Color.Transparent
-                                    ),
-                                    center = headPos,
-                                    radius = photonGlowRadius
-                                ),
-                                center = headPos,
-                                radius = photonGlowRadius
-                            )
+                            withTransform({
+                                translate(headX, headY)
+                            }) {
+                                drawCircle(
+                                    brush = photonBrush,
+                                    center = Offset.Zero,
+                                    radius = photonGlowRadiusPx,
+                                    alpha = mult
+                                )
+                            }
 
                             drawCircle(
                                 color = Color.White.copy(alpha = mult),
                                 center = headPos,
-                                radius = 2.6.dp.toPx()
+                                radius = photonCoreRadiusPx
                             )
 
                             // Trailing Comet Sparks
@@ -376,6 +454,7 @@ fun AppLoadingScreen(
                     // Protein: +35°, rx 100.dp, ry 38.dp
                     drawQuantumOrbit(
                         color = MacroProtein,
+                        photonBrush = proteinPhotonBrush,
                         inclinationDeg = 35f,
                         rxDp = 100f,
                         ryDp = 38f,
@@ -385,6 +464,7 @@ fun AppLoadingScreen(
                     // Carb: -40°, rx 90.dp, ry 34.dp
                     drawQuantumOrbit(
                         color = MacroCarb,
+                        photonBrush = carbPhotonBrush,
                         inclinationDeg = -40f,
                         rxDp = 90f,
                         ryDp = 34f,
@@ -394,6 +474,7 @@ fun AppLoadingScreen(
                     // Fat: 0° equatorial, rx 110.dp, ry 30.dp
                     drawQuantumOrbit(
                         color = MacroFat,
+                        photonBrush = fatPhotonBrush,
                         inclinationDeg = 0f,
                         rxDp = 110f,
                         ryDp = 30f,
@@ -402,21 +483,16 @@ fun AppLoadingScreen(
 
                     // 3. Convergence Bloom Flash
                     if (bloomAlpha.value > 0.001f) {
-                        val bloomRadius = 130.dp.toPx()
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = bloomAlpha.value),
-                                    MacroProtein.copy(alpha = (bloomAlpha.value * 0.70f).coerceIn(0f, 1f)),
-                                    MacroFat.copy(alpha = (bloomAlpha.value * 0.30f).coerceIn(0f, 1f)),
-                                    Color.Transparent
-                                ),
-                                center = centerOffset,
-                                radius = bloomRadius
-                            ),
-                            center = centerOffset,
-                            radius = bloomRadius
-                        )
+                        withTransform({
+                            translate(centerOffset.x, centerOffset.y)
+                        }) {
+                            drawCircle(
+                                brush = bloomBrush,
+                                center = Offset.Zero,
+                                radius = bloomRadiusPx,
+                                alpha = bloomAlpha.value
+                            )
+                        }
                     }
                 }
 
@@ -464,24 +540,15 @@ fun AppLoadingScreen(
                     .clip(RoundedCornerShape(99.dp))
                     .background(ProgressBarBg.copy(alpha = 0.5f))
             ) {
-                val currentProgress = progress.value.coerceIn(0f, 1f)
-                if (currentProgress > 0f) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction = currentProgress)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        MacroProtein,
-                                        MacroFat,
-                                        MacroCarb
-                                    )
-                                )
-                            )
-                    )
-                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = progress.value.coerceIn(0f, 1f)
+                            transformOrigin = TransformOrigin(0f, 0.5f)
+                        }
+                        .background(ProgressBarBrush)
+                )
             }
         }
     }
