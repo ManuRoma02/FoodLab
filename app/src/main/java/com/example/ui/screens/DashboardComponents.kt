@@ -97,7 +97,6 @@ import com.example.ui.DashboardViewModel
 import com.example.ui.FoodSearchViewModel
 import com.example.ui.StatsViewModel
 import com.example.ui.SettingsViewModel
-import com.example.ui.components.BlinkingText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.drawText
 import java.util.Locale
@@ -143,6 +142,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.util.MealTypes
 
@@ -1227,6 +1227,7 @@ fun UnifiedHeroHeader(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .semantics { testTag = "dashboard_hero_card" }
             .shadow(
                 elevation = 8.dp,
                 shape = RoundedCornerShape(24.dp),

@@ -40,8 +40,8 @@ import com.example.util.LocalSoundManager
 
 @Composable
 fun BottomNavBar(
-    navController: NavController,
     currentRoute: String?,
+    onNavigateToRoute: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val soundManager = LocalSoundManager.current
@@ -56,19 +56,19 @@ fun BottomNavBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = 16.dp,
                     shape = RoundedCornerShape(32.dp),
-                    spotColor = Color.Black.copy(alpha = 0.35f),
+                    spotColor = Color.Black.copy(alpha = 0.40f),
                     ambientColor = Color.Black.copy(alpha = 0.25f)
                 ),
             shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f),
+            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.82f),
             border = BorderStroke(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.22f),
-                        Color.Transparent
+                        Color.White.copy(alpha = 0.28f),
+                        Color.White.copy(alpha = 0.05f)
                     )
                 )
             )
@@ -86,11 +86,7 @@ fun BottomNavBar(
                     isSelected = currentRoute == Routes.Dashboard
                 ) {
                     soundManager.playSound("click")
-                    navController.navigate(Routes.Dashboard) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    onNavigateToRoute(Routes.Dashboard)
                 }
                 NavBarItem(
                     icon = Icons.Default.Restaurant,
@@ -100,11 +96,7 @@ fun BottomNavBar(
                             currentRoute == Routes.CreateFood
                 ) {
                     soundManager.playSound("click")
-                    navController.navigate(Routes.FoodsDatabase) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    onNavigateToRoute(Routes.FoodsDatabase)
                 }
                 NavBarItem(
                     icon = Icons.Default.BarChart,
@@ -112,11 +104,7 @@ fun BottomNavBar(
                     isSelected = currentRoute == Routes.Stats || currentRoute == Routes.Analytics
                 ) {
                     soundManager.playSound("click")
-                    navController.navigate(Routes.Stats) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    onNavigateToRoute(Routes.Stats)
                 }
                 NavBarItem(
                     icon = Icons.Default.Settings,
@@ -124,15 +112,33 @@ fun BottomNavBar(
                     isSelected = currentRoute == Routes.Settings
                 ) {
                     soundManager.playSound("click")
-                    navController.navigate(Routes.Settings) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    onNavigateToRoute(Routes.Settings)
                 }
             }
         }
     }
+}
+
+/**
+ * Backward-compatible NavController overload that delegates to the hoisted [BottomNavBar].
+ */
+@Composable
+fun BottomNavBar(
+    navController: NavController,
+    currentRoute: String?,
+    modifier: Modifier = Modifier
+) {
+    BottomNavBar(
+        currentRoute = currentRoute,
+        onNavigateToRoute = { route ->
+            navController.navigate(route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        },
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -263,7 +269,8 @@ fun NavBarItem(
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                     fontSize = 10.sp,
-                    lineHeight = 12.sp
+                    lineHeight = 12.sp,
+                    letterSpacing = 0.2.sp
                 ),
                 color = contentColor,
                 maxLines = 1

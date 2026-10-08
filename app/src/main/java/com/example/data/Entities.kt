@@ -1,11 +1,13 @@
 package com.example.data
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Embedded
 import androidx.room.Relation
 
+@Immutable
 @Entity(
     tableName = "foods",
     indices = [
@@ -30,6 +32,7 @@ data class FoodItem(
     val barcode: String = ""
 )
 
+@Immutable
 @Entity(
     tableName = "food_portions",
     foreignKeys = [
@@ -49,6 +52,7 @@ data class FoodPortion(
     val weightGrams: Float
 )
 
+@Immutable
 data class FoodItemWithPortions(
     @Embedded val food: FoodItem,
     @Relation(
@@ -59,6 +63,7 @@ data class FoodItemWithPortions(
 )
 
 
+@Immutable
 @Entity(
     tableName = "meal_entries",
     indices = [
@@ -84,6 +89,7 @@ data class MealEntry(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+@Immutable
 @Entity(tableName = "daily_targets")
 data class DailyTarget(
     @PrimaryKey val dateString: String,
@@ -100,6 +106,7 @@ data class DailyTarget(
     }
 }
 
+@Immutable
 @Entity(
     tableName = "weight_logs",
     indices = [Index(value = ["timestamp"])]
@@ -111,6 +118,7 @@ data class WeightLog(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+@Immutable
 @Entity(tableName = "meal_templates")
 data class MealTemplate(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -119,6 +127,7 @@ data class MealTemplate(
     val servings: Int = 1
 )
 
+@Immutable
 @Entity(
     tableName = "meal_template_items",
     foreignKeys = [
@@ -151,6 +160,7 @@ data class MealTemplateItem(
     val fat: Float get() = nutritionResult.fat
 }
 
+@Immutable
 data class MealTemplateWithItems(
     @Embedded val template: MealTemplate,
     @Relation(

@@ -50,7 +50,6 @@ import com.example.data.*
 import com.example.ui.DashboardViewModel
 import com.example.ui.FoodSearchViewModel
 import com.example.ui.PedometerViewModel
-import com.example.ui.components.*
 import com.example.util.*
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
@@ -669,7 +668,8 @@ fun SearchScreen(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
-                                                Text("• ${item.foodName} (${item.quantityGrams}g)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text("• ${item.foodName} (${item.quantityGrams}g)", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Spacer(modifier = Modifier.width(8.dp))
                                                 Text("$cals kcal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                         }

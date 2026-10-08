@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Android Themed Icon & iOS 18 Tinted Monochrome Silhouette -->
+  <g fill="currentColor">
+    <!-- Slime Body Silhouette -->
+    <path d="M 236 145 C 175 145, 132 195, 126 270 C 122 315, 105 335, 115 365 C 125 395, 160 408, 236 408 C 312 408, 347 395, 357 365 C 367 335, 350 315, 346 270 C 340 195, 297 145, 236 145 Z"/>
+    
+    <!-- Left Arm -->
+    <path d="M 128 290 C 100 305, 95 338, 120 350 C 135 356, 148 335, 142 310 Z"/>
+
+    <!-- Right Arm -->
+    <path d="M 344 290 C 372 305, 377 338, 352 350 C 337 356, 324 335, 330 310 Z"/>
+
+    <!-- Cutout Face Features (Masking via counter-paths or knockout) -->
+    <!-- Eyes Knockout -->
+    <mask id="face-mask">
+      <rect width="512" height="512" fill="white"/>
+      <circle cx="196" cy="248" r="11" fill="black"/>
+      <circle cx="276" cy="248" r="11" fill="black"/>
+      <ellipse cx="236" cy="272" rx="14" ry="9" fill="black"/>
+      <!-- Belly Nutrient Leaf Cutout -->
+      <path d="M 236 312 C 248 320, 252 338, 236 348 C 220 338, 224 320, 236 312 Z" fill="black"/>
+      <circle cx="260" cy="336" r="6" fill="black"/>
+      <circle cx="212" cy="336" r="6" fill="black"/>
+      <!-- Ghost Eyes Cutout -->
+      <circle cx="358" cy="143" r="3.5" fill="black"/>
+      <circle cx="377" cy="145" r="3.5" fill="black"/>
+      <ellipse cx="367.5" cy="154" rx="3.5" ry="5" fill="black"/>
+    </mask>
+
+    <!-- Companion Ghost Silhouette -->
+    <g transform="translate(365, 150)">
+      <path d="M 0 -34 C -24 -34, -32 -10, -28 15 C -26 28, -32 38, -24 38 C -18 38, -14 28, -8 28 C -2 28, 2 36, 8 36 C 14 36, 18 28, 24 28 C 30 28, 30 38, 36 34 C 40 25, 34 8, 30 -5 C 26 -22, 18 -34, 0 -34 Z"/>
+      <path d="M -26 5 C -38 0, -42 12, -30 16 C -24 18, -22 10, -26 5 Z"/>
+      <path d="M 28 8 C 38 6, 40 18, 30 20 C 25 21, 24 14, 28 8 Z"/>
+    </g>
+  </g>
+</svg>

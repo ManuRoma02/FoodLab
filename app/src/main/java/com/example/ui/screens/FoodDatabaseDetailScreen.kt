@@ -50,7 +50,6 @@ import com.example.ui.DashboardViewModel
 import com.example.ui.FoodSearchViewModel
 import com.example.ui.StatsViewModel
 import com.example.ui.SettingsViewModel
-import com.example.ui.components.BlinkingText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.drawText
 import java.util.Locale

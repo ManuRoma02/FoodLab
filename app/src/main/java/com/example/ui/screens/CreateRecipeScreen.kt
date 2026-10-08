@@ -139,6 +139,7 @@ fun CreateRecipeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .imePadding()
     ) {
         // Header Bar (ZERO ARROWS)
         Surface(

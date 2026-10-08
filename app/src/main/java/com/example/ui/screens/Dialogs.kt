@@ -55,7 +55,6 @@ import com.example.ui.DashboardViewModel
 import com.example.ui.FoodSearchViewModel
 import com.example.ui.StatsViewModel
 import com.example.ui.SettingsViewModel
-import com.example.ui.components.BlinkingText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.drawText
 import java.util.Locale
@@ -118,11 +117,15 @@ fun RetroScannerDialog(
     var loadingSoundId by remember { mutableStateOf<Int?>(null) }
     // Removed laser sound effect as requested
 
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(decorFitsSystemWindows = false)
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+                .imePadding()
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
@@ -152,7 +155,7 @@ fun RetroScannerDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            BlinkingText(
+                            Text(
                                 text = "RICERCA IN CORSO...",
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.bodyMedium
@@ -267,11 +270,15 @@ fun LogWeightDialog(
         onTypingChanged(isFocused)
     }
 
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(decorFitsSystemWindows = false)
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+                .imePadding()
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
@@ -380,11 +387,15 @@ fun EditMealEntryDialog(
         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
     }
 
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(decorFitsSystemWindows = false)
+    ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp, vertical = 12.dp)
+                .imePadding()
                 .shadow(
                     elevation = 16.dp,
                     shape = RoundedCornerShape(28.dp),

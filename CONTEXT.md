@@ -72,3 +72,11 @@ Widget fill verification on 2026-07-22: proportional widget rows passed native r
 Widget meal-flow verification on 2026-07-22: the launcher intent now resets the selected date to today and canonicalizes its meal category before navigation. All new single-food and template logs use the same canonical categories, while Dashboard grouping maps legacy title-case values and `Break` into visible sections. The full suite passed all 15 tests across 6 suites and `assembleDebug` succeeded. Device-level launcher verification remained unavailable because ADB reported no connected device.
 
 Streak verification on 2026-07-23: the hardcoded `3` UI default and its fake test were removed. The Home now collects `DashboardViewModel.streakCount`, backed by reactive meals, all target tiers, and a day-boundary ticker. Six deterministic tests cover ±10% boundaries, incomplete and over-target today, missing days, target precedence, and future meals. The full suite passed all 20 tests across 7 suites and `assembleDebug` succeeded. ADB again reported no connected device.
+
+## Active Design & Engineering Protocols
+
+As configured in `AGENTS.md` and tracked in `skills-lock.json`:
+- **UI Motion & Micro-interactions**: Strict adherence to **Apple Design System** and **Emil Kowalski Animation Philosophy**. Gated by interaction frequency (0 animations for 100+/day inputs; delight budget reserved for goals/streaks). Hardware-accelerated GPU animations via `Modifier.graphicsLayer` (never animate layout sizes/paddings). Physical spring dynamics with damping and subtle haptic synchronization.
+- **Engineering Discipline**: Strict adherence to **Karpathy Guidelines** (Think before coding, Simplicity first, Surgical changes, Goal-driven execution). Zero speculative abstractions or code bloating.
+- **Codebase Memory**: Persistent AST knowledge graph maintained via `codebase-memory-mcp` across agent sessions to guarantee architectural continuity.
+

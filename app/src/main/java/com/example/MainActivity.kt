@@ -25,6 +25,13 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -33,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -40,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -90,8 +99,20 @@ object Routes {
     }
 }
 
+private fun isTopLevelRoute(route: String?): Boolean {
+    val baseRoute = route?.substringBefore("/")?.substringBefore("?") ?: return false
+    return when (baseRoute) {
+        Routes.Dashboard,
+        Routes.FoodsDatabase,
+        Routes.Analytics,
+        Routes.Stats,
+        Routes.Settings -> true
+        else -> false
+    }
+}
+
 private fun getRouteIndex(route: String?): Int {
-    val baseRoute = route?.substringBefore("/") ?: return 0
+    val baseRoute = route?.substringBefore("/")?.substringBefore("?") ?: return 0
     return when (baseRoute) {
         Routes.Dashboard -> 0
         Routes.FoodsDatabase -> 1
@@ -259,6 +280,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    var isAppReady by rememberSaveable { mutableStateOf(false) }
+
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (isWideScreen && showBottomBar) {
                             Row(
@@ -304,12 +327,26 @@ class MainActivity : ComponentActivity() {
                                 )
                                 if (showBottomBar && !isWideScreen) {
                                     BottomNavBar(
-                                        navController = navController,
                                         currentRoute = currentRoute,
+                                        onNavigateToRoute = { route ->
+                                            navController.navigate(route) {
+                                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
+                                        },
                                         modifier = Modifier.align(Alignment.BottomCenter)
                                     )
                                 }
                             }
+                        }
+
+                        if (!isAppReady) {
+                            AppLoadingScreen(
+                                onLoadingComplete = {
+                                    isAppReady = true
+                                }
+                            )
                         }
                     }
                 }
@@ -334,44 +371,88 @@ private fun FoodLabNavHost(
         startDestination = if (hasCompletedOnboarding) Routes.Dashboard else Routes.Onboarding,
         modifier = modifier,
         enterTransition = {
-            val initialIdx = getRouteIndex(initialState.destination.route)
-            val targetIdx = getRouteIndex(targetState.destination.route)
-            val direction = if (targetIdx >= initialIdx) 1 else -1
-            androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(240, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
-            androidx.compose.animation.slideInHorizontally(
-                initialOffsetX = { fullWidth -> direction * fullWidth },
-                animationSpec = androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-            )
+            val initialRoute = initialState.destination.route
+            val targetRoute = targetState.destination.route
+            val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
+            if (bothTopLevel) {
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                val direction = if (targetIdx >= initialIdx) 1 else -1
+                fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
+                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                )
+            } else {
+                fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) +
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(280, easing = FastOutSlowInEasing)
+                )
+            }
         },
         exitTransition = {
-            val initialIdx = getRouteIndex(initialState.destination.route)
-            val targetIdx = getRouteIndex(targetState.destination.route)
-            val direction = if (targetIdx >= initialIdx) -1 else 1
-            androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(240, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
-            androidx.compose.animation.slideOutHorizontally(
-                targetOffsetX = { fullWidth -> direction * fullWidth },
-                animationSpec = androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-            )
+            val initialRoute = initialState.destination.route
+            val targetRoute = targetState.destination.route
+            val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
+            if (bothTopLevel) {
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                val direction = if (targetIdx >= initialIdx) -1 else 1
+                fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing)) +
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
+                    animationSpec = tween(220, easing = FastOutLinearInEasing)
+                )
+            } else {
+                fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing)) +
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> (-fullWidth * 0.25f).toInt() },
+                    animationSpec = tween(280, easing = FastOutSlowInEasing)
+                )
+            }
         },
         popEnterTransition = {
-            val initialIdx = getRouteIndex(initialState.destination.route)
-            val targetIdx = getRouteIndex(targetState.destination.route)
-            val direction = if (targetIdx >= initialIdx) 1 else -1
-            androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(240, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
-            androidx.compose.animation.slideInHorizontally(
-                initialOffsetX = { fullWidth -> direction * fullWidth },
-                animationSpec = androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-            )
+            val initialRoute = initialState.destination.route
+            val targetRoute = targetState.destination.route
+            val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
+            if (bothTopLevel) {
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                val direction = if (targetIdx >= initialIdx) 1 else -1
+                fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
+                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                )
+            } else {
+                fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) +
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> (-fullWidth * 0.25f).toInt() },
+                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                )
+            }
         },
         popExitTransition = {
-            val initialIdx = getRouteIndex(initialState.destination.route)
-            val targetIdx = getRouteIndex(targetState.destination.route)
-            val direction = if (targetIdx >= initialIdx) -1 else 1
-            androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(240, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
-            androidx.compose.animation.slideOutHorizontally(
-                targetOffsetX = { fullWidth -> direction * fullWidth },
-                animationSpec = androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-            )
+            val initialRoute = initialState.destination.route
+            val targetRoute = targetState.destination.route
+            val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
+            if (bothTopLevel) {
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                val direction = if (targetIdx >= initialIdx) -1 else 1
+                fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing)) +
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
+                    animationSpec = tween(220, easing = FastOutLinearInEasing)
+                )
+            } else {
+                fadeOut(animationSpec = tween(160, easing = FastOutLinearInEasing)) +
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(200, easing = FastOutLinearInEasing)
+                )
+            }
         }
     ) {
         composable(Routes.Onboarding) {

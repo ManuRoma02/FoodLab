@@ -384,9 +384,11 @@ private fun RecipeCard(
                         ) {
                             Text(
                                 text = "• ${item.foodName} (${item.quantityGrams}g)",
+                                modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "$itemCals kcal",
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
