@@ -87,19 +87,48 @@ class HealthConnectManager(private val context: Context) {
     }
 
     /**
-     * Returns true if all required read/write permissions have been granted.
+     * Returns true if any required health data permissions have been granted.
      */
     suspend fun checkPermissionsGranted(): Boolean {
         val client = healthConnectClient ?: return false
         return try {
             val granted = client.permissionController.getGrantedPermissions()
-            val hasAll = granted.containsAll(permissions)
-            _isAuthorized.value = hasAll
-            hasAll
+            val hasPermission = granted.any { permissions.contains(it) }
+            _isAuthorized.value = hasPermission
+            hasPermission
         } catch (e: Exception) {
             Log.e(tag, "Error checking Health Connect permissions", e)
             _isAuthorized.value = false
             false
+        }
+    }
+
+    /**
+     * Opens Health Connect system settings or permission manager for this app.
+     */
+    fun openSettings(context: Context) {
+        val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            android.content.Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
+                putExtra(android.content.Intent.EXTRA_PACKAGE_NAME, context.packageName)
+            }
+        } else {
+            android.content.Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+        }
+        try {
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                val fallback = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("market://details?id=com.google.android.apps.healthdata")
+                ).apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(fallback)
+            } catch (_: Exception) {
+                android.widget.Toast.makeText(context, "Impossibile aprire Health Connect", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -114,9 +143,19 @@ class HealthConnectManager(private val context: Context) {
         val endOfDay = startOfDay.plus(1, ChronoUnit.DAYS)
 
         return try {
-            val steps = readSteps(client, startOfDay, endOfDay)
-            val calories = readCaloriesBurned(client, startOfDay, endOfDay)
-            val weight = readLatestWeight(client)
+            val granted = try { client.permissionController.getGrantedPermissions() } catch (_: Exception) { emptySet() }
+            val steps = if (granted.contains(HealthPermission.getReadPermission(StepsRecord::class))) {
+                readSteps(client, startOfDay, endOfDay)
+            } else 0L
+
+            val calories = if (granted.contains(HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class)) ||
+                granted.contains(HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class))) {
+                readCaloriesBurned(client, startOfDay, endOfDay)
+            } else 0.0
+
+            val weight = if (granted.contains(HealthPermission.getReadPermission(WeightRecord::class))) {
+                readLatestWeight(client)
+            } else null
 
             val updatedData = HealthConnectDailyData(
                 steps = steps,

@@ -113,20 +113,33 @@ fun SettingsScreen(
 
     val hcPermissionLauncher = rememberLauncherForActivityResult(
         contract = androidx.health.connect.client.PermissionController.createRequestPermissionResultContract()
-    ) { _: Set<String> ->
+    ) { granted: Set<String> ->
         scope.launch {
-            val allGranted = hcManager.checkPermissionsGranted()
-            if (allGranted) {
+            val isAuthorized = hcManager.checkPermissionsGranted()
+            if (isAuthorized || granted.isNotEmpty()) {
                 hcManager.syncDailyData()
                 Toast.makeText(context, "Google Health Connect connesso!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Permessi Health Connect non concessi", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    LaunchedEffect(Unit) {
-        hcManager.checkPermissionsGranted()
-        if (hcManager.isAuthorized.value) {
-            hcManager.syncDailyData()
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                scope.launch {
+                    hcManager.checkPermissionsGranted()
+                    if (hcManager.isAuthorized.value) {
+                        hcManager.syncDailyData()
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -608,12 +621,27 @@ fun SettingsScreen(
                                     Text("SINCRONIZZA ORA", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                                 }
                             }
+
+                            TextButton(
+                                onClick = {
+                                    soundManager.playSound("click")
+                                    hcManager.openSettings(context)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Gestisci permessi Health Connect", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                         else -> {
                             Button(
                                 onClick = {
                                     soundManager.playSound("click")
-                                    hcPermissionLauncher.launch(hcManager.permissions)
+                                    try {
+                                        hcPermissionLauncher.launch(hcManager.permissions)
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("SettingsScreen", "Error launching Health Connect permission dialog", e)
+                                        hcManager.openSettings(context)
+                                    }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -625,6 +653,20 @@ fun SettingsScreen(
                                 )
                             ) {
                                 Text("CONNETTI HEALTH CONNECT", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            }
+
+                            TextButton(
+                                onClick = {
+                                    soundManager.playSound("click")
+                                    hcManager.openSettings(context)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    "Apri impostazioni Health Connect",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }
