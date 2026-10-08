@@ -34,6 +34,10 @@ class FoodLabApplication : Application() {
         OpenFoodFactsApi.create(cacheDir)
     }
 
+    val healthConnectManager: com.example.util.HealthConnectManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        com.example.util.HealthConnectManager(this)
+    }
+
     override fun onCreate() {
         super.onCreate()
         try {

@@ -214,8 +214,30 @@ class PedometerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // No-op
+    }
+
+    fun syncWithHealthConnect() {
+        viewModelScope.launch {
+            val app = getApplication<Application>() as? com.example.FoodLabApplication ?: return@launch
+            val hcManager = app.healthConnectManager
+            if (hcManager.checkAvailability() == com.example.util.HealthConnectAvailability.AVAILABLE) {
+                if (hcManager.checkPermissionsGranted()) {
+                    val result = hcManager.syncDailyData()
+                    result.onSuccess { data ->
+                        val hcSteps = data.steps.toInt()
+                        if (hcSteps > _steps.value) {
+                            StepCounterStore.setSteps(appContext, hcSteps)
+                            _steps.value = hcSteps
+                            com.example.util.WidgetUpdater.updateAllWidgets(appContext)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         stopTracking()

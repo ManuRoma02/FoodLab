@@ -133,6 +133,17 @@ object StepCounterStore {
         return newTotal
     }
 
+    fun setSteps(context: Context, steps: Int, dateString: String = today()): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val totalKey = totalKey(dateString)
+        val offsetKey = offsetKey(dateString)
+        prefs.edit {
+            putInt(totalKey, steps)
+            putInt(offsetKey, steps)
+        }
+        return steps
+    }
+
     fun clear(context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { clear() }
     }

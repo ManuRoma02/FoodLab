@@ -32,6 +32,7 @@ roborazzi = "1.59.0"
 secretsGradlePlugin = "2.0.1"
 workRuntimeKtx = "2.10.0"
 riveAndroid = "10.2.0"
+healthConnect = "1.1.0-alpha10"
 
 [libraries]
 rive-android = { group = "app.rive", name = "rive-android", version.ref = "riveAndroid" }
@@ -75,6 +76,7 @@ robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "
 roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
 roborazzi-junit-rule = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
+androidx-health-connect = { group = "androidx.health.connect", name = "connect-client", version.ref = "healthConnect" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

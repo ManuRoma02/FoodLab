@@ -29,7 +29,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -101,6 +104,31 @@ fun SettingsScreen(
 
     val stepGoal by preferencesManager.stepGoal.collectAsStateWithLifecycle()
     var steps by remember(stepGoal) { mutableFloatStateOf(stepGoal.toFloat()) }
+
+    val hcManager = remember { (context.applicationContext as com.example.FoodLabApplication).healthConnectManager }
+    val isHcAuthorized by hcManager.isAuthorized.collectAsStateWithLifecycle()
+    val hcDailyData by hcManager.dailyData.collectAsStateWithLifecycle()
+    val hcAvailability = remember { hcManager.checkAvailability() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+    val hcPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.health.connect.client.PermissionController.createRequestPermissionResultContract()
+    ) { _: Set<String> ->
+        scope.launch {
+            val allGranted = hcManager.checkPermissionsGranted()
+            if (allGranted) {
+                hcManager.syncDailyData()
+                Toast.makeText(context, "Google Health Connect connesso!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        hcManager.checkPermissionsGranted()
+        if (hcManager.isAuthorized.value) {
+            hcManager.syncDailyData()
+        }
+    }
 
     var showWipeDialog by remember { mutableStateOf(false) }
 
@@ -411,6 +439,195 @@ fun SettingsScreen(
                             preferencesManager.setStepGoal(it.roundToInt())
                         }
                     )
+                }
+            }
+
+            // 2b. GOOGLE HEALTH CONNECT INTEGRATION SECTION
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(18.dp)),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "GOOGLE HEALTH CONNECT",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        // Status Badge
+                        val (statusText, statusBg, statusFg) = when {
+                            hcAvailability != com.example.util.HealthConnectAvailability.AVAILABLE ->
+                                Triple("NON DISPONIBILE", MaterialTheme.colorScheme.error.copy(alpha = 0.15f), MaterialTheme.colorScheme.error)
+                            isHcAuthorized ->
+                                Triple("CONNESSO", Color(0xFF22C55E).copy(alpha = 0.15f), Color(0xFF22C55E))
+                            else ->
+                                Triple("DISCONNESSO", MaterialTheme.colorScheme.outline.copy(alpha = 0.15f), MaterialTheme.colorScheme.outline)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(statusBg)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = statusText,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = statusFg
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Sincronizza passi, calorie attive/totali e peso corporeo da smartwatch, Google Fit, Fitbit o Samsung Health.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    when {
+                        hcAvailability == com.example.util.HealthConnectAvailability.UPDATE_REQUIRED -> {
+                            Button(
+                                onClick = {
+                                    soundManager.playSound("click")
+                                    try {
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                            data = android.net.Uri.parse("market://details?id=com.google.android.apps.healthdata")
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, "Impossibile aprire Play Store", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(42.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("AGGIORNA HEALTH CONNECT", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            }
+                        }
+                        hcAvailability == com.example.util.HealthConnectAvailability.NOT_SUPPORTED -> {
+                            Text(
+                                "Health Connect non è supportato su questo dispositivo (richiede Android 9+).",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        isHcAuthorized -> {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceAround
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Passi", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        "${hcDailyData.steps}",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Calorie bruciate", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        "${hcDailyData.caloriesBurned.roundToInt()} kcal",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                if (hcDailyData.latestWeightKg != null) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("Ultimo Peso", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(
+                                            "%.1f kg".format(hcDailyData.latestWeightKg),
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.secondary
+                                        )
+                                    }
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    soundManager.playSound("click")
+                                    scope.launch {
+                                        val res = hcManager.syncDailyData()
+                                        if (res.isSuccess) {
+                                            val data = res.getOrThrow()
+                                            val todaySteps = com.example.util.StepCounterStore.savedSteps(context)
+                                            if (data.steps.toInt() > todaySteps) {
+                                                com.example.util.StepCounterStore.setSteps(context, data.steps.toInt())
+                                            }
+                                            com.example.util.WidgetUpdater.updateAllWidgets(context)
+                                            Toast.makeText(context, "Sincronizzazione completata!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Errore durante la sincronizzazione", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(42.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Text("SINCRONIZZA ORA", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                                }
+                            }
+                        }
+                        else -> {
+                            Button(
+                                onClick = {
+                                    soundManager.playSound("click")
+                                    hcPermissionLauncher.launch(hcManager.permissions)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(42.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Text("CONNETTI HEALTH CONNECT", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                            }
+                        }
+                    }
                 }
             }
 
