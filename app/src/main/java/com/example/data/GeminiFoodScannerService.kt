@@ -211,17 +211,19 @@ class RealGeminiFoodScannerService(
                 .url(url)
                 .post(requestBody)
                 .header("Content-Type", "application/json")
+                .header("x-goog-api-key", apiKey)
                 .build()
 
-            val response = okHttpClient.newCall(httpRequest).execute()
-            val responseBody = response.body?.string()
+            val scanResult = okHttpClient.newCall(httpRequest).execute().use { response ->
+                val responseBody = response.body?.string()
 
-            if (!response.isSuccessful || responseBody.isNullOrBlank()) {
-                val errorMsg = "Gemini API error (HTTP ${response.code}): ${responseBody ?: response.message}"
-                return@withContext Result.failure(IOException(errorMsg))
+                if (!response.isSuccessful || responseBody.isNullOrBlank()) {
+                    val errorMsg = "Gemini API error (HTTP ${response.code}): ${responseBody ?: response.message}"
+                    throw IOException(errorMsg)
+                }
+
+                GeminiFoodScannerService.parseScanResponse(responseBody)
             }
-
-            val scanResult = GeminiFoodScannerService.parseScanResponse(responseBody)
             Result.success(scanResult)
         } catch (e: Exception) {
             Result.failure(e)
