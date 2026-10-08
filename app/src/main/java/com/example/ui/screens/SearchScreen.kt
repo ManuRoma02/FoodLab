@@ -54,11 +54,17 @@ import com.example.util.*
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.barcode.common.Barcode
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import com.example.ui.GeminiFoodScanViewModel
+import com.example.ui.GeminiScanUiState
 import java.util.Locale
 import kotlinx.coroutines.launch
 
 private const val SCREEN_TAG = "SearchScreen"
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     viewModel: FoodSearchViewModel,
@@ -69,7 +75,8 @@ fun SearchScreen(
     onNavigateBack: () -> Unit,
     onFoodSelected: (Int) -> Unit,
     onNavigateToCreateFood: (String, String) -> Unit,
-    onNavigateToCreateRecipe: () -> Unit
+    onNavigateToCreateRecipe: () -> Unit,
+    geminiScanViewModel: GeminiFoodScanViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -98,6 +105,38 @@ fun SearchScreen(
     var scanLoading by remember { mutableStateOf(false) }
     var scanError by remember { mutableStateOf<String?>(null) }
     var selectedFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("TUTTI") }
+
+    val geminiScanUiState by geminiScanViewModel.uiState.collectAsStateWithLifecycle()
+    var showMediaSourcePicker by remember { mutableStateOf(false) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { selectedUri ->
+            scope.launch {
+                try {
+                    context.contentResolver.openInputStream(selectedUri)?.use { input ->
+                        val bytes = input.readBytes()
+                        geminiScanViewModel.analyzeImageBytes(bytes)
+                    }
+                } catch (e: Exception) {
+                    Log.e(SCREEN_TAG, "Error reading image bytes from picker", e)
+                }
+            }
+        }
+    }
+
+    val cameraCaptureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            geminiScanViewModel.analyzeBitmap(it)
+        }
+    }
+
+    BackHandler(enabled = geminiScanUiState !is GeminiScanUiState.Idle) {
+        geminiScanViewModel.resetState()
+    }
     BackHandler(enabled = mealToEdit != null) { mealToEdit = null }
     BackHandler(enabled = showScannerDialog) {
         showScannerDialog = false
@@ -205,6 +244,19 @@ fun SearchScreen(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                        }
+                        IconButton(
+                            onClick = {
+                                appleHaptics.tactileClick()
+                                showMediaSourcePicker = true
+                            },
+                            modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "Scansiona piatto con Gemini IA",
+                                tint = Color(0xFF818CF8)
+                            )
                         }
                         IconButton(
                             onClick = {
@@ -1045,6 +1097,116 @@ fun SearchScreen(
             }
         }
     }
+
+    if (showMediaSourcePicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showMediaSourcePicker = false },
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Scansiona piatto con IA",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Scatta una foto del tuo piatto o sceglila dalla galleria per stimare calorie e macronutrienti con Gemini.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            appleHaptics.tactileClick()
+                            showMediaSourcePicker = false
+                            cameraCaptureLauncher.launch(null)
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Column {
+                            Text("Scatta foto con fotocamera", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                            Text("Fotografa il piatto direttamente", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            appleHaptics.tactileClick()
+                            showMediaSourcePicker = false
+                            photoPickerLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            tint = Color(0xFF818CF8)
+                        )
+                        Column {
+                            Text("Scegli da galleria", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                            Text("Seleziona una foto recente", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    GeminiFoodScanSheet(
+        uiState = geminiScanUiState,
+        currentMealType = mealType,
+        currentDate = currentDate,
+        onAdjustGrams = { grams ->
+            geminiScanViewModel.updateAdjustedGrams(grams)
+        },
+        onConfirmMeal = { result, grams, targetMeal, date ->
+            geminiScanViewModel.confirmAndLogMeal(result, grams, targetMeal, date)
+            soundManager.playSound("power_up")
+            appleHaptics.tactileClick()
+        },
+        onRetry = {
+            geminiScanViewModel.retryLastScan()
+        },
+        onDismiss = {
+            geminiScanViewModel.resetState()
+        }
+    )
 }
 
 @Composable
