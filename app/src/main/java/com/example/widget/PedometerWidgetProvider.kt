@@ -22,6 +22,7 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import com.example.util.PreferencesManager
 import com.example.util.StepCounterStore
+import kotlinx.coroutines.launch
 
 class PedometerWidgetProvider : AppWidgetProvider() {
 
@@ -30,6 +31,7 @@ class PedometerWidgetProvider : AppWidgetProvider() {
             updatePedometerWidget(context, appWidgetManager, appWidgetId, StepCounterStore.savedSteps(context))
         }
         triggerSensorUpdate(context)
+        triggerHealthConnectSync(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -42,6 +44,7 @@ class PedometerWidgetProvider : AppWidgetProvider() {
                 updatePedometerWidget(context, appWidgetManager, id, saved)
             }
             triggerSensorUpdate(context)
+            triggerHealthConnectSync(context)
         }
     }
 
@@ -94,6 +97,38 @@ class PedometerWidgetProvider : AppWidgetProvider() {
             listener.cleanup()
         }
     }
+
+    private fun triggerHealthConnectSync(context: Context) {
+        val app = context.applicationContext as? com.example.FoodLabApplication ?: return
+        val hcManager = app.healthConnectManager
+        if (hcManager.checkAvailability() != com.example.util.HealthConnectAvailability.AVAILABLE) return
+
+        val pendingResult = try { goAsync() } catch (_: Exception) { null }
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                if (hcManager.checkPermissionsGranted()) {
+                    val result = hcManager.syncDailyData()
+                    result.onSuccess { data ->
+                        val hcSteps = data.steps.toInt()
+                        val currentSteps = StepCounterStore.savedSteps(context)
+                        if (hcSteps > currentSteps) {
+                            StepCounterStore.setSteps(context, hcSteps)
+                            val appWidgetManager = AppWidgetManager.getInstance(context)
+                            val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, PedometerWidgetProvider::class.java))
+                            for (id in appWidgetIds) {
+                                updatePedometerWidget(context, appWidgetManager, id, hcSteps)
+                            }
+                            com.example.util.WidgetUpdater.updateAllWidgets(context)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("PedometerWidgetProvider", "Failed to sync HC from widget", e)
+            } finally {
+                try { pendingResult?.finish() } catch (_: Exception) {}
+            }
+        }
+    }
 }
 
 internal fun updatePedometerWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, steps: Int) {
@@ -122,8 +157,13 @@ internal fun updatePedometerWidget(context: Context, appWidgetManager: AppWidget
     views.setOnClickPendingIntent(R.id.widget_refresh, pendingRefresh)
     
     if (steps >= 0) {
+        val stepGoal = try {
+            PreferencesManager.getInstance(context).stepGoal.value.coerceAtLeast(1000)
+        } catch (_: Exception) {
+            10000
+        }
         views.setTextViewText(R.id.steps_text, steps.toString())
-        views.setProgressBar(R.id.steps_progress, 10000, steps, false) // assuming 10k goal for widget
+        views.setProgressBar(R.id.steps_progress, stepGoal, steps, false)
     }
 
     appWidgetManager.updateAppWidget(appWidgetId, views)

@@ -122,6 +122,7 @@ class PedometerViewModel(application: Application) : AndroidViewModel(applicatio
     override fun onResume(owner: LifecycleOwner) {
         refresh()
         startTracking()
+        syncWithHealthConnect()
     }
 
     override fun onPause(owner: LifecycleOwner) {
