@@ -74,7 +74,7 @@ interface OpenFoodFactsApi {
                 .retryOnConnectionFailure(true)
                 .addInterceptor { chain ->
                     val request = chain.request().newBuilder()
-                        .header("User-Agent", "FoodLab/1.0 Android (contact: https://github.com/ManuRoma02/FoodLab)")
+                        .header("User-Agent", "FoodLab/1.0 Android (https://github.com/ManuRoma02/FoodLab)")
                         .cacheControl(CacheControl.Builder().maxAge(15, TimeUnit.MINUTES).build())
                         .build()
                     chain.proceed(request)

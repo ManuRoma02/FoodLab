@@ -1,4 +1,4 @@
-# Edge-to-Edge & Material 3 Adaptive Layout Implementation Plan
+﻿# Edge-to-Edge & Material 3 Adaptive Layout Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -104,7 +104,7 @@ fun FoodLabNavigationRail(
 Ensure `BottomNavBar` uses `Modifier.navigationBarsPadding()` so gesture navigation bars never overlap on compact devices.
 
 - [ ] **Step 3: Compile Kotlin**
-Run: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"; & "C:\Users\developer\.gradle\wrapper\dists\gradle-9.3.1-bin\23ovyewtku6u96viwx3xl3oks\gradle-9.3.1\bin\gradle.bat" compileDebugKotlin --no-daemon`
+Run: `./gradlew compileDebugKotlin --no-daemon`
 Expected: `BUILD SUCCESSFUL`
 
 ---
@@ -126,7 +126,7 @@ Ensure the dish creation form has `Modifier.imePadding()` on its scrollable Colu
 Ensure gram quantity edit input has `Modifier.imePadding()` on bottom action button.
 
 - [ ] **Step 4: Compile Kotlin**
-Run: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"; & "C:\Users\developer\.gradle\wrapper\dists\gradle-9.3.1-bin\23ovyewtku6u96viwx3xl3oks\gradle-9.3.1\bin\gradle.bat" compileDebugKotlin --no-daemon`
+Run: `./gradlew compileDebugKotlin --no-daemon`
 Expected: `BUILD SUCCESSFUL`
 
 ---
@@ -146,7 +146,7 @@ Render a `Row(Modifier.fillMaxSize())`:
 When `isWideScreen == false`, maintain original behavior (`onFoodClick(food.id)` navigates to `Routes.createFoodsDatabaseDetailRoute(food.id)`).
 
 - [ ] **Step 2: Compile Kotlin**
-Run: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"; & "C:\Users\developer\.gradle\wrapper\dists\gradle-9.3.1-bin\23ovyewtku6u96viwx3xl3oks\gradle-9.3.1\bin\gradle.bat" compileDebugKotlin --no-daemon`
+Run: `./gradlew compileDebugKotlin --no-daemon`
 Expected: `BUILD SUCCESSFUL`
 
 ---
@@ -191,7 +191,7 @@ if (isWideScreen && showBottomBar) {
 Ensure slide & fade transitions utilize Material 3 motion specs (`FastOutSlowInEasing`, 280ms duration) with pop transitions properly mirrored.
 
 - [ ] **Step 3: Compile Kotlin**
-Run: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"; & "C:\Users\developer\.gradle\wrapper\dists\gradle-9.3.1-bin\23ovyewtku6u96viwx3xl3oks\gradle-9.3.1\bin\gradle.bat" compileDebugKotlin --no-daemon`
+Run: `./gradlew compileDebugKotlin --no-daemon`
 Expected: `BUILD SUCCESSFUL`
 
 ---
@@ -202,9 +202,9 @@ Expected: `BUILD SUCCESSFUL`
 - Test: All modified files
 
 - [ ] **Step 1: Run unit tests**
-Run: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"; & "C:\Users\developer\.gradle\wrapper\dists\gradle-9.3.1-bin\23ovyewtku6u96viwx3xl3oks\gradle-9.3.1\bin\gradle.bat" testDebugUnitTest --no-daemon`
+Run: `./gradlew testDebugUnitTest --no-daemon`
 Expected: `BUILD SUCCESSFUL`
 
 - [ ] **Step 2: Assemble Debug APK**
-Run: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-22"; & "C:\Users\developer\.gradle\wrapper\dists\gradle-9.3.1-bin\23ovyewtku6u96viwx3xl3oks\gradle-9.3.1\bin\gradle.bat" assembleDebug --no-daemon`
+Run: `./gradlew assembleDebug --no-daemon`
 Expected: `BUILD SUCCESSFUL`
