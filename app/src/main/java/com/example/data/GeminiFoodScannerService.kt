@@ -204,7 +204,7 @@ class RealGeminiFoodScannerService(
                 .adapter(GeminiGenerateContentRequest::class.java)
                 .toJson(requestPayload)
 
-            val url = "${GeminiFoodScannerService.BASE_URL}$model:generateContent?key=$apiKey"
+            val url = "${GeminiFoodScannerService.BASE_URL}$model:generateContent"
             val requestBody = requestJson.toRequestBody("application/json; charset=utf-8".toMediaType())
 
             val httpRequest = Request.Builder()

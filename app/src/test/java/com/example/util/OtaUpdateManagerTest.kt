@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], application = android.app.Application::class)
 class OtaUpdateManagerTest {
 
     private fun createMockClient(statusCode: Int, jsonBody: String): OkHttpClient {

@@ -20,6 +20,10 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Moshi Generated JSON Adapters
+# Moshi Generated JSON Adapters & Models
 -keep class com.example.data.**JsonAdapter { *; }
 -keep class * extends com.squareup.moshi.JsonAdapter { *; }
+-keep @com.squareup.moshi.JsonClass class * { *; }
+-keepclassmembers class * {
+    @com.squareup.moshi.Json *;
+}

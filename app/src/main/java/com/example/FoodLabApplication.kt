@@ -46,8 +46,12 @@ class FoodLabApplication : Application() {
             NotificationScheduler.scheduleReminders(this, notificationsEnabled)
             com.example.util.WidgetUpdater.updateAllWidgets(this)
             CoroutineScope(Dispatchers.IO).launch {
-                repository.ensureDefaultFoodsSeeded()
-                CreaDatabaseImporter.importIfNeeded(this@FoodLabApplication, repository)
+                try {
+                    repository.ensureDefaultFoodsSeeded()
+                    CreaDatabaseImporter.importIfNeeded(this@FoodLabApplication, repository)
+                } catch (e: Exception) {
+                    android.util.Log.e("FoodLabApp", "Error during background seeding", e)
+                }
             }
         } catch (e: Exception) {
             android.util.Log.e("FoodLabApp", "Error during application onCreate initialization", e)

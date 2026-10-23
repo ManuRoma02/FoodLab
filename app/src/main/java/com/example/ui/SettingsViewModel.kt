@@ -80,5 +80,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private fun csvEscape(value: String): String = "\"${value.replace("\"", "\"\"")}\""
+    private fun csvEscape(value: String): String {
+        val sanitized = if (value.isNotEmpty() && value[0] in "=+-@\t\r") "'$value" else value
+        return "\"${sanitized.replace("\"", "\"\"")}\""
+    }
 }
