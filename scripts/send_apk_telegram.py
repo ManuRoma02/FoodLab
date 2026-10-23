@@ -33,6 +33,10 @@ def get_version_info():
     return v_code, v_name
 
 def main():
+    if not TOKEN or not CHAT_ID:
+        print("Error: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing in .env", file=sys.stderr)
+        sys.exit(1)
+
     apk_path = sys.argv[1] if len(sys.argv) > 1 else "FoodLab_Latest.apk"
     if not os.path.exists(apk_path):
         candidate = os.path.join("app", "build", "outputs", "apk", "debug", "app-debug.apk")

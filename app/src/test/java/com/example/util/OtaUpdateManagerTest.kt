@@ -151,4 +151,73 @@ class OtaUpdateManagerTest {
         assertTrue(result.isFailure)
         assertTrue(manager.state.value is OtaUpdateState.Error)
     }
+
+    @Test
+    fun testDownloadUpdate_withMatchingSha256_succeeds() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mockBytes = "mock apk binary payload".toByteArray()
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                Response.Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body(mockBytes.toResponseBody("application/vnd.android.package-archive".toMediaType()))
+                    .build()
+            }
+            .build()
+
+        val manager = OtaUpdateManager(client = client)
+        val info = OtaUpdateInfo(
+            versionCode = 36,
+            versionName = "1.0.36",
+            apkUrl = "https://example.com/app-v1.0.36.apk",
+            changelog = "Valid checksum",
+            sha256 = "78eda42ba38a4ab03ca69c7bec6bc6406607579bda7f5bdf254540451add318f"
+        )
+
+        val result = manager.downloadUpdate(context, info)
+        assertTrue(result.isSuccess)
+        val file = result.getOrNull()
+        assertNotNull(file)
+        assertTrue(file!!.exists())
+        assertEquals("FoodLab_v1.0.36.apk", file.name)
+    }
+
+    @Test
+    fun testDownloadUpdate_withMismatchedSha256_failsAndDeletesTempFile() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val updatesDir = File(context.cacheDir, "ota_updates").apply { mkdirs() }
+        val mockBytes = "mock apk binary payload".toByteArray()
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                Response.Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body(mockBytes.toResponseBody("application/vnd.android.package-archive".toMediaType()))
+                    .build()
+            }
+            .build()
+
+        val manager = OtaUpdateManager(client = client)
+        val info = OtaUpdateInfo(
+            versionCode = 37,
+            versionName = "1.0.37",
+            apkUrl = "https://example.com/app-v1.0.37.apk",
+            changelog = "Tampered release",
+            sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+        )
+
+        val result = manager.downloadUpdate(context, info)
+        assertTrue(result.isFailure)
+        assertTrue("Exception should be SecurityException", result.exceptionOrNull() is SecurityException)
+        val tempFile = File(updatesDir, "FoodLab_v1.0.37.apk.tmp")
+        assertFalse("Temp APK should be deleted on checksum failure", tempFile.exists())
+        val finalFile = File(updatesDir, "FoodLab_v1.0.37.apk")
+        assertFalse("Final APK should not be created on checksum failure", finalFile.exists())
+        assertTrue(manager.state.value is OtaUpdateState.Error)
+    }
 }

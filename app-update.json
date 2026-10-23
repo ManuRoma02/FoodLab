@@ -4,5 +4,6 @@
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
   "changelog": "• **Barra navigazione**: scorrimento fluido con **rimbalzo elastico**\n• **Prestazioni**: zero lag grazie a rendering **GPU** a 120 FPS\n• **Aggiornamenti OTA**: installazione in-app con un tocco",
   "releaseDate": "2026-10-21",
-  "forceUpdate": false
+  "forceUpdate": false,
+  "sha256": "13a9facef1fb4358e3c8d119badb60d2748748732694d7cad480d6c7ff8dc304"
 }

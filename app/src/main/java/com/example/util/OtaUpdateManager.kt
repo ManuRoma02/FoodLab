@@ -18,6 +18,7 @@ import okhttp3.Request
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 data class OtaUpdateInfo(
@@ -27,7 +28,8 @@ data class OtaUpdateInfo(
     val changelog: String,
     val releaseDate: String = "",
     val forceUpdate: Boolean = false,
-    val isUpdateAvailable: Boolean = false
+    val isUpdateAvailable: Boolean = false,
+    val sha256: String = ""
 )
 
 sealed interface OtaUpdateState {
@@ -111,7 +113,8 @@ class OtaUpdateManager(
                     apkUrl = json.optString("apkUrl", ""),
                     changelog = json.optString("changelog", "Miglioramenti generali e correzioni di bug."),
                     releaseDate = json.optString("releaseDate", ""),
-                    forceUpdate = json.optBoolean("forceUpdate", false)
+                    forceUpdate = json.optBoolean("forceUpdate", false),
+                    sha256 = json.optString("sha256", "").trim()
                 )
             }
         } catch (e: Exception) {
@@ -148,12 +151,15 @@ class OtaUpdateManager(
                 val code = codeMatch?.groupValues?.get(1)?.toIntOrNull()
                     ?: tagName.substringAfterLast(".").toIntOrNull()
                     ?: 1
+                val sha256Match = Regex("""(?:sha256[:=]|SHA-256:\s*)([a-fA-F0-9]{64})""", RegexOption.IGNORE_CASE).find(changelog)
+                val sha256 = sha256Match?.groupValues?.get(1) ?: ""
                 if (apkDownloadUrl.isNotBlank()) {
                     OtaUpdateInfo(
                         versionCode = code,
                         versionName = tagName,
                         apkUrl = apkDownloadUrl,
-                        changelog = changelog
+                        changelog = changelog,
+                        sha256 = sha256
                     )
                 } else {
                     null
@@ -206,6 +212,17 @@ class OtaUpdateManager(
                         }
                         output.flush()
                     }
+                }
+            }
+
+            // Verify SHA-256 integrity if checksum is provided
+            if (info.sha256.isNotBlank()) {
+                val computedHash = calculateSha256(tempDestination)
+                if (!computedHash.equals(info.sha256, ignoreCase = true)) {
+                    try { tempDestination.delete() } catch (_: Exception) {}
+                    val err = "Verifica integrità fallita: SHA-256 non corrispondente"
+                    _state.value = OtaUpdateState.Error(err)
+                    return@withContext Result.failure(SecurityException(err))
                 }
             }
 
@@ -269,5 +286,17 @@ class OtaUpdateManager(
 
     fun resetState() {
         _state.value = OtaUpdateState.Idle
+    }
+
+    private fun calculateSha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(8 * 1024)
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                digest.update(buffer, 0, bytesRead)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 }
