@@ -40,6 +40,7 @@ import com.example.util.MealTypes
 import com.example.ui.theme.macroColors
 import kotlinx.coroutines.launch
 import java.util.Date
+import java.util.Locale
 
 // Retro Dark Palette Tokens
 private val CalorieBlue = Color(0xFF38BDF8)
@@ -337,9 +338,9 @@ private fun RecipeCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                MacroPill(label = "C: ${String.format("%.1fg", perServingCarbs)}/porz", color = MaterialTheme.macroColors.carbs)
-                MacroPill(label = "P: ${String.format("%.1fg", perServingPro)}/porz", color = MaterialTheme.macroColors.protein)
-                MacroPill(label = "F: ${String.format("%.1fg", perServingFat)}/porz", color = MaterialTheme.macroColors.fat)
+                MacroPill(label = "C: ${String.format(Locale.getDefault(), "%.1fg", perServingCarbs)}/porz", color = MaterialTheme.macroColors.carbs)
+                MacroPill(label = "P: ${String.format(Locale.getDefault(), "%.1fg", perServingPro)}/porz", color = MaterialTheme.macroColors.protein)
+                MacroPill(label = "F: ${String.format(Locale.getDefault(), "%.1fg", perServingFat)}/porz", color = MaterialTheme.macroColors.fat)
             }
 
             // Expanded ingredients details & total comparison
@@ -360,12 +361,12 @@ private fun RecipeCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "• Per porzione (1 di $servings): $perServingCals kcal | C: ${String.format("%.1fg", perServingCarbs)}g | P: ${String.format("%.1fg", perServingPro)}g | F: ${String.format("%.1fg", perServingFat)}g",
+                        text = "• Per porzione (1 di $servings): $perServingCals kcal | C: ${String.format(Locale.getDefault(), "%.1f", perServingCarbs)}g | P: ${String.format(Locale.getDefault(), "%.1f", perServingPro)}g | F: ${String.format(Locale.getDefault(), "%.1f", perServingFat)}g",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "• Totale ricetta: $totalCals kcal | C: ${String.format("%.1fg", totalCarbs)}g | P: ${String.format("%.1fg", totalPro)}g | F: ${String.format("%.1fg", totalFat)}g",
+                        text = "• Totale ricetta: $totalCals kcal | C: ${String.format(Locale.getDefault(), "%.1f", totalCarbs)}g | P: ${String.format(Locale.getDefault(), "%.1f", totalPro)}g | F: ${String.format(Locale.getDefault(), "%.1f", totalFat)}g",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

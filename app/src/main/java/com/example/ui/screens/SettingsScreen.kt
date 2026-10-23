@@ -73,7 +73,7 @@ import com.example.data.DailyTarget
 import com.example.ui.SettingsViewModel
 import com.example.util.LocalPreferencesManager
 import com.example.util.LocalSoundManager
-import com.example.util.ReminderScheduler
+import com.example.util.NotificationScheduler
 import com.example.util.ThemeSkin
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
@@ -196,7 +196,7 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         preferencesManager.setNotificationsEnabled(granted)
-        ReminderScheduler.sync(context, granted)
+        NotificationScheduler.scheduleReminders(context, granted)
     }
 
     val activeTheme by preferencesManager.themeSkin.collectAsStateWithLifecycle()
@@ -779,7 +779,7 @@ fun SettingsScreen(
                                 notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                             } else {
                                 preferencesManager.setNotificationsEnabled(checked)
-                                ReminderScheduler.sync(context, checked)
+                                NotificationScheduler.scheduleReminders(context, checked)
                             }
                         }
                     )
@@ -864,6 +864,9 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            // In-App OTA Updates Card
+            OtaUpdateCard()
 
             Spacer(modifier = Modifier.height(112.dp))
         }

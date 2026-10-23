@@ -36,6 +36,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.Routes
 import com.example.ui.foundation.appleSpring
 import com.example.util.LocalSoundManager
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -45,6 +46,16 @@ fun BottomNavBar(
     modifier: Modifier = Modifier
 ) {
     val soundManager = LocalSoundManager.current
+    val selectedIndex = when {
+        currentRoute == Routes.Dashboard -> 0
+        currentRoute == Routes.FoodsDatabase ||
+                currentRoute?.startsWith("foods_database_detail") == true ||
+                currentRoute == Routes.CreateFood -> 1
+        currentRoute == Routes.Stats || currentRoute == Routes.Analytics -> 2
+        currentRoute == Routes.Settings -> 3
+        else -> 0
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -73,46 +84,108 @@ fun BottomNavBar(
                 )
             )
         ) {
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
-                NavBarItem(
-                    icon = Icons.Default.DateRange,
-                    label = "Diario",
-                    isSelected = currentRoute == Routes.Dashboard
+                val totalWidth = maxWidth
+                val tabWidth = totalWidth / 4
+
+                val animatedIndex by animateFloatAsState(
+                    targetValue = selectedIndex.toFloat(),
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = 380f
+                    ),
+                    label = "nav_sliding_indicator_index"
+                )
+
+                // Sliding active pill behind the navigation items with cartoon bouncy spring
+                Box(
+                    modifier = Modifier
+                        .width(tabWidth)
+                        .height(48.dp)
+                        .graphicsLayer {
+                            translationX = animatedIndex * tabWidth.toPx()
+                        }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    soundManager.playSound("click")
-                    onNavigateToRoute(Routes.Dashboard)
+                    // Pill container background
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                                    )
+                                )
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                    )
+                    // Sliding active bar at bottom of the active tab
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 3.dp)
+                            .width(22.dp)
+                            .height(3.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(99.dp)
+                            )
+                    )
                 }
-                NavBarItem(
-                    icon = Icons.Default.Restaurant,
-                    label = "Alimenti",
-                    isSelected = currentRoute == Routes.FoodsDatabase ||
-                            currentRoute?.startsWith("foods_database_detail") == true ||
-                            currentRoute == Routes.CreateFood
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    soundManager.playSound("click")
-                    onNavigateToRoute(Routes.FoodsDatabase)
-                }
-                NavBarItem(
-                    icon = Icons.Default.BarChart,
-                    label = "Progressi",
-                    isSelected = currentRoute == Routes.Stats || currentRoute == Routes.Analytics
-                ) {
-                    soundManager.playSound("click")
-                    onNavigateToRoute(Routes.Stats)
-                }
-                NavBarItem(
-                    icon = Icons.Default.Settings,
-                    label = "Impostazioni",
-                    isSelected = currentRoute == Routes.Settings
-                ) {
-                    soundManager.playSound("click")
-                    onNavigateToRoute(Routes.Settings)
+                    NavBarItem(
+                        icon = Icons.Default.DateRange,
+                        label = "Diario",
+                        isSelected = selectedIndex == 0,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        soundManager.playSound("click")
+                        onNavigateToRoute(Routes.Dashboard)
+                    }
+                    NavBarItem(
+                        icon = Icons.Default.Restaurant,
+                        label = "Alimenti",
+                        isSelected = selectedIndex == 1,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        soundManager.playSound("click")
+                        onNavigateToRoute(Routes.FoodsDatabase)
+                    }
+                    NavBarItem(
+                        icon = Icons.Default.BarChart,
+                        label = "Progressi",
+                        isSelected = selectedIndex == 2,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        soundManager.playSound("click")
+                        onNavigateToRoute(Routes.Stats)
+                    }
+                    NavBarItem(
+                        icon = Icons.Default.Settings,
+                        label = "Impostazioni",
+                        isSelected = selectedIndex == 3,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        soundManager.playSound("click")
+                        onNavigateToRoute(Routes.Settings)
+                    }
                 }
             }
         }
@@ -218,6 +291,7 @@ fun NavBarItem(
     icon: ImageVector,
     label: String,
     isSelected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -228,24 +302,29 @@ fun NavBarItem(
         animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
         label = "nav_item_color"
     )
-    val bgPillColor by animateColorAsState(
-        targetValue = if (isSelected) primaryColor.copy(alpha = 0.14f) else Color.Transparent,
-        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
-        label = "nav_item_bg"
-    )
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.08f else 1.0f,
-        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        targetValue = if (isSelected) 1.16f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = 350f
+        ),
         label = "nav_icon_scale"
+    )
+    val iconBob by animateFloatAsState(
+        targetValue = if (isSelected) -3f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = 350f
+        ),
+        label = "nav_icon_bob"
     )
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .defaultMinSize(minWidth = 56.dp, minHeight = 44.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(bgPillColor)
-            .applePressEffect(pressedScale = 0.94f, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .applePressEffect(pressedScale = 0.92f, onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -261,6 +340,7 @@ fun NavBarItem(
                     .graphicsLayer {
                         scaleX = iconScale
                         scaleY = iconScale
+                        translationY = iconBob
                     }
             )
             Spacer(modifier = Modifier.height(2.dp))
@@ -286,46 +366,90 @@ fun Modifier.applePressEffect(
     val haptic = LocalHapticFeedback.current
     val currentOnClick by rememberUpdatedState(onClick)
     var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) pressedScale else 1.0f,
-        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
-        label = "applePressScale"
-    )
+
+    // Cartoon squash-and-stretch: down-press compresses along Y and expands along X;
+    // release springs back with juicy medium-bouncy overshoot.
+    // Animatable values run on the GPU RenderThread via graphicsLayer, completely skipping
+    // Recomposition and Layout passes for peak 120 FPS buttery-smooth performance.
+    val scaleY = remember { Animatable(1.0f) }
+    val scaleX = remember { Animatable(1.0f) }
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            launch {
+                scaleY.animateTo(
+                    targetValue = pressedScale,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = 600f
+                    )
+                )
+            }
+            launch {
+                scaleX.animateTo(
+                    targetValue = 1.0f + (1.0f - pressedScale) * 0.40f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = 600f
+                    )
+                )
+            }
+        } else {
+            launch {
+                scaleY.animateTo(
+                    targetValue = 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = 380f
+                    )
+                )
+            }
+            launch {
+                scaleX.animateTo(
+                    targetValue = 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = 380f
+                    )
+                )
+            }
+        }
+    }
 
     val scaleModifier = this.graphicsLayer {
-        scaleX = scale
-        scaleY = scale
+        this.scaleX = scaleX.value
+        this.scaleY = scaleY.value
     }
 
     if (onClick != null) {
-        scaleModifier.pointerInput(Unit) {
-            detectTapGestures(
-                onPress = {
-                    isPressed = true
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    val released = try {
-                        tryAwaitRelease()
-                    } catch (_: Exception) {
-                        false
-                    }
-                    isPressed = false
-                    if (released) {
-                        currentOnClick?.invoke()
-                    }
-                }
-            )
+        val interactionSource = remember { MutableInteractionSource() }
+        val interactionPressed by interactionSource.collectIsPressedAsState()
+
+        LaunchedEffect(interactionPressed) {
+            isPressed = interactionPressed
         }
+
+        scaleModifier.clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                currentOnClick?.invoke()
+            }
+        )
     } else {
+        // Passive observation mode: monitors pointer state via PointerEventPass.Final
+        // without intercepting or consuming scroll gestures or conflicting with child clickables
         scaleModifier.pointerInput(Unit) {
             awaitPointerEventScope {
                 try {
                     while (true) {
-                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val event = awaitPointerEvent(PointerEventPass.Final)
                         val down = event.changes.firstOrNull { it.pressed }
-                        if (down != null && !isPressed) {
-                            isPressed = true
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        } else if (isPressed && event.changes.all { !it.pressed }) {
+                        if (down != null) {
+                            val isScroll = event.changes.any { it.isConsumed }
+                            isPressed = !isScroll
+                        } else {
                             isPressed = false
                         }
                     }
@@ -358,10 +482,22 @@ fun ImprovedTagButton(
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "tagBorder"
     )
+    val tagScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.06f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = 380f
+        ),
+        label = "tagScale"
+    )
 
     Box(
         modifier = Modifier
-            .applePressEffect(pressedScale = 0.94f, onClick = onClick)
+            .graphicsLayer {
+                scaleX = tagScale
+                scaleY = tagScale
+            }
+            .applePressEffect(pressedScale = 0.93f, onClick = onClick)
             .clip(RoundedCornerShape(14.dp))
             .background(animatedBg)
             .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
@@ -489,6 +625,14 @@ fun SearchResultCard(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onToggleFavorite != null) {
+                    val heartScale by animateFloatAsState(
+                        targetValue = if (food.isFavorite) 1.25f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = 350f
+                        ),
+                        label = "fav_pop"
+                    )
                     IconButton(
                         onClick = onToggleFavorite,
                         modifier = Modifier.applePressEffect(pressedScale = 0.85f)
@@ -496,7 +640,11 @@ fun SearchResultCard(
                         Icon(
                             imageVector = if (food.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
-                            tint = if (food.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (food.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = heartScale
+                                scaleY = heartScale
+                            }
                         )
                     }
                 }

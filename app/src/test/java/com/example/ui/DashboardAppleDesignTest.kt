@@ -264,10 +264,10 @@ class DashboardAppleDesignTest {
         composeTestRule.onNodeWithText("PASTI DI OGGI").assertIsDisplayed()
 
         // Categories
-        composeTestRule.onNodeWithText("Colazione 🌅").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Pranzo ☀️").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Cena 🌙").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Snack 🍎").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Colazione").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Pranzo").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Cena").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Snack").performScrollTo().assertIsDisplayed()
 
         // Logged item in breakfast
         composeTestRule.onNodeWithText("Caffè e Biscotti").performScrollTo().assertIsDisplayed()

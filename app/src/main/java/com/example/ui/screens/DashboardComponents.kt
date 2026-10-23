@@ -32,6 +32,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
@@ -296,6 +298,7 @@ fun FoodLabActionButton(
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         modifier = modifier
             .height(44.dp)
+            .applePressEffect(pressedScale = 0.92f, onClick = onClick)
             .border(
                 1.dp,
                 if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
@@ -991,7 +994,22 @@ fun HorizontalDatePicker(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("🔥 ${streakCount}D STREAK", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFFFEF08A))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = Color(0xFFFEF08A),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            "${streakCount}D STREAK",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFFFEF08A)
+                        )
+                    }
                 }
 
                 if (weightText.isNotBlank()) {
@@ -1047,10 +1065,32 @@ fun HorizontalDatePicker(
                 label = "numTextColor"
             )
 
+            val selectedDayScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (isSelected) 1.08f else 1.0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = 350f
+                ),
+                label = "dayScale"
+            )
+            val selectedDayBob by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (isSelected) -2f else 0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = 350f
+                ),
+                label = "dayBob"
+            )
+
             Column(
                 modifier = Modifier
                     .width(44.dp)
                     .heightIn(min = 54.dp)
+                    .graphicsLayer {
+                        scaleX = selectedDayScale
+                        scaleY = selectedDayScale
+                        translationY = selectedDayBob
+                    }
                     .applePressEffect(pressedScale = 0.92f) { onDateChange(date) }
                     .clip(RoundedCornerShape(14.dp))
                     .background(animatedBg)
@@ -1415,6 +1455,13 @@ private data class MealCategoryInfo(
     val accentColor: Color
 )
 
+private val DEFAULT_MEAL_CATEGORIES = listOf(
+    MealCategoryInfo(MealTypes.BREAKFAST, "Colazione", Icons.Default.EggAlt, Color(0xFF22C55E)),
+    MealCategoryInfo(MealTypes.LUNCH, "Pranzo", Icons.Default.LunchDining, Color(0xFF3B82F6)),
+    MealCategoryInfo(MealTypes.DINNER, "Cena", Icons.Default.DinnerDining, Color(0xFFA855F7)),
+    MealCategoryInfo(MealTypes.SNACK, "Snack", Icons.Default.Icecream, Color(0xFFF59E0B))
+)
+
 @Composable
 fun UnifiedMealsCard(
     mealsByType: Map<String, List<MealEntry>>,
@@ -1426,12 +1473,6 @@ fun UnifiedMealsCard(
     modifier: Modifier = Modifier,
     dragDropState: MealDragDropState? = null
 ) {
-    val mealTypes = listOf(
-        MealCategoryInfo(MealTypes.BREAKFAST, "Colazione 🌅", Icons.Default.EggAlt, Color(0xFF22C55E)),
-        MealCategoryInfo(MealTypes.LUNCH, "Pranzo ☀️", Icons.Default.LunchDining, Color(0xFF3B82F6)),
-        MealCategoryInfo(MealTypes.DINNER, "Cena 🌙", Icons.Default.DinnerDining, Color(0xFFA855F7)),
-        MealCategoryInfo(MealTypes.SNACK, "Snack 🍎", Icons.Default.Icecream, Color(0xFFF59E0B))
-    )
     val haptic = LocalHapticFeedback.current
 
     Column(
@@ -1462,7 +1503,7 @@ fun UnifiedMealsCard(
             )
         }
 
-        mealTypes.forEach { (typeKey, title, icon, accentColor) ->
+        DEFAULT_MEAL_CATEGORIES.forEach { (typeKey, title, icon, accentColor) ->
             val meals = mealsByType[typeKey] ?: emptyList()
             val totalCals = meals.sumOf { it.calories }
             val isHoveredTarget = dragDropState?.hoveredMealType == typeKey && dragDropState?.sourceMealType != typeKey
@@ -1584,10 +1625,16 @@ fun UnifiedMealsCard(
                                     var isDeleted by remember(meal.id) { mutableStateOf(false) }
                                     AnimatedVisibility(
                                         visible = !isDeleted,
-                                        exit = shrinkVertically(
+                                        exit = scaleOut(
+                                            targetScale = 0.85f,
+                                            animationSpec = spring(
+                                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                stiffness = Spring.StiffnessMedium
+                                            )
+                                        ) + shrinkVertically(
                                             animationSpec = appleSpring(dampingRatio = 0.85f, stiffness = 400f)
                                         ) + fadeOut(
-                                            animationSpec = tween(durationMillis = 180)
+                                            animationSpec = tween(durationMillis = 150)
                                         )
                                     ) {
                                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1735,10 +1782,20 @@ fun MonthlyStreakDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            "🔥",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFFF59E0B).copy(alpha = 0.20f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocalFireDepartment,
+                                contentDescription = null,
+                                tint = Color(0xFFF59E0B),
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                         Column {
                             Text(
                                 "Streak: $streakCount ${if (streakCount == 1) "Giorno" else "Giorni"} Consecutivi!",

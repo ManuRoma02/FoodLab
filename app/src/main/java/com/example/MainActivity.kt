@@ -67,7 +67,7 @@ import com.example.util.LocalPreferencesManager
 import com.example.util.LocalSoundManager
 import com.example.util.MealTypes
 import com.example.util.PreferencesManager
-import com.example.util.ReminderScheduler
+import com.example.util.NotificationScheduler
 import com.example.util.SoundManager
 import com.example.util.ThemeSkin
 import com.example.util.WidgetUpdater
@@ -156,7 +156,7 @@ class MainActivity : ComponentActivity() {
         _intentFlow.value = intent
         try {
             val appPreferences = PreferencesManager.getInstance(this)
-            ReminderScheduler.sync(this, appPreferences.notificationsEnabled.value)
+            NotificationScheduler.scheduleReminders(this, appPreferences.notificationsEnabled.value)
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error syncing reminders", e)
         }
@@ -249,7 +249,7 @@ class MainActivity : ComponentActivity() {
                         ActivityResultContracts.RequestPermission()
                     ) { granted ->
                         preferencesManager.setNotificationsEnabled(granted)
-                        ReminderScheduler.sync(context, granted)
+                        NotificationScheduler.scheduleReminders(context, granted)
                     }
 
                     LaunchedEffect(hasCompletedOnboarding) {

@@ -942,11 +942,30 @@ private fun SlimeCalendarGrid(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 val loggedDaysCount = last14Days.count { (mealsByDate[it] ?: emptyList()).isNotEmpty() }
-                Text(
-                    text = if (loggedDaysCount > 0) "🔥 $loggedDaysCount giorni registrati" else "Nessun dato registrato",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = if (loggedDaysCount > 0) Color(0xFFFEF08A) else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (loggedDaysCount > 0) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = Color(0xFFFEF08A),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "$loggedDaysCount giorni registrati",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFFFEF08A)
+                        )
+                    } else {
+                        Text(
+                            text = "Nessun dato registrato",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
             Row(

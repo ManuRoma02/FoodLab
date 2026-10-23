@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Moshi Generated JSON Adapters
+-keep class com.example.data.**JsonAdapter { *; }
+-keep class * extends com.squareup.moshi.JsonAdapter { *; }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.example.util.PreferencesManager
-import com.example.util.ReminderScheduler
+import com.example.util.NotificationScheduler
 import com.example.util.StepCounterStore
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -43,7 +43,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             StepCounterStore.clear(context)
             context.getSharedPreferences("rpg_prefs", android.content.Context.MODE_PRIVATE).edit { clear() }
             context.getSharedPreferences("sound_prefs", android.content.Context.MODE_PRIVATE).edit { clear() }
-            ReminderScheduler.sync(context, false)
+            NotificationScheduler.scheduleReminders(context, false)
             com.example.util.WidgetUpdater.updateAllWidgets(context)
             _messages.tryEmit("All local FoodLab data was removed.")
         }

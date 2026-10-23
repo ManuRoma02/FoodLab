@@ -1,0 +1,8 @@
+{
+  "versionCode": 33,
+  "versionName": "1.0.33",
+  "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
+  "changelog": "• **Barra navigazione**: scorrimento fluido con **rimbalzo elastico**\n• **Prestazioni**: zero lag grazie a rendering **GPU** a 120 FPS\n• **Aggiornamenti OTA**: installazione in-app con un tocco",
+  "releaseDate": "2026-10-21",
+  "forceUpdate": false
+}
