@@ -163,7 +163,9 @@ private fun AppleHighlightTile(
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
 
             Text(
@@ -172,7 +174,9 @@ private fun AppleHighlightTile(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
@@ -523,7 +527,7 @@ fun AnalyticsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(130.dp))
         }
     }
 }
@@ -547,7 +551,7 @@ private fun UnifiedIntakeExplorerCard(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header Row + Sub-Metric Selector
+            // Header Row: Title & Subtitle
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -567,44 +571,52 @@ private fun UnifiedIntakeExplorerCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
 
-                // Sub-Metric Pills (Calorie | Proteine | Carbo | Grassi)
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .padding(2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    ChartMetricMode.values().forEach { mode ->
-                        val isSel = mode == selectedMetric
-                        val bg = if (isSel) {
-                            if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
-                        } else Color.Transparent
-                        val fg = if (isSel) {
-                            if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
-                        } else MaterialTheme.colorScheme.onSurfaceVariant
+            // Sub-Metric Segmented Selector (Calorie | Proteine | Carbo | Grassi) - Fully Responsive
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                ChartMetricMode.values().forEach { mode ->
+                    val isSel = mode == selectedMetric
+                    val bg = if (isSel) {
+                        if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                    } else Color.Transparent
+                    val fg = if (isSel) {
+                        if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    } else MaterialTheme.colorScheme.onSurfaceVariant
 
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(bg)
-                                .clickable {
-                                    selectedMetric = mode
-                                    selectedDayIndex = null
-                                }
-                                .padding(horizontal = 7.dp, vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = mode.label,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp
-                                ),
-                                color = fg
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(bg)
+                            .then(
+                                if (isSel && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(6.dp))
+                                else Modifier
                             )
-                        }
+                            .clickable {
+                                selectedMetric = mode
+                                selectedDayIndex = null
+                            }
+                            .padding(vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = mode.label,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            ),
+                            color = fg,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
@@ -643,30 +655,36 @@ private fun UnifiedIntakeExplorerCard(
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             text = inspectedDay?.let { "${it.dayLabel} (${it.date.takeLast(5)})" } ?: "Oggi",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        val delta = currentVal - targetVal
-                        val deltaStr = if (delta >= 0) "+${delta.roundToInt()} $unit" else "${delta.roundToInt()} $unit"
                         Text(
-                            text = "Assunti: ${currentVal.roundToInt()} $unit ($deltaStr vs target)",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = metricColor
+                            text = "Obiettivo: ${targetVal.roundToInt()} $unit",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-
+                    val delta = currentVal - targetVal
+                    val deltaStr = if (delta >= 0) "+${delta.roundToInt()} $unit" else "${delta.roundToInt()} $unit"
                     Text(
-                        text = "Obiettivo: ${targetVal.roundToInt()} $unit",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Assunti: ${currentVal.roundToInt()} $unit ($deltaStr vs target)",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = metricColor,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
             }
@@ -843,10 +861,10 @@ private fun MacroDistributionCard(
                 Box(modifier = Modifier.weight(fatPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.fat))
             }
 
-            // 3 Macro Detail Columns
+            // 3 Macro Detail Columns - Equal Responsive Width
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 MacroStatColumn(
                     name = "Carboidrati",
@@ -854,7 +872,8 @@ private fun MacroDistributionCard(
                     today = "${todayCarbs.roundToInt()}g",
                     avg = "Media: ${avgCarbs.roundToInt()}g",
                     target = "Target: ${targetCarbs}g",
-                    color = MaterialTheme.macroColors.carbs
+                    color = MaterialTheme.macroColors.carbs,
+                    modifier = Modifier.weight(1f)
                 )
                 MacroStatColumn(
                     name = "Proteine",
@@ -862,7 +881,8 @@ private fun MacroDistributionCard(
                     today = "${todayProtein.roundToInt()}g",
                     avg = "Media: ${avgProtein.roundToInt()}g",
                     target = "Target: ${targetProtein}g",
-                    color = MaterialTheme.macroColors.protein
+                    color = MaterialTheme.macroColors.protein,
+                    modifier = Modifier.weight(1f)
                 )
                 MacroStatColumn(
                     name = "Grassi",
@@ -870,7 +890,8 @@ private fun MacroDistributionCard(
                     today = "${todayFat.roundToInt()}g",
                     avg = "Media: ${avgFat.roundToInt()}g",
                     target = "Target: ${targetFat}g",
-                    color = MaterialTheme.macroColors.fat
+                    color = MaterialTheme.macroColors.fat,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -884,16 +905,45 @@ private fun MacroStatColumn(
     today: String,
     avg: String,
     target: String,
-    color: Color
+    color: Color,
+    modifier: Modifier = Modifier
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color))
-            Text(name, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                name,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
         }
-        Text(today, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = color)
-        Text(pct, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(avg, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            today,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+            color = color,
+            maxLines = 1
+        )
+        Text(
+            pct,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+        Text(
+            avg,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+        )
     }
 }
 

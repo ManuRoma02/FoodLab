@@ -7,7 +7,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,12 +33,14 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -96,6 +103,136 @@ private fun IosGroupCard(
         colors = CardDefaults.cardColors(containerColor = bg),
         content = content
     )
+}
+
+@Composable
+private fun IosCollapsibleSection(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    iconBg: Color,
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    statusBadge: String? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val haptic = LocalHapticFeedback.current
+    val soundManager = LocalSoundManager.current
+
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "chevron_rotation"
+    )
+
+    val shape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(18.dp)
+    val border = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val bg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            ),
+        shape = shape,
+        border = border,
+        colors = CardDefaults.cardColors(containerColor = bg)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Interactive Apple Header Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        soundManager.playSound("click")
+                        onToggle()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    IosIconTile(icon = icon, backgroundColor = iconBg)
+                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (statusBadge != null) {
+                        Surface(
+                            color = if (isNeo) Color(0xFFF7F5ED) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = RoundedCornerShape(6.dp),
+                            border = if (isNeo) BorderStroke(1.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        ) {
+                            Text(
+                                text = statusBadge,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                ),
+                                color = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (isExpanded) "Comprimi" else "Espandi",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .graphicsLayer {
+                                rotationZ = rotationAngle
+                            }
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                exit = shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut()
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    IosRowDivider()
+                    content()
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -226,7 +363,8 @@ private fun IosTargetControlRow(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
             ) {
                 IosIconTile(icon = icon, backgroundColor = accentColor)
                 Column {
@@ -235,14 +373,17 @@ private fun IosTargetControlRow(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = if (isNeo) FontWeight.Bold else FontWeight.SemiBold
                         ),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                     Text(
                         text = "${value.roundToInt()} $unit",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = if (isNeo) Color.Black else accentColor
-                        )
+                        ),
+                        maxLines = 1
                     )
                 }
             }
@@ -474,6 +615,15 @@ fun SettingsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        var openSections by rememberSaveable { mutableStateOf(setOf("TARGETS")) }
+        fun toggleSection(key: String) {
+            openSections = if (openSections.contains(key)) {
+                openSections - key
+            } else {
+                openSections + key
+            }
+        }
+
         Column(
             modifier = Modifier
                 .padding(horizontal = 14.dp, vertical = 8.dp)
@@ -486,229 +636,233 @@ fun SettingsScreen(
             )
 
             // ==========================================
-            // 1. OBIETTIVI NUTRIZIONALI (Apple Inset Group)
+            // 1. OBIETTIVI NUTRIZIONALI (Apple Collapsible Group)
             // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                IosSectionHeader(title = "Obiettivi Nutrizionali")
+            IosCollapsibleSection(
+                title = "Obiettivi Nutrizionali",
+                subtitle = "Calorie, macronutrienti e TDEE",
+                icon = Icons.Default.TrackChanges,
+                iconBg = AppleOrange,
+                isExpanded = openSections.contains("TARGETS"),
+                onToggle = { toggleSection("TARGETS") },
+                statusBadge = "${calories.roundToInt()} kcal"
+            ) {
+                // TDEE Wizard Row
+                IosSettingsRow(
+                    icon = Icons.Default.Calculate,
+                    iconBg = AppleBlue,
+                    title = "Calcolo Fabbisogno (TDEE)",
+                    subtitle = "Ricalcola calorie e macro con la guida",
+                    trailing = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    onClick = onNavigateToOnboarding
+                )
 
-                IosGroupCard {
-                    // TDEE Wizard Row
-                    IosSettingsRow(
-                        icon = Icons.Default.Calculate,
-                        iconBg = AppleBlue,
-                        title = "Calcolo Fabbisogno (TDEE)",
-                        subtitle = "Ricalcola calorie e macro con la guida",
-                        trailing = {
+                IosRowDivider()
+
+                // Day of Week Selector
+                val dayOptions = listOf("FIXED", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
+                val dayLabels = mapOf(
+                    "FIXED" to "Tutti",
+                    "MONDAY" to "Lun",
+                    "TUESDAY" to "Mar",
+                    "WEDNESDAY" to "Mer",
+                    "THURSDAY" to "Gio",
+                    "FRIDAY" to "Ven",
+                    "SATURDAY" to "Sab",
+                    "SUNDAY" to "Dom"
+                )
+
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+                    Text(
+                        "GIORNO OBIETTIVO",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(dayOptions.size) { idx ->
+                            val opt = dayOptions[idx]
+                            val selected = opt == selectedTargetKey
+                            val chipShape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp)
+                            val chipBg = if (isNeo) {
+                                if (selected) Color(0xFFFFE500) else Color(0xFFF7F5ED)
+                            } else {
+                                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
+                            }
+                            val chipText = if (isNeo) Color.Black else (if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(chipShape)
+                                    .background(chipBg)
+                                    .then(
+                                        if (isNeo) Modifier.border(1.5.dp, Color.Black, chipShape)
+                                        else Modifier
+                                    )
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        selectedTargetKey = opt
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = dayLabels[opt] ?: opt,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = chipText
+                                )
+                            }
+                        }
+                    }
+                }
+
+                IosRowDivider()
+
+                // Macro Distribution Ratio Bar
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(
-                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                imageVector = if (isExact100) Icons.Default.CheckCircle else Icons.Default.Info,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (isExact100) Color(0xFF22C55E) else AppleOrange,
+                                modifier = Modifier.size(15.dp)
                             )
-                        },
-                        onClick = onNavigateToOnboarding
-                    )
-
-                    IosRowDivider()
-
-                    // Day of Week Selector
-                    val dayOptions = listOf("FIXED", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
-                    val dayLabels = mapOf(
-                        "FIXED" to "Tutti",
-                        "MONDAY" to "Lun",
-                        "TUESDAY" to "Mar",
-                        "WEDNESDAY" to "Mer",
-                        "THURSDAY" to "Gio",
-                        "FRIDAY" to "Ven",
-                        "SATURDAY" to "Sab",
-                        "SUNDAY" to "Dom"
-                    )
-
-                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+                            Text(
+                                text = if (isExact100) "Bilancio 100% (${calories.roundToInt()} kcal)" else "Macro: $totalMacroPct% (${totalMacroCals.roundToInt()}/${calories.roundToInt()} kcal)",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (isExact100) Color(0xFF22C55E) else AppleOrange
+                            )
+                        }
                         Text(
-                            "GIORNO OBIETTIVO",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                            text = "${carbsPct}% C • ${proteinPct}% P • ${fatPct}% F",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            items(dayOptions.size) { idx ->
-                                val opt = dayOptions[idx]
-                                val selected = opt == selectedTargetKey
-                                val chipShape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp)
-                                val chipBg = if (isNeo) {
-                                    if (selected) Color(0xFFFFE500) else Color(0xFFF7F5ED)
-                                } else {
-                                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
-                                }
-                                val chipText = if (isNeo) Color.Black else (if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface)
-
-                                Box(
-                                    modifier = Modifier
-                                        .clip(chipShape)
-                                        .background(chipBg)
-                                        .then(
-                                            if (isNeo) Modifier.border(1.5.dp, Color.Black, chipShape)
-                                            else Modifier
-                                        )
-                                        .clickable {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            selectedTargetKey = opt
-                                        }
-                                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = dayLabels[opt] ?: opt,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = chipText
-                                    )
-                                }
-                            }
-                        }
                     }
 
-                    IosRowDivider()
-
-                    // Macro Distribution Ratio Bar
-                    Column(
+                    // Proportional Bar
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(
-                                    imageVector = if (isExact100) Icons.Default.CheckCircle else Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = if (isExact100) Color(0xFF22C55E) else AppleOrange,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Text(
-                                    text = if (isExact100) "Bilancio 100% (${calories.roundToInt()} kcal)" else "Macro: $totalMacroPct% (${totalMacroCals.roundToInt()}/${calories.roundToInt()} kcal)",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = if (isExact100) Color(0xFF22C55E) else AppleOrange
-                                )
-                            }
-                            Text(
-                                text = "${carbsPct}% C • ${proteinPct}% P • ${fatPct}% F",
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Proportional Bar
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(carbsPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.carbs))
-                            Box(modifier = Modifier.weight(proteinPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.protein))
-                            Box(modifier = Modifier.weight(fatPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.fat))
-                        }
+                        Box(modifier = Modifier.weight(carbsPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.carbs))
+                        Box(modifier = Modifier.weight(proteinPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.protein))
+                        Box(modifier = Modifier.weight(fatPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.fat))
                     }
+                }
 
-                    IosRowDivider()
+                IosRowDivider()
 
-                    // Target Sliders
-                    IosTargetControlRow(
-                        label = "Calorie Giornaliere",
-                        value = calories,
-                        unit = "kcal",
-                        valueRange = 1000f..4500f,
-                        stepSize = 50f,
-                        accentColor = AppleOrange,
-                        icon = Icons.Default.LocalFireDepartment,
-                        onValueChange = { calories = it }
-                    )
+                // Target Sliders
+                IosTargetControlRow(
+                    label = "Calorie Giornaliere",
+                    value = calories,
+                    unit = "kcal",
+                    valueRange = 1000f..4500f,
+                    stepSize = 50f,
+                    accentColor = AppleOrange,
+                    icon = Icons.Default.LocalFireDepartment,
+                    onValueChange = { calories = it }
+                )
 
-                    IosRowDivider()
+                IosRowDivider()
 
-                    IosTargetControlRow(
-                        label = "Carboidrati",
-                        value = carbs,
-                        unit = "g",
-                        valueRange = 30f..500f,
-                        stepSize = 5f,
-                        accentColor = MaterialTheme.macroColors.carbs,
-                        icon = Icons.Default.Grain,
-                        onValueChange = { carbs = it }
-                    )
+                IosTargetControlRow(
+                    label = "Carboidrati",
+                    value = carbs,
+                    unit = "g",
+                    valueRange = 30f..500f,
+                    stepSize = 5f,
+                    accentColor = MaterialTheme.macroColors.carbs,
+                    icon = Icons.Default.Grain,
+                    onValueChange = { carbs = it }
+                )
 
-                    IosRowDivider()
+                IosRowDivider()
 
-                    IosTargetControlRow(
-                        label = "Proteine",
-                        value = protein,
-                        unit = "g",
-                        valueRange = 30f..350f,
-                        stepSize = 5f,
-                        accentColor = MaterialTheme.macroColors.protein,
-                        icon = Icons.Default.EggAlt,
-                        onValueChange = { protein = it }
-                    )
+                IosTargetControlRow(
+                    label = "Proteine",
+                    value = protein,
+                    unit = "g",
+                    valueRange = 30f..350f,
+                    stepSize = 5f,
+                    accentColor = MaterialTheme.macroColors.protein,
+                    icon = Icons.Default.EggAlt,
+                    onValueChange = { protein = it }
+                )
 
-                    IosRowDivider()
+                IosRowDivider()
 
-                    IosTargetControlRow(
-                        label = "Grassi",
-                        value = fat,
-                        unit = "g",
-                        valueRange = 15f..200f,
-                        stepSize = 5f,
-                        accentColor = MaterialTheme.macroColors.fat,
-                        icon = Icons.Default.Opacity,
-                        onValueChange = { fat = it }
-                    )
+                IosTargetControlRow(
+                    label = "Grassi",
+                    value = fat,
+                    unit = "g",
+                    valueRange = 15f..200f,
+                    stepSize = 5f,
+                    accentColor = MaterialTheme.macroColors.fat,
+                    icon = Icons.Default.Opacity,
+                    onValueChange = { fat = it }
+                )
 
-                    IosRowDivider()
+                IosRowDivider()
 
-                    // Save Button
-                    Box(modifier = Modifier.padding(14.dp)) {
-                        Button(
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                soundManager.playSound("click")
-                                viewModel.updateDailyTarget(
-                                    dateString = selectedTargetKey,
-                                    calories = calories.roundToInt(),
-                                    protein = protein.roundToInt(),
-                                    carbs = carbs.roundToInt(),
-                                    fat = fat.roundToInt()
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary,
-                                contentColor = if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
-                            ),
-                            shape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp),
-                            border = if (isNeo) BorderStroke(2.dp, Color.Black) else null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .then(
-                                    if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
-                                    else Modifier
-                                )
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                "SALVA OBIETTIVO ($selectedTargetKey)",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                // Save Button
+                Box(modifier = Modifier.padding(14.dp)) {
+                    Button(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            soundManager.playSound("click")
+                            viewModel.updateDailyTarget(
+                                dateString = selectedTargetKey,
+                                calories = calories.roundToInt(),
+                                protein = protein.roundToInt(),
+                                carbs = carbs.roundToInt(),
+                                fat = fat.roundToInt()
                             )
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary,
+                            contentColor = if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
+                        ),
+                        shape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp),
+                        border = if (isNeo) BorderStroke(2.dp, Color.Black) else null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .then(
+                                if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                else Modifier
+                            )
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "SALVA OBIETTIVO ($selectedTargetKey)",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        )
                     }
                 }
             }
@@ -716,150 +870,154 @@ fun SettingsScreen(
             // ==========================================
             // 2. ATTIVITÀ & SALUTE (Health & Step Activity)
             // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                IosSectionHeader(title = "Attività & Salute")
+            IosCollapsibleSection(
+                title = "Attività & Salute",
+                subtitle = "Passi e Google Health Connect",
+                icon = Icons.AutoMirrored.Filled.DirectionsWalk,
+                iconBg = ApplePurple,
+                isExpanded = openSections.contains("HEALTH"),
+                onToggle = { toggleSection("HEALTH") },
+                statusBadge = "${steps.roundToInt()} passi"
+            ) {
+                // Daily Steps Slider
+                IosTargetControlRow(
+                    label = "Obiettivo Passi",
+                    value = steps,
+                    unit = "passi",
+                    valueRange = 2000f..30000f,
+                    stepSize = 500f,
+                    accentColor = ApplePurple,
+                    icon = Icons.AutoMirrored.Filled.DirectionsWalk,
+                    onValueChange = {
+                        steps = it
+                        preferencesManager.setStepGoal(it.roundToInt())
+                    }
+                )
 
-                IosGroupCard {
-                    // Daily Steps Slider
-                    IosTargetControlRow(
-                        label = "Obiettivo Passi",
-                        value = steps,
-                        unit = "passi",
-                        valueRange = 2000f..30000f,
-                        stepSize = 500f,
-                        accentColor = ApplePurple,
-                        icon = Icons.AutoMirrored.Filled.DirectionsWalk,
-                        onValueChange = {
-                            steps = it
-                            preferencesManager.setStepGoal(it.roundToInt())
+                IosRowDivider()
+
+                // Google Health Connect
+                val isAvailable = hcAvailability == com.example.util.HealthConnectAvailability.AVAILABLE
+                IosSettingsRow(
+                    icon = Icons.Default.Favorite,
+                    iconBg = AppleRed,
+                    title = "Health Connect",
+                    subtitle = if (isHcAuthorized) "Sincronizzazione attiva" else "Sincronizza smartwatch e Google Fit",
+                    trailing = {
+                        val badgeText = when {
+                            !isAvailable -> "Non Disp."
+                            isHcAuthorized -> "Attivo"
+                            else -> "Disconnesso"
                         }
-                    )
-
-                    IosRowDivider()
-
-                    // Google Health Connect
-                    val isAvailable = hcAvailability == com.example.util.HealthConnectAvailability.AVAILABLE
-                    IosSettingsRow(
-                        icon = Icons.Default.Favorite,
-                        iconBg = AppleRed,
-                        title = "Health Connect",
-                        subtitle = if (isHcAuthorized) "Sincronizzazione attiva" else "Sincronizza smartwatch e Google Fit",
-                        trailing = {
-                            val badgeText = when {
-                                !isAvailable -> "Non Disp."
-                                isHcAuthorized -> "Attivo"
-                                else -> "Disconnesso"
-                            }
-                            val badgeColor = when {
-                                isHcAuthorized -> Color(0xFF22C55E)
-                                !isAvailable -> MaterialTheme.colorScheme.error
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                            Surface(
-                                color = badgeColor.copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(6.dp),
-                                border = BorderStroke(0.8.dp, badgeColor.copy(alpha = 0.4f))
-                            ) {
-                                Text(
-                                    text = badgeText,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                                    color = badgeColor,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                                )
-                            }
+                        val badgeColor = when {
+                            isHcAuthorized -> Color(0xFF22C55E)
+                            !isAvailable -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
                         }
-                    )
+                        Surface(
+                            color = badgeColor.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp),
+                            border = BorderStroke(0.8.dp, badgeColor.copy(alpha = 0.4f))
+                        ) {
+                            Text(
+                                text = badgeText,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                color = badgeColor,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                )
 
-                    if (isHcAuthorized) {
-                        Column(
+                if (isHcAuthorized) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 6.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .padding(vertical = 10.dp, horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceAround
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                    .padding(vertical = 10.dp, horizontal = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceAround
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Passi", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${hcDailyData.steps}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Calorie Bruciate", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${hcDailyData.caloriesBurned.roundToInt()} kcal", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = AppleOrange)
-                                }
-                                if (hcDailyData.latestWeightKg != null) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("Ultimo Peso", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text("%.1f kg".format(hcDailyData.latestWeightKg), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = AppleBlue)
-                                    }
-                                }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Passi", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${hcDailyData.steps}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                             }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        soundManager.playSound("click")
-                                        scope.launch {
-                                            val res = hcManager.syncDailyData()
-                                            if (res.isSuccess) {
-                                                val data = res.getOrThrow()
-                                                val todaySteps = com.example.util.StepCounterStore.savedSteps(context)
-                                                if (data.steps.toInt() > todaySteps) {
-                                                    com.example.util.StepCounterStore.setSteps(context, data.steps.toInt())
-                                                }
-                                                com.example.util.WidgetUpdater.updateAllWidgets(context)
-                                                Toast.makeText(context, "Dati sincronizzati!", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, "Errore di sincronizzazione", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f).height(38.dp),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                        contentColor = MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Sincronizza Ora", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                                }
-
-                                TextButton(
-                                    onClick = { hcManager.openSettings(context) },
-                                    modifier = Modifier.height(38.dp)
-                                ) {
-                                    Text("Gestisci", style = MaterialTheme.typography.labelSmall)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Calorie Bruciate", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("${hcDailyData.caloriesBurned.roundToInt()} kcal", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = AppleOrange)
+                            }
+                            if (hcDailyData.latestWeightKg != null) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Ultimo Peso", style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("%.1f kg".format(hcDailyData.latestWeightKg), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = AppleBlue)
                                 }
                             }
                         }
-                    } else if (isAvailable) {
-                        Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Button(
                                 onClick = {
-                                    try {
-                                        hcPermissionLauncher.launch(hcManager.permissions)
-                                    } catch (e: Exception) {
-                                        hcManager.openSettings(context)
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    soundManager.playSound("click")
+                                    scope.launch {
+                                        val res = hcManager.syncDailyData()
+                                        if (res.isSuccess) {
+                                            val data = res.getOrThrow()
+                                            val todaySteps = com.example.util.StepCounterStore.savedSteps(context)
+                                            if (data.steps.toInt() > todaySteps) {
+                                                com.example.util.StepCounterStore.setSteps(context, data.steps.toInt())
+                                            }
+                                            com.example.util.WidgetUpdater.updateAllWidgets(context)
+                                            Toast.makeText(context, "Dati sincronizzati!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Errore di sincronizzazione", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth().height(40.dp),
+                                modifier = Modifier.weight(1f).height(38.dp),
                                 shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = AppleRed, contentColor = Color.White)
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
                             ) {
-                                Text("CONNETTI GOOGLE HEALTH CONNECT", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Sincronizza Ora", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                             }
+
+                            TextButton(
+                                onClick = { hcManager.openSettings(context) },
+                                modifier = Modifier.height(38.dp)
+                            ) {
+                                Text("Gestisci", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                } else if (isAvailable) {
+                    Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+                        Button(
+                            onClick = {
+                                try {
+                                    hcPermissionLauncher.launch(hcManager.permissions)
+                                } catch (e: Exception) {
+                                    hcManager.openSettings(context)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(40.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppleRed, contentColor = Color.White)
+                        ) {
+                            Text("CONNETTI GOOGLE HEALTH CONNECT", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                         }
                     }
                 }
@@ -868,245 +1026,262 @@ fun SettingsScreen(
             // ==========================================
             // 3. ASPETTO & FEEDBACK (Theme, Sounds, Alerts)
             // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                IosSectionHeader(title = "Aspetto & Feedback")
+            IosCollapsibleSection(
+                title = "Aspetto & Feedback",
+                subtitle = "Tema, suoni e notifiche",
+                icon = Icons.Default.Palette,
+                iconBg = AppleYellow,
+                isExpanded = openSections.contains("APPEARANCE"),
+                onToggle = { toggleSection("APPEARANCE") },
+                statusBadge = activeTheme.displayName
+            ) {
+                // Theme Skin Row
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        IosIconTile(icon = Icons.Default.Palette, backgroundColor = AppleYellow)
+                        Text(
+                            "Tema dell'Applicazione",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (isNeo) FontWeight.Bold else FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
 
-                IosGroupCard {
-                    // Theme Skin Row
-                    Column(
+                    // Theme Selection Pills
+                    val themes = ThemeSkin.values()
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            IosIconTile(icon = Icons.Default.Palette, backgroundColor = AppleYellow)
-                            Text(
-                                "Tema dell'Applicazione",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (isNeo) FontWeight.Bold else FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        themes.forEach { theme ->
+                            val isSelected = theme == activeTheme
+                            val pillBg = if (isSelected) {
+                                if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                            } else Color.Transparent
+                            val pillFg = if (isSelected) {
+                                if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
+                            } else MaterialTheme.colorScheme.onSurfaceVariant
 
-                        // Theme Selection Pills
-                        val themes = ThemeSkin.values()
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .padding(4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            themes.forEach { theme ->
-                                val isSelected = theme == activeTheme
-                                val pillBg = if (isSelected) {
-                                    if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
-                                } else Color.Transparent
-                                val pillFg = if (isSelected) {
-                                    if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                } else MaterialTheme.colorScheme.onSurfaceVariant
-
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(pillBg)
-                                        .then(
-                                            if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
-                                            else Modifier
-                                        )
-                                        .clickable {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            soundManager.playSound("click")
-                                            preferencesManager.setThemeSkin(theme)
-                                        }
-                                        .padding(vertical = 7.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(7.dp)
-                                                .clip(CircleShape)
-                                                .background(themePreviewColor(theme))
-                                        )
-                                        Text(
-                                            text = theme.displayName,
-                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = pillFg
-                                        )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(pillBg)
+                                    .then(
+                                        if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
+                                        else Modifier
+                                    )
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        soundManager.playSound("click")
+                                        preferencesManager.setThemeSkin(theme)
                                     }
+                                    .padding(vertical = 7.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(themePreviewColor(theme))
+                                    )
+                                    Text(
+                                        text = theme.displayName,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = pillFg
+                                    )
                                 }
                             }
                         }
                     }
-
-                    IosRowDivider()
-
-                    // Sound Effects Switch
-                    IosSettingsRow(
-                        icon = Icons.AutoMirrored.Filled.VolumeUp,
-                        iconBg = AppleBlue,
-                        title = "Effetti Sonori",
-                        subtitle = "Feedback audio alle interazioni",
-                        trailing = {
-                            Switch(
-                                checked = soundEffectsEnabled,
-                                onCheckedChange = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    soundManager.playSound("click")
-                                    preferencesManager.setSoundEnabled(it)
-                                },
-                                modifier = Modifier.scale(0.85f),
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
-                                )
-                            )
-                        }
-                    )
-
-                    IosRowDivider()
-
-                    // Step Sensor Switch
-                    IosSettingsRow(
-                        icon = Icons.AutoMirrored.Filled.DirectionsWalk,
-                        iconBg = AppleGreen,
-                        title = "Sensore Passi",
-                        subtitle = "Contapassi integrato in background",
-                        trailing = {
-                            Switch(
-                                checked = syncStepsEnabled,
-                                onCheckedChange = { checked ->
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    soundManager.playSound("click")
-                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                        activityPermissionLauncher.launch(android.Manifest.permission.ACTIVITY_RECOGNITION)
-                                    } else {
-                                        preferencesManager.setSyncSteps(checked)
-                                    }
-                                },
-                                modifier = Modifier.scale(0.85f),
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
-                                )
-                            )
-                        }
-                    )
-
-                    IosRowDivider()
-
-                    // Meal Reminders Switch
-                    IosSettingsRow(
-                        icon = Icons.Default.Notifications,
-                        iconBg = AppleOrange,
-                        title = "Promemoria Notifiche",
-                        subtitle = "Avvisi per la registrazione dei pasti",
-                        trailing = {
-                            Switch(
-                                checked = notificationsEnabled,
-                                onCheckedChange = { checked ->
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    soundManager.playSound("click")
-                                    if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                    } else {
-                                        preferencesManager.setNotificationsEnabled(checked)
-                                        NotificationScheduler.scheduleReminders(context, checked)
-                                    }
-                                },
-                                modifier = Modifier.scale(0.85f),
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
-                                )
-                            )
-                        }
-                    )
                 }
+
+                IosRowDivider()
+
+                // Sound Effects Switch
+                IosSettingsRow(
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    iconBg = AppleBlue,
+                    title = "Effetti Sonori",
+                    subtitle = "Feedback audio alle interazioni",
+                    trailing = {
+                        Switch(
+                            checked = soundEffectsEnabled,
+                            onCheckedChange = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                soundManager.playSound("click")
+                                preferencesManager.setSoundEnabled(it)
+                            },
+                            modifier = Modifier.scale(0.85f),
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
+                            )
+                        )
+                    }
+                )
+
+                IosRowDivider()
+
+                // Step Sensor Switch
+                IosSettingsRow(
+                    icon = Icons.AutoMirrored.Filled.DirectionsWalk,
+                    iconBg = AppleGreen,
+                    title = "Sensore Passi",
+                    subtitle = "Contapassi integrato in background",
+                    trailing = {
+                        Switch(
+                            checked = syncStepsEnabled,
+                            onCheckedChange = { checked ->
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                soundManager.playSound("click")
+                                if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    activityPermissionLauncher.launch(android.Manifest.permission.ACTIVITY_RECOGNITION)
+                                } else {
+                                    preferencesManager.setSyncSteps(checked)
+                                }
+                            },
+                            modifier = Modifier.scale(0.85f),
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
+                            )
+                        )
+                    }
+                )
+
+                IosRowDivider()
+
+                // Meal Reminders Switch
+                IosSettingsRow(
+                    icon = Icons.Default.Notifications,
+                    iconBg = AppleOrange,
+                    title = "Promemoria Notifiche",
+                    subtitle = "Avvisi per la registrazione dei pasti",
+                    trailing = {
+                        Switch(
+                            checked = notificationsEnabled,
+                            onCheckedChange = { checked ->
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                soundManager.playSound("click")
+                                if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    preferencesManager.setNotificationsEnabled(checked)
+                                    NotificationScheduler.scheduleReminders(context, checked)
+                                }
+                            },
+                            modifier = Modifier.scale(0.85f),
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
+                            )
+                        )
+                    }
+                )
             }
 
             // ==========================================
             // 4. PRIVACY & DATI (GDPR & Local-First)
             // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                IosSectionHeader(title = "Privacy & Archiviazione Dati")
-
-                IosGroupCard {
-                    // Local First Badge
-                    IosSettingsRow(
-                        icon = Icons.Default.Shield,
-                        iconBg = AppleGreen,
-                        title = "100% Locale & Offline",
-                        subtitle = "Nessun cloud: i dati risiedono solo su questo telefono",
-                        trailing = {
-                            Surface(
-                                color = AppleGreen.copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = "GDPR",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
-                                    color = AppleGreen,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    )
-
-                    IosRowDivider()
-
-                    // Export CSV
-                    IosSettingsRow(
-                        icon = Icons.Default.FileDownload,
-                        iconBg = AppleBlue,
-                        title = "Esporta Dati in CSV",
-                        subtitle = "Esporta storico pasti e peso in formato standard",
-                        trailing = {
-                            Icon(
-                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            IosCollapsibleSection(
+                title = "Privacy & Archiviazione Dati",
+                subtitle = "Database locale, esportazione e reset",
+                icon = Icons.Default.Shield,
+                iconBg = AppleGreen,
+                isExpanded = openSections.contains("PRIVACY"),
+                onToggle = { toggleSection("PRIVACY") },
+                statusBadge = "Offline"
+            ) {
+                // Local First Badge
+                IosSettingsRow(
+                    icon = Icons.Default.Shield,
+                    iconBg = AppleGreen,
+                    title = "100% Locale & Offline",
+                    subtitle = "Nessun cloud: i dati risiedono solo su questo telefono",
+                    trailing = {
+                        Surface(
+                            color = AppleGreen.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "GDPR",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                                color = AppleGreen,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
-                        },
-                        onClick = {
-                            viewModel.exportData(context)
                         }
-                    )
+                    }
+                )
 
-                    IosRowDivider()
+                IosRowDivider()
 
-                    // Reset Data Row
-                    IosSettingsRow(
-                        icon = Icons.Default.DeleteForever,
-                        iconBg = AppleRed,
-                        title = "Ripristina Applicazione",
-                        subtitle = "Cancella pasti, cibi personali e storico peso",
-                        trailing = {
-                            Icon(
-                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        },
-                        onClick = {
-                            showWipeDialog = true
-                        }
-                    )
-                }
+                // Export CSV
+                IosSettingsRow(
+                    icon = Icons.Default.FileDownload,
+                    iconBg = AppleBlue,
+                    title = "Esporta Dati in CSV",
+                    subtitle = "Esporta storico pasti e peso in formato standard",
+                    trailing = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    onClick = {
+                        viewModel.exportData(context)
+                    }
+                )
+
+                IosRowDivider()
+
+                // Reset Data Row
+                IosSettingsRow(
+                    icon = Icons.Default.DeleteForever,
+                    iconBg = AppleRed,
+                    title = "Ripristina Applicazione",
+                    subtitle = "Cancella pasti, cibi personali e storico peso",
+                    trailing = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    onClick = {
+                        showWipeDialog = true
+                    }
+                )
             }
 
             // ==========================================
             // 5. AGGIORNAMENTI & INFO APP
             // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                IosSectionHeader(title = "Aggiornamenti & Informazioni")
-                OtaUpdateCard()
+            IosCollapsibleSection(
+                title = "Aggiornamenti & Informazioni",
+                subtitle = "Note di rilascio e aggiornamenti OTA",
+                icon = Icons.Default.SystemUpdate,
+                iconBg = AppleBlue,
+                isExpanded = openSections.contains("UPDATES"),
+                onToggle = { toggleSection("UPDATES") },
+                statusBadge = "v1.0.34"
+            ) {
+                Box(modifier = Modifier.padding(10.dp)) {
+                    OtaUpdateCard()
+                }
             }
 
-            Spacer(modifier = Modifier.height(110.dp))
+            Spacer(modifier = Modifier.height(130.dp))
         }
     }
 }
