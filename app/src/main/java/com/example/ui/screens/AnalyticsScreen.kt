@@ -427,7 +427,9 @@ fun AnalyticsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val calorieDiffLabel = if (avgDifference >= 0) "-$avgDifference kcal/g" else "+${-avgDifference} kcal/g"
+                    val calorieDiffLabel = if (avgDifference != 0) {
+                        if (avgDifference > 0) "-$avgDifference vs target" else "+${-avgDifference} vs target"
+                    } else "A target"
                     AppleHighlightTile(
                         title = "Media Calorie",
                         primaryValue = "$avgIntake kcal",
@@ -438,12 +440,17 @@ fun AnalyticsScreen(
                     )
 
                     val netLabel = if (netDifference >= 0) "-$netDifference kcal" else "+${-netDifference} kcal"
-                    val estKg = netDifference / 7700f
+                    val estKg = kotlin.math.abs(netDifference) / 7700f
                     val estKgStr = String.format(Locale.US, "%.1f", estKg)
+                    val netSubtitle = when {
+                        netDifference > 0 -> "Deficit (~$estKgStr kg)"
+                        netDifference < 0 -> "Surplus (~$estKgStr kg)"
+                        else -> "In pareggio"
+                    }
                     AppleHighlightTile(
-                        title = "Saldo Periodo",
+                        title = "Bilancio Periodo",
                         primaryValue = netLabel,
-                        subtitle = if (netDifference >= 0) "Deficit (~$estKgStr kg)" else "Surplus (~$estKgStr kg)",
+                        subtitle = netSubtitle,
                         icon = if (netDifference >= 0) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
                         iconBg = if (netDifference >= 0) Color(0xFF22C55E) else AppleRed,
                         modifier = Modifier.weight(1f)
@@ -527,7 +534,7 @@ fun AnalyticsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(130.dp))
+            Spacer(modifier = Modifier.height(140.dp))
         }
     }
 }
@@ -655,37 +662,52 @@ private fun UnifiedIntakeExplorerCard(
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = inspectedDay?.let { "${it.dayLabel} (${it.date.takeLast(5)})" } ?: "Oggi",
+                            text = inspectedDay?.let { "${it.dayLabel} · ${it.date.takeLast(5)}" } ?: "Oggi",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        val delta = currentVal - targetVal
+                        val deltaStr = if (delta >= 0) "+${delta.roundToInt()}" else "${delta.roundToInt()}"
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "${currentVal.roundToInt()} $unit",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = metricColor
+                            )
+                            Text(
+                                text = "($deltaStr vs target)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
                         Text(
-                            text = "Obiettivo: ${targetVal.roundToInt()} $unit",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Target ${targetVal.roundToInt()} $unit",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 10.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                         )
                     }
-                    val delta = currentVal - targetVal
-                    val deltaStr = if (delta >= 0) "+${delta.roundToInt()} $unit" else "${delta.roundToInt()} $unit"
-                    Text(
-                        text = "Assunti: ${currentVal.roundToInt()} $unit ($deltaStr vs target)",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = metricColor,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
                 }
             }
 
@@ -747,31 +769,55 @@ private fun UnifiedIntakeExplorerCard(
                         ChartMetricMode.FAT -> dayData.fat
                     }
 
-                    val barHeight = ((dayValue / maxVal) * chartHeight).coerceIn(4.dp.toPx(), chartHeight)
-                    val barTopY = topLabelHeight + (chartHeight - barHeight)
                     val isSelected = selectedDayIndex == index
 
-                    val barColor = if (isSelected) {
-                        if (isNeo) Color(0xFFFFE500) else metricColor
+                    // Background track bar (Apple Health style)
+                    val trackColor = if (isSelected) {
+                        onSurfaceVariant.copy(alpha = 0.22f)
                     } else {
-                        metricColor.copy(alpha = 0.75f)
+                        onSurfaceVariant.copy(alpha = 0.08f)
                     }
-
-                    // Bar
                     drawRoundRect(
-                        color = barColor,
-                        topLeft = Offset(centerX - barWidth / 2f, barTopY),
-                        size = Size(barWidth, barHeight),
+                        color = trackColor,
+                        topLeft = Offset(centerX - barWidth / 2f, topLabelHeight),
+                        size = Size(barWidth, chartHeight),
                         cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx())
                     )
 
-                    if (isNeo) {
+                    if (dayValue > 0f) {
+                        val barHeight = ((dayValue / maxVal) * chartHeight).coerceIn(4.dp.toPx(), chartHeight)
+                        val barTopY = topLabelHeight + (chartHeight - barHeight)
+
+                        val barColor = if (isSelected) {
+                            if (isNeo) Color(0xFFFFE500) else metricColor
+                        } else {
+                            metricColor.copy(alpha = 0.85f)
+                        }
+
+                        // Bar
                         drawRoundRect(
-                            color = Color.Black,
+                            color = barColor,
                             topLeft = Offset(centerX - barWidth / 2f, barTopY),
                             size = Size(barWidth, barHeight),
-                            cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx()),
-                            style = Stroke(width = 1.5.dp.toPx())
+                            cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx())
+                        )
+
+                        if (isNeo) {
+                            drawRoundRect(
+                                color = Color.Black,
+                                topLeft = Offset(centerX - barWidth / 2f, barTopY),
+                                size = Size(barWidth, barHeight),
+                                cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx()),
+                                style = Stroke(width = 1.5.dp.toPx())
+                            )
+                        }
+                    } else {
+                        // Subtle baseline indicator when no intake
+                        drawRoundRect(
+                            color = onSurfaceVariant.copy(alpha = 0.20f),
+                            topLeft = Offset(centerX - barWidth / 2f, topLabelHeight + chartHeight - 3.dp.toPx()),
+                            size = Size(barWidth, 3.dp.toPx()),
+                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                         )
                     }
 
@@ -848,17 +894,34 @@ private fun MacroDistributionCard(
             }
 
             // Proportional Ratio Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Box(modifier = Modifier.weight(carbsPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.carbs))
-                Box(modifier = Modifier.weight(proteinPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.protein))
-                Box(modifier = Modifier.weight(fatPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.fat))
+            if (todayProtein > 0f || todayCarbs > 0f || todayFat > 0f) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Box(modifier = Modifier.weight(carbsPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.carbs))
+                    Box(modifier = Modifier.weight(proteinPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.protein))
+                    Box(modifier = Modifier.weight(fatPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.fat))
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Nessun pasto registrato oggi",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             // 3 Macro Detail Columns - Equal Responsive Width
