@@ -26,6 +26,17 @@ import kotlinx.coroutines.launch
 
 class PedometerWidgetProvider : AppWidgetProvider() {
 
+    companion object {
+        @Volatile
+        private var lastSensorCheckTimeMs: Long = 0L
+
+        @Volatile
+        private var lastHcSyncTimeMs: Long = 0L
+
+        private const val SENSOR_DEBOUNCE_MS = 15_000L
+        private const val HC_SYNC_DEBOUNCE_MS = 30_000L
+    }
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         for (appWidgetId in appWidgetIds) {
             updatePedometerWidget(context, appWidgetManager, appWidgetId, StepCounterStore.savedSteps(context))
@@ -49,6 +60,10 @@ class PedometerWidgetProvider : AppWidgetProvider() {
     }
 
     private fun triggerSensorUpdate(context: Context) {
+        val now = System.currentTimeMillis()
+        if (now - lastSensorCheckTimeMs < SENSOR_DEBOUNCE_MS) return
+        lastSensorCheckTimeMs = now
+
         if (!PreferencesManager.getInstance(context).syncSteps.value) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(context, Manifest.permission.ACTIVITY_RECOGNITION) != PackageManager.PERMISSION_GRANTED) return
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return
@@ -99,6 +114,10 @@ class PedometerWidgetProvider : AppWidgetProvider() {
     }
 
     private fun triggerHealthConnectSync(context: Context) {
+        val now = System.currentTimeMillis()
+        if (now - lastHcSyncTimeMs < HC_SYNC_DEBOUNCE_MS) return
+        lastHcSyncTimeMs = now
+
         val app = context.applicationContext as? com.example.FoodLabApplication ?: return
         val hcManager = app.healthConnectManager
         if (hcManager.checkAvailability() != com.example.util.HealthConnectAvailability.AVAILABLE) return

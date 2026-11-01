@@ -11,10 +11,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
+import androidx.compose.ui.graphics.Color
+
 @Composable
 fun ShoppingListScreen(
     onNavigateBack: () -> Unit = {}
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(22.dp)
+    val cardBorder = if (isNeo) androidx.compose.foundation.BorderStroke(2.dp, Color.Black) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val cardBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -33,10 +42,15 @@ fun ShoppingListScreen(
             contentAlignment = Alignment.Center
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                        else Modifier
+                    ),
+                shape = cardShape,
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                border = cardBorder
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),

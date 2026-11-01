@@ -18,21 +18,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val repository = (application as FoodLabApplication).repository
 
     init {
-        // Init fake database data for empty states
         viewModelScope.launch {
-            val foods = repository.allFoods.first()
-            if (foods.isEmpty()) {
-                repository.insertInitialFoods(
-                    listOf(
-                        FoodItem(name = "Oatmeal", brand = "Quaker", caloriesPer100g = 379, proteinPer100g = 13.1f, carbsPer100g = 67.7f, fatPer100g = 6.5f, isFavorite = true),
-                        FoodItem(name = "Chicken Breast", brand = "Generic", caloriesPer100g = 165, proteinPer100g = 31f, carbsPer100g = 0f, fatPer100g = 3.6f, isFavorite = true),
-                        FoodItem(name = "Almonds", brand = "Generic", caloriesPer100g = 579, proteinPer100g = 21.1f, carbsPer100g = 21.6f, fatPer100g = 49.9f),
-                        FoodItem(name = "Greek Yogurt", brand = "Chobani", caloriesPer100g = 59, proteinPer100g = 10f, carbsPer100g = 3.6f, fatPer100g = 0.4f, isFavorite = true),
-                        FoodItem(name = "Banana", brand = "Generic", caloriesPer100g = 89, proteinPer100g = 1.1f, carbsPer100g = 22.8f, fatPer100g = 0.3f, isFavorite = true),
-                        FoodItem(name = "Salmon", brand = "Generic", caloriesPer100g = 208, proteinPer100g = 20f, carbsPer100g = 0f, fatPer100g = 13f)
-                    )
-                )
-            }
             val target = repository.getFixedTarget().first()
             if (target == null) {
                 repository.insertTarget(DailyTarget(dateString = "FIXED"))
@@ -55,26 +41,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DailyTarget("FIXED"))
 
     fun resolveTargetForDateSync(date: String, targets: List<DailyTarget>): DailyTarget {
-        val specific = targets.firstOrNull { it.dateString == date }
-        if (specific != null) return specific
-
-        val calendar = Calendar.getInstance().apply {
-            time = SessionManager.parseDateString(date)
-        }
-        val weekdayName = when (calendar.get(Calendar.DAY_OF_WEEK)) {
-            Calendar.MONDAY -> "MONDAY"
-            Calendar.TUESDAY -> "TUESDAY"
-            Calendar.WEDNESDAY -> "WEDNESDAY"
-            Calendar.THURSDAY -> "THURSDAY"
-            Calendar.FRIDAY -> "FRIDAY"
-            Calendar.SATURDAY -> "SATURDAY"
-            Calendar.SUNDAY -> "SUNDAY"
-            else -> ""
-        }
-        val weekdayTarget = targets.firstOrNull { it.dateString == weekdayName }
-        if (weekdayTarget != null) return weekdayTarget
-
-        return targets.firstOrNull { it.dateString == "FIXED" } ?: DailyTarget("FIXED")
+        return com.example.util.TargetResolver.resolveTarget(date, targets)
     }
 
     val latestWeight: StateFlow<WeightLog?> = repository.allWeights
@@ -173,9 +140,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 carbsPer100g = food.carbsPer100g,
                 fatPer100g = food.fatPer100g
             )
+            val canonicalMealType = com.example.util.MealTypes.canonicalize(mealType)
             val newMeal = MealEntry(
                 dateString = currentDate.value,
-                mealType = mealType,
+                mealType = canonicalMealType,
                 foodId = food.id,
                 foodName = food.name,
                 quantityGrams = servingGrams,
@@ -209,8 +177,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun moveMealToType(meal: MealEntry, targetMealType: String) {
-        if (meal.mealType == targetMealType) return
-        val updated = meal.copy(mealType = targetMealType)
+        val canonicalTarget = com.example.util.MealTypes.canonicalize(targetMealType)
+        if (meal.mealType == canonicalTarget) return
+        val updated = meal.copy(mealType = canonicalTarget)
         viewModelScope.launch {
             repository.insertMeal(updated)
             com.example.util.WidgetUpdater.updateAllWidgets(getApplication())

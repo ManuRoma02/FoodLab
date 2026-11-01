@@ -39,6 +39,11 @@ import com.example.util.LocalSoundManager
 import kotlinx.coroutines.launch
 
 
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
+import com.example.ui.theme.neoBorder
+import com.example.ui.theme.foodLabCardModifier
+
 @Composable
 fun BottomNavBar(
     currentRoute: String?,
@@ -46,6 +51,7 @@ fun BottomNavBar(
     modifier: Modifier = Modifier
 ) {
     val soundManager = LocalSoundManager.current
+    val isNeo = MaterialTheme.isNeoBrutalist
     val selectedIndex = when {
         currentRoute == Routes.Dashboard -> 0
         currentRoute == Routes.FoodsDatabase ||
@@ -55,6 +61,18 @@ fun BottomNavBar(
         currentRoute == Routes.Settings -> 3
         else -> 0
     }
+
+    val navShape = if (isNeo) RoundedCornerShape(14.dp) else RoundedCornerShape(32.dp)
+    val navColor = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.82f)
+    val navBorder = if (isNeo) BorderStroke(2.5.dp, Color.Black) else BorderStroke(
+        width = 1.dp,
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.28f),
+                Color.White.copy(alpha = 0.05f)
+            )
+        )
+    )
 
     Box(
         modifier = modifier
@@ -66,23 +84,18 @@ fun BottomNavBar(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(
-                    elevation = 16.dp,
-                    shape = RoundedCornerShape(32.dp),
-                    spotColor = Color.Black.copy(alpha = 0.40f),
-                    ambientColor = Color.Black.copy(alpha = 0.25f)
-                ),
-            shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.82f),
-            border = BorderStroke(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.28f),
-                        Color.White.copy(alpha = 0.05f)
+                .then(
+                    if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = Color.Black, cornerRadius = 14.dp)
+                    else Modifier.shadow(
+                        elevation = 16.dp,
+                        shape = navShape,
+                        spotColor = Color.Black.copy(alpha = 0.40f),
+                        ambientColor = Color.Black.copy(alpha = 0.25f)
                     )
-                )
-            )
+                ),
+            shape = navShape,
+            color = navColor,
+            border = navBorder
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -112,37 +125,47 @@ fun BottomNavBar(
                         .padding(horizontal = 4.dp, vertical = 2.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Pill container background
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                    if (isNeo) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFFFFE500))
+                                .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
+                        )
+                    } else {
+                        // Pill container background
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                                        )
                                     )
                                 )
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                    )
-                    // Sliding active bar at bottom of the active tab
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 3.dp)
-                            .width(22.dp)
-                            .height(3.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(99.dp)
-                            )
-                    )
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                        )
+                        // Sliding active bar at bottom of the active tab
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 3.dp)
+                                .width(22.dp)
+                                .height(3.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(99.dp)
+                                )
+                        )
+                    }
                 }
 
                 Row(
@@ -294,8 +317,9 @@ fun NavBarItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val primaryColor = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary
+    val unselectedColor = if (isNeo) Color(0xFF333333) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
 
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) primaryColor else unselectedColor,
@@ -322,7 +346,7 @@ fun NavBarItem(
     Box(
         modifier = modifier
             .defaultMinSize(minWidth = 56.dp, minHeight = 44.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(20.dp))
             .applePressEffect(pressedScale = 0.92f, onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
@@ -347,7 +371,7 @@ fun NavBarItem(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    fontWeight = if (isSelected) (if (isNeo) FontWeight.Black else FontWeight.SemiBold) else (if (isNeo) FontWeight.Bold else FontWeight.Normal),
                     fontSize = 10.sp,
                     lineHeight = 12.sp,
                     letterSpacing = 0.2.sp
@@ -467,18 +491,27 @@ fun ImprovedTagButton(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val targetBg = if (isNeo) {
+        if (isSelected) Color(0xFFFFE500) else Color.White
+    } else {
+        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer
+    }
+    val targetText = if (isNeo) Color.Black else (if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+    val targetBorder = if (isNeo) Color.Black else (if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+
     val animatedBg by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
+        targetValue = targetBg,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "tagBg"
     )
     val animatedText by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = targetText,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "tagText"
     )
     val animatedBorder by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+        targetValue = targetBorder,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "tagBorder"
     )
@@ -491,23 +524,30 @@ fun ImprovedTagButton(
         label = "tagScale"
     )
 
+    val tagShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(14.dp)
+    val borderWidth = if (isNeo) 2.dp else 1.dp
+
     Box(
         modifier = Modifier
             .graphicsLayer {
                 scaleX = tagScale
                 scaleY = tagScale
             }
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 8.dp)
+                else Modifier
+            )
             .applePressEffect(pressedScale = 0.93f, onClick = onClick)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(tagShape)
             .background(animatedBg)
-            .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
+            .border(borderWidth, animatedBorder, tagShape)
             .padding(horizontal = 14.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold,
                 letterSpacing = 0.3.sp
             ),
             color = animatedText
@@ -517,10 +557,15 @@ fun ImprovedTagButton(
 
 @Composable
 fun MacroBadge(label: String, value: String, color: Color) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val badgeShape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp)
+    val bgColor = if (isNeo) color.copy(alpha = 0.25f) else color.copy(alpha = 0.12f)
+    val borderStroke = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(0.5.dp, color.copy(alpha = 0.3f))
+
     Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = color.copy(alpha = 0.12f),
-        border = BorderStroke(0.5.dp, color.copy(alpha = 0.3f))
+        shape = badgeShape,
+        color = bgColor,
+        border = borderStroke
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
@@ -529,12 +574,12 @@ fun MacroBadge(label: String, value: String, color: Color) {
             Text(
                 text = "$label ",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                color = color
+                color = if (isNeo) Color.Black else color
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNeo) FontWeight.ExtraBold else FontWeight.SemiBold),
+                color = if (isNeo) Color.Black else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -549,18 +594,26 @@ fun SearchResultCard(
     onAddClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(18.dp)
+    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(
+        1.dp,
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            )
             .applePressEffect(pressedScale = 0.97f, onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
+        shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
         ),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-        )
+        border = cardBorder
     ) {
         Row(
             modifier = Modifier
@@ -595,17 +648,17 @@ fun SearchResultCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                            shape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp),
+                            color = if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            border = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                         ) {
                             Text(
                                 text = "${food.caloriesPer100g} kcal/100g",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = if (isNeo) FontWeight.Black else FontWeight.ExtraBold,
                                     letterSpacing = (-0.1).sp
                                 ),
-                                color = MaterialTheme.colorScheme.primary,
+                                color = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                             )
                         }

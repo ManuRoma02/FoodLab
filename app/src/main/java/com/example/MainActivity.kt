@@ -524,12 +524,6 @@ private fun FoodLabNavHost(
                 initialName = initialName
             )
         }
-        composable(Routes.CreateFood) {
-            CreateFoodScreen(
-                viewModel = foodSearchViewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
         composable(Routes.CreateRecipe) {
             CreateRecipeScreen(
                 onNavigateBack = { navController.popBackStack() }
@@ -574,12 +568,7 @@ private fun FoodLabNavHost(
         ) { backStackEntry ->
             val foodId = backStackEntry.arguments?.getInt("foodId") ?: 0
             val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-            val mealType = when {
-                hour in 4..10 -> MealTypes.BREAKFAST
-                hour in 11..14 -> MealTypes.LUNCH
-                hour in 18..22 -> MealTypes.DINNER
-                else -> MealTypes.SNACK
-            }
+            val mealType = MealTypes.inferMealTypeFromHour(hour)
             FoodDatabaseDetailScreen(
                 viewModel = foodSearchViewModel,
                 foodId = foodId,

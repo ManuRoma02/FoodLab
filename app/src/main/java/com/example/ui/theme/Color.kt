@@ -3,6 +3,7 @@ package com.example.ui.theme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
@@ -142,142 +143,43 @@ val OriginalColorScheme = darkColorScheme(
     outlineVariant = OutlineVariant
 )
 
-// 2. TITANIUM: Apple Style Pro Titanium with electric cyan/blue and graphite
-val TitaniumColorScheme = darkColorScheme(
-    primary = Color(0xFF2997FF),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFF00458E),
-    onPrimaryContainer = Color(0xFFD6E9FF),
-    secondary = AppleGreen,
+// 3. NEO_BRUTALISM: High-contrast brutalist canvas with stark black borders and saturated punchy accents
+val NeoBrutalismColorScheme = lightColorScheme(
+    primary = Color(0xFFFF3366), // Saturated Neo Coral / Shocking Pink
+    onPrimary = Color(0xFF000000), // Pure Black text
+    primaryContainer = Color(0xFFFFE500), // Electric Cyber Yellow
+    onPrimaryContainer = Color(0xFF000000),
+    secondary = Color(0xFF00E599), // Electric Acid Mint
     onSecondary = Color(0xFF000000),
-    secondaryContainer = Color(0xFF0F5B24),
-    onSecondaryContainer = Color(0xFFB4F3C6),
-    tertiary = Color(0xFFE5A93C),
-    onTertiary = Color(0xFF2E1C00),
-    tertiaryContainer = Color(0xFF5A3B00),
-    onTertiaryContainer = Color(0xFFFFE0A3),
-    error = AppleRed,
+    secondaryContainer = Color(0xFFB3FCE0),
+    onSecondaryContainer = Color(0xFF000000),
+    tertiary = Color(0xFF00D2FF), // Electric Cyan
+    onTertiary = Color(0xFF000000),
+    tertiaryContainer = Color(0xFF8CEEFF),
+    onTertiaryContainer = Color(0xFF000000),
+    error = Color(0xFFFF2A2A),
     onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFF8C1D18),
-    onErrorContainer = Color(0xFFFFD4D1),
-    background = Color(0xFF121316),
-    onBackground = Color(0xFFF5F5F7),
-    surface = Color(0xFF181A1E),
-    onSurface = Color(0xFFF5F5F7),
-    surfaceVariant = Color(0xFF2A2E36),
-    onSurfaceVariant = Color(0xFFA1A1A6),
-    surfaceContainerLow = Color(0xFF15171A),
-    surfaceContainer = Color(0xFF1E2025),
-    surfaceContainerHigh = Color(0xFF262930),
-    surfaceContainerHighest = Color(0xFF30343C),
-    outline = Color(0xFF484C55),
-    outlineVariant = Color(0xFF2A2D34)
-)
-
-// 3. NORD: Nordic Frost - Polar Night, Frost Ice Blue & Snow Storm
-val NordColorScheme = darkColorScheme(
-    primary = Color(0xFF88C0D0),
-    onPrimary = Color(0xFF242933),
-    primaryContainer = Color(0xFF3B5663),
-    onPrimaryContainer = Color(0xFFD8EEF4),
-    secondary = Color(0xFFA3BE8C),
-    onSecondary = Color(0xFF242933),
-    secondaryContainer = Color(0xFF3E5434),
-    onSecondaryContainer = Color(0xFFE2F0D9),
-    tertiary = Color(0xFFEBCB8B),
-    onTertiary = Color(0xFF2E2413),
-    tertiaryContainer = Color(0xFF5E4F28),
-    onTertiaryContainer = Color(0xFFFFF0D4),
-    error = Color(0xFFBF616A),
-    onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFF5C292E),
-    onErrorContainer = Color(0xFFFFD8DC),
-    background = Color(0xFF242933),
-    onBackground = Color(0xFFECEFF4),
-    surface = Color(0xFF2E3440),
-    onSurface = Color(0xFFECEFF4),
-    surfaceVariant = Color(0xFF434C5E),
-    onSurfaceVariant = Color(0xFFD8DEE9),
-    surfaceContainerLow = Color(0xFF292E3A),
-    surfaceContainer = Color(0xFF3B4252),
-    surfaceContainerHigh = Color(0xFF434C5E),
-    surfaceContainerHighest = Color(0xFF4C566A),
-    outline = Color(0xFF616E85),
-    outlineVariant = Color(0xFF3B4252)
-)
-
-// 4. CATPPUCCIN: Deep Mauve / Catppuccin Mocha velvety pastel dark
-val CatppuccinColorScheme = darkColorScheme(
-    primary = Color(0xFFCBA6F7),
-    onPrimary = Color(0xFF181825),
-    primaryContainer = Color(0xFF553B82),
-    onPrimaryContainer = Color(0xFFF1E4FD),
-    secondary = Color(0xFFA6E3A1),
-    onSecondary = Color(0xFF181825),
-    secondaryContainer = Color(0xFF325430),
-    onSecondaryContainer = Color(0xFFDCF8DA),
-    tertiary = Color(0xFFFAB387),
-    onTertiary = Color(0xFF2E190E),
-    tertiaryContainer = Color(0xFF633A20),
-    onTertiaryContainer = Color(0xFFFFE3D1),
-    error = Color(0xFFF38BA8),
-    onError = Color(0xFF181825),
-    errorContainer = Color(0xFF6B2939),
-    onErrorContainer = Color(0xFFFFD9E2),
-    background = Color(0xFF181825),
-    onBackground = Color(0xFFCDD6F4),
-    surface = Color(0xFF1E1E2E),
-    onSurface = Color(0xFFCDD6F4),
-    surfaceVariant = Color(0xFF313244),
-    onSurfaceVariant = Color(0xFFA6ADC8),
-    surfaceContainerLow = Color(0xFF1B1B2A),
-    surfaceContainer = Color(0xFF252538),
-    surfaceContainerHigh = Color(0xFF313244),
-    surfaceContainerHighest = Color(0xFF45475A),
-    outline = Color(0xFF585B70),
-    outlineVariant = Color(0xFF313244)
-)
-
-// 5. WARM_EMBER: Cozy roast espresso & warm terracotta ember
-val WarmEmberColorScheme = darkColorScheme(
-    primary = Color(0xFFF08C54),
-    onPrimary = Color(0xFF2D1600),
-    primaryContainer = Color(0xFF6E3612),
-    onPrimaryContainer = Color(0xFFFFDCBE),
-    secondary = Color(0xFF7CB88B),
-    onSecondary = Color(0xFF122817),
-    secondaryContainer = Color(0xFF2A5034),
-    onSecondaryContainer = Color(0xFFCEECD6),
-    tertiary = Color(0xFFE6BA67),
-    onTertiary = Color(0xFF2E2000),
-    tertiaryContainer = Color(0xFF5E4717),
-    onTertiaryContainer = Color(0xFFFFEBBF),
-    error = Color(0xFFE55959),
-    onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFF6B2222),
-    onErrorContainer = Color(0xFFFFD7D7),
-    background = Color(0xFF161311),
-    onBackground = Color(0xFFF5EBE1),
-    surface = Color(0xFF1F1A17),
-    onSurface = Color(0xFFF5EBE1),
-    surfaceVariant = Color(0xFF332B25),
-    onSurfaceVariant = Color(0xFFC4B6AA),
-    surfaceContainerLow = Color(0xFF1A1613),
-    surfaceContainer = Color(0xFF26201C),
-    surfaceContainerHigh = Color(0xFF322B25),
-    surfaceContainerHighest = Color(0xFF3F3730),
-    outline = Color(0xFF5E5248),
-    outlineVariant = Color(0xFF332B25)
+    errorContainer = Color(0xFFFF8A80),
+    onErrorContainer = Color(0xFF000000),
+    background = Color(0xFFFFFDF5), // Off-white brutal canvas
+    onBackground = Color(0xFF000000), // Solid pitch black
+    surface = Color(0xFFFFFFFF), // Crisp card surface
+    onSurface = Color(0xFF000000), // Solid pitch black
+    surfaceVariant = Color(0xFFFFF9D2), // Canary yellow tint
+    onSurfaceVariant = Color(0xFF1A1A1A),
+    surfaceContainerLow = Color(0xFFF7F5ED),
+    surfaceContainer = Color(0xFFFFFFFF),
+    surfaceContainerHigh = Color(0xFFFFF4B8),
+    surfaceContainerHighest = Color(0xFFFFE500),
+    outline = Color(0xFF000000), // Solid stark black outlines
+    outlineVariant = Color(0xFF000000)
 )
 
 fun themePreviewColor(skin: ThemeSkin): Color {
     return when (skin) {
         ThemeSkin.ORIGINAL -> Color(0xFFFF9500)
         ThemeSkin.RETRO_DARK -> AppleBlue
-        ThemeSkin.TITANIUM -> Color(0xFF2997FF)
-        ThemeSkin.NORD -> Color(0xFF88C0D0)
-        ThemeSkin.CATPPUCCIN -> Color(0xFFCBA6F7)
-        ThemeSkin.WARM_EMBER -> Color(0xFFF08C54)
+        ThemeSkin.NEO_BRUTALISM -> Color(0xFFFFE500)
     }
 }
 
@@ -285,10 +187,7 @@ fun colorSchemeForSkin(skin: ThemeSkin): ColorScheme {
     return when (skin) {
         ThemeSkin.ORIGINAL -> OriginalColorScheme
         ThemeSkin.RETRO_DARK -> RetroDarkColorScheme
-        ThemeSkin.TITANIUM -> TitaniumColorScheme
-        ThemeSkin.NORD -> NordColorScheme
-        ThemeSkin.CATPPUCCIN -> CatppuccinColorScheme
-        ThemeSkin.WARM_EMBER -> WarmEmberColorScheme
+        ThemeSkin.NEO_BRUTALISM -> NeoBrutalismColorScheme
     }
 }
 
@@ -313,29 +212,11 @@ fun macroColorsForSkin(skin: ThemeSkin): MacroColors {
             protein = AppleGreen,
             fat = Color(0xFF64D2FF)
         )
-        ThemeSkin.TITANIUM -> MacroColors(
-            calories = Color(0xFF2997FF),
-            carbs = Color(0xFFE5A93C),
-            protein = AppleGreen,
-            fat = Color(0xFFA1A1A6)
-        )
-        ThemeSkin.NORD -> MacroColors(
-            calories = Color(0xFF88C0D0),
-            carbs = Color(0xFFEBCB8B),
-            protein = Color(0xFFA3BE8C),
-            fat = Color(0xFFD8DEE9)
-        )
-        ThemeSkin.CATPPUCCIN -> MacroColors(
-            calories = Color(0xFFCBA6F7),
-            carbs = Color(0xFFFAB387),
-            protein = Color(0xFFA6E3A1),
-            fat = Color(0xFFCDD6F4)
-        )
-        ThemeSkin.WARM_EMBER -> MacroColors(
-            calories = Color(0xFFF08C54),
-            carbs = Color(0xFFE6BA67),
-            protein = Color(0xFF7CB88B),
-            fat = Color(0xFFF5EBE1)
+        ThemeSkin.NEO_BRUTALISM -> MacroColors(
+            calories = Color(0xFFFF3366), // Saturated coral
+            carbs = Color(0xFFFFB800),    // Electric gold
+            protein = Color(0xFF00C853),  // Vibrant acid green
+            fat = Color(0xFF00B0FF)       // Electric blue
         )
     }
 }

@@ -99,16 +99,29 @@ data class GeminiFoodScanResult(
         if (safeCalories == 0 && (safeProtein > 0f || safeCarbs > 0f || safeFat > 0f)) {
             safeCalories = (safeProtein * 4f + safeCarbs * 4f + safeFat * 9f).roundToInt()
         }
+        val safeFoodName = foodName.trim()
+            .filter { !it.isISOControl() }
+            .take(120)
+            .ifEmpty { "Pasto stimato" }
+        val safeNotes = notes?.trim()
+            ?.filter { !it.isISOControl() || it == '\n' }
+            ?.take(500)
+            ?.ifEmpty { null }
+        val safeDetectedItems = detectedItems.mapNotNull {
+            val cleaned = it.trim().filter { c -> !c.isISOControl() }.take(80)
+            cleaned.ifEmpty { null }
+        }.take(30)
+
         return copy(
-            foodName = foodName.trim().ifEmpty { "Pasto stimato" },
+            foodName = safeFoodName,
             estimatedGrams = safeGrams,
             calories = safeCalories,
             protein = safeProtein,
             carbs = safeCarbs,
             fat = safeFat,
             confidence = normalizedConf,
-            notes = notes?.trim()?.ifEmpty { null },
-            detectedItems = detectedItems.mapNotNull { it.trim().ifEmpty { null } }
+            notes = safeNotes,
+            detectedItems = safeDetectedItems
         )
     }
 }

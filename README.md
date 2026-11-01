@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 <img src="./app/src/main/res/drawable/foodlab_launcher_symbol.png" alt="FoodLab Logo" width="120" height="120" />
 
@@ -14,7 +14,7 @@
 
 <br/>
 
-<img src="./mascot_waving.webp" alt="FoodLab Mascot Companion" width="220" />
+<img src="./app/src/main/res/drawable-nodpi/foodlab_mascot_duo.png" alt="FoodLab Mascot Companion" width="220" />
 
 <p><em>An all-in-one, modern Android nutrition tracker featuring an interactive animated mascot, barcode scanning, custom recipes, pedometer sync, rich Android home screen widgets, and full Material 3 Adaptive UI.</em></p>
 

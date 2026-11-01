@@ -125,20 +125,7 @@ class Repository(
     suspend fun insertTarget(target: DailyTarget) = targetDao.insertTarget(target)
 
     fun resolveTargetForDate(date: String): Flow<DailyTarget> {
-        val calendar = java.util.Calendar.getInstance().apply {
-            time = com.example.ui.SessionManager.parseDateString(date)
-        }
-        val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
-        val dayString = mapOf(
-            java.util.Calendar.MONDAY to "MONDAY",
-            java.util.Calendar.TUESDAY to "TUESDAY",
-            java.util.Calendar.WEDNESDAY to "WEDNESDAY",
-            java.util.Calendar.THURSDAY to "THURSDAY",
-            java.util.Calendar.FRIDAY to "FRIDAY",
-            java.util.Calendar.SATURDAY to "SATURDAY",
-            java.util.Calendar.SUNDAY to "SUNDAY"
-        )[dayOfWeek] ?: "FIXED"
-
+        val dayString = com.example.util.TargetResolver.getWeekdayName(date)
         return targetDao.getTargetForDate(date).combine(targetDao.getTargetForDate(dayString)) { specificTarget, dayTarget ->
             Pair(specificTarget, dayTarget)
         }.combine(targetDao.getFixedTarget()) { (specific, day), fixed ->
@@ -150,20 +137,7 @@ class Repository(
         val specific = targetDao.getTargetForDateOnce(date)
         if (specific != null) return specific
 
-        val calendar = java.util.Calendar.getInstance().apply {
-            time = com.example.ui.SessionManager.parseDateString(date)
-        }
-        val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
-        val dayString = mapOf(
-            java.util.Calendar.MONDAY to "MONDAY",
-            java.util.Calendar.TUESDAY to "TUESDAY",
-            java.util.Calendar.WEDNESDAY to "WEDNESDAY",
-            java.util.Calendar.THURSDAY to "THURSDAY",
-            java.util.Calendar.FRIDAY to "FRIDAY",
-            java.util.Calendar.SATURDAY to "SATURDAY",
-            java.util.Calendar.SUNDAY to "SUNDAY"
-        )[dayOfWeek] ?: "FIXED"
-
+        val dayString = com.example.util.TargetResolver.getWeekdayName(date)
         val dayTarget = targetDao.getTargetForDateOnce(dayString)
         if (dayTarget != null) return dayTarget
 

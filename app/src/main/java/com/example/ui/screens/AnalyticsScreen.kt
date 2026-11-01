@@ -1,33 +1,32 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MonitorWeight
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -36,28 +35,148 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import com.example.ui.theme.macroColors
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.AppDatabase
-import com.example.data.WeightLog
 import com.example.data.MealEntry
+import com.example.data.WeightLog
 import com.example.ui.SessionManager
+import com.example.ui.theme.*
 import com.example.util.LocalPreferencesManager
 import com.example.util.LocalSoundManager
+import com.example.util.TargetResolver
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
+
+private data class DayCalorieData(
+    val date: String,
+    val intake: Int,
+    val target: Int,
+    val protein: Float = 0f,
+    val carbs: Float = 0f,
+    val fat: Float = 0f,
+    val dayLabel: String = ""
+)
+
+private enum class ChartMetricMode(val label: String) {
+    CALORIES("Calorie"),
+    PROTEIN("Proteine"),
+    CARBS("Carbo"),
+    FAT("Grassi")
+}
+
+@Composable
+private fun AnalyticsCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(18.dp)
+    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val cardBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            ),
+        shape = cardShape,
+        border = cardBorder,
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        content = content
+    )
+}
+
+@Composable
+private fun AppleHighlightTile(
+    title: String,
+    primaryValue: String,
+    subtitle: String,
+    icon: ImageVector,
+    iconBg: Color,
+    modifier: Modifier = Modifier
+) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val shape = if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(14.dp)
+    val border = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+    val bg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh
+
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(bg)
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 10.dp)
+                else Modifier
+            )
+            .border(border.width, border.brush, shape)
+            .padding(12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title.uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        fontSize = 10.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(iconBg.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconBg,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = primaryValue,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,23 +185,21 @@ fun AnalyticsScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val soundManager = LocalSoundManager.current
     val prefsManager = LocalPreferencesManager.current
+    val scope = rememberCoroutineScope()
+    val isNeo = MaterialTheme.isNeoBrutalist
 
     val weights by db.weightLogDao().getAllWeightsDesc().collectAsStateWithLifecycle(initialValue = emptyList())
     val allMeals by db.mealEntryDao().getAllMeals().collectAsStateWithLifecycle(initialValue = emptyList())
     val allTargets by db.dailyTargetDao().getAllTargets().collectAsStateWithLifecycle(initialValue = emptyList())
     val fixedTarget by db.dailyTargetDao().getFixedTarget().collectAsStateWithLifecycle(initialValue = null)
 
-    // Visibility StateFlows
+    // Visibility toggles
     val showCalorieDeficit by prefsManager.showCalorieDeficit.collectAsStateWithLifecycle()
     val showCalorieChart by prefsManager.showCalorieChart.collectAsStateWithLifecycle()
     val showMacroBreakdown by prefsManager.showMacroBreakdown.collectAsStateWithLifecycle()
-    val showProteinChart by prefsManager.showProteinChart.collectAsStateWithLifecycle()
-    val showCarbsChart by prefsManager.showCarbsChart.collectAsStateWithLifecycle()
-    val showFatChart by prefsManager.showFatChart.collectAsStateWithLifecycle()
     val showWeightChart by prefsManager.showWeightChart.collectAsStateWithLifecycle()
     val showStepsChart by prefsManager.showStepsChart.collectAsStateWithLifecycle()
     val showStreakCard by prefsManager.showStreakCard.collectAsStateWithLifecycle()
@@ -91,10 +208,14 @@ fun AnalyticsScreen(
     var showCustomizationSheet by remember { mutableStateOf(false) }
     var showLogWeightDialog by remember { mutableStateOf(false) }
 
+    // Selected Time Horizon: 7, 14, 30 days
+    var selectedHorizonDays by remember { mutableIntStateOf(7) }
+
     val todayStr = remember { SessionManager.formatDate(Date()) }
     val todaySteps: Int = remember(todayStr) { com.example.util.StepCounterStore.savedSteps(context, todayStr) }
-    val last7Days = remember(todayStr) {
-        (6 downTo 0).map { daysAgo ->
+
+    val horizonDaysList = remember(todayStr, selectedHorizonDays) {
+        ((selectedHorizonDays - 1) downTo 0).map { daysAgo ->
             SessionManager.getPreviousDay(todayStr, daysAgo)
         }
     }
@@ -104,35 +225,16 @@ fun AnalyticsScreen(
     val defaultTargetCarbs = fixedTarget?.targetCarbs ?: 220
     val defaultTargetFat = fixedTarget?.targetFat ?: 65
 
-    // Compute 7-day intake data
-    val dailyIntakes = remember(allMeals, allTargets, last7Days, defaultTargetCalories) {
+    // Compute horizon intake data
+    val dailyIntakes = remember(allMeals, allTargets, horizonDaysList, defaultTargetCalories) {
         val sdf = SimpleDateFormat("EEE", Locale.US)
-        last7Days.map { date ->
+        horizonDaysList.map { date ->
             val mealsForDate = allMeals.filter { it.dateString == date }
             val cals = mealsForDate.sumOf { it.calories }
             val prot = mealsForDate.fold(0f) { acc, m -> acc + m.protein }
             val carbs = mealsForDate.fold(0f) { acc, m -> acc + m.carbs }
             val fat = mealsForDate.fold(0f) { acc, m -> acc + m.fat }
-            val weekdayName = try {
-                val calendar = Calendar.getInstance().apply {
-                    time = SessionManager.parseDateString(date)
-                }
-                when (calendar.get(Calendar.DAY_OF_WEEK)) {
-                    Calendar.MONDAY -> "MONDAY"
-                    Calendar.TUESDAY -> "TUESDAY"
-                    Calendar.WEDNESDAY -> "WEDNESDAY"
-                    Calendar.THURSDAY -> "THURSDAY"
-                    Calendar.FRIDAY -> "FRIDAY"
-                    Calendar.SATURDAY -> "SATURDAY"
-                    Calendar.SUNDAY -> "SUNDAY"
-                    else -> "FIXED"
-                }
-            } catch (e: Exception) {
-                "FIXED"
-            }
-            val target = allTargets.firstOrNull { it.dateString == date }?.targetCalories
-                ?: allTargets.firstOrNull { it.dateString == weekdayName }?.targetCalories
-                ?: defaultTargetCalories
+            val target = TargetResolver.resolveTargetCalories(date, allTargets, defaultTargetCalories)
             val dayLabel = try {
                 val dateObj = SessionManager.parseDateString(date)
                 sdf.format(dateObj).uppercase()
@@ -151,162 +253,44 @@ fun AnalyticsScreen(
         }
     }
 
+    // Aggregated Metrics
+    val totalIntake = dailyIntakes.sumOf { it.intake }
+    val totalTarget = dailyIntakes.sumOf { it.target }
+    val avgIntake = if (dailyIntakes.isNotEmpty()) totalIntake / dailyIntakes.size else 0
+    val avgTarget = if (dailyIntakes.isNotEmpty()) totalTarget / dailyIntakes.size else defaultTargetCalories
+    val netDifference = totalTarget - totalIntake // Positive = Deficit, Negative = Surplus
+    val avgDifference = if (dailyIntakes.isNotEmpty()) netDifference / dailyIntakes.size else 0
+
+    val avgProtein = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.protein }.average().toFloat() else 0f
+    val avgCarbs = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.carbs }.average().toFloat() else 0f
+    val avgFat = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.fat }.average().toFloat() else 0f
+
     // Today's macros
-    val todayMeals = remember(allMeals, todayStr) {
-        allMeals.filter { it.dateString == todayStr }
-    }
+    val todayMeals = remember(allMeals, todayStr) { allMeals.filter { it.dateString == todayStr } }
     val todayProtein = remember(todayMeals) { todayMeals.fold(0f) { acc, m -> acc + m.protein } }
     val todayCarbs = remember(todayMeals) { todayMeals.fold(0f) { acc, m -> acc + m.carbs } }
     val todayFat = remember(todayMeals) { todayMeals.fold(0f) { acc, m -> acc + m.fat } }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Compact Top Header Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Progressi e Statistiche",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    soundManager.playSound("click")
-                    showLogWeightDialog = true
-                }) {
-                    Icon(Icons.Default.MonitorWeight, contentDescription = "Log Weight", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    soundManager.playSound("click")
-                    showCustomizationSheet = true
-                }) {
-                    Icon(Icons.Default.Tune, contentDescription = "Customize Screen", tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-        }
-
-        // Scrollable Cards List
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 1. Calorie Deficit Card
-            AnimatedVisibility(visible = showCalorieDeficit) {
-                CalorieDeficitSummaryCard(dailyIntakes = dailyIntakes)
-            }
-
-            // 2. Calorie Bar Chart Card
-            AnimatedVisibility(visible = showCalorieChart) {
-                CalorieBarChartCard(dailyIntakes = dailyIntakes)
-            }
-
-            // 3. Overall Macro Breakdown Card
-            AnimatedVisibility(visible = showMacroBreakdown) {
-                MacroDistributionCard(
-                    dailyIntakes = dailyIntakes,
-                    protein = todayProtein,
-                    carbs = todayCarbs,
-                    fat = todayFat,
-                    targetProtein = defaultTargetProtein,
-                    targetCarbs = defaultTargetCarbs,
-                    targetFat = defaultTargetFat
-                )
-            }
-
-            // 4. Individual Carbs Trend Chart Card
-            AnimatedVisibility(visible = showCarbsChart) {
-                IndividualMacroTrendCard(
-                    title = "Trend Carboidrati (7 giorni)",
-                    macroName = "Carboidrati",
-                    unit = "g",
-                    lineColor = MaterialTheme.macroColors.carbs,
-                    targetValue = defaultTargetCarbs.toFloat(),
-                    dailyData = dailyIntakes.map { it.date to it.carbs }
-                )
-            }
-
-            // 5. Individual Protein Trend Chart Card
-            AnimatedVisibility(visible = showProteinChart) {
-                IndividualMacroTrendCard(
-                    title = "Trend Proteine (7 giorni)",
-                    macroName = "Proteine",
-                    unit = "g",
-                    lineColor = MaterialTheme.macroColors.protein,
-                    targetValue = defaultTargetProtein.toFloat(),
-                    dailyData = dailyIntakes.map { it.date to it.protein }
-                )
-            }
-
-            // 6. Individual Fat Trend Chart Card
-            AnimatedVisibility(visible = showFatChart) {
-                IndividualMacroTrendCard(
-                    title = "Trend Grassi (7 giorni)",
-                    macroName = "Grassi",
-                    unit = "g",
-                    lineColor = MaterialTheme.macroColors.fat,
-                    targetValue = defaultTargetFat.toFloat(),
-                    dailyData = dailyIntakes.map { it.date to it.fat }
-                )
-            }
-
-            // 7. Weight Progression Line Chart
-            AnimatedVisibility(visible = showWeightChart) {
-                WeightProgressionCard(
-                    weights = weights,
-                    onLogWeightClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        soundManager.playSound("click")
-                        showLogWeightDialog = true
-                    }
-                )
-            }
-
-            // 8. Activity & Steps Card
-            AnimatedVisibility(visible = showStepsChart) {
-                ActivityStepsCard(stepGoal = stepGoal, currentSteps = todaySteps)
-            }
-
-            // 9. Streak & Mood Journal Grid Card
-            AnimatedVisibility(visible = showStreakCard) {
-                SlimeCalendarGrid(allMeals = allMeals, targetCalories = defaultTargetCalories)
-            }
-
-            Spacer(modifier = Modifier.height(112.dp))
-        }
+    val sortedWeights = remember(weights) {
+        weights.sortedWith(compareBy({ it.dateString }, { it.timestamp }))
     }
+    val latestWeight = sortedWeights.lastOrNull()?.weightKg ?: 0f
 
+    // Dialog & Sheets
     if (showLogWeightDialog) {
-        val currentInitialWeight = formatWeightInput(weights.firstOrNull()?.weightKg)
+        val initialWeightStr = if (latestWeight > 0f) String.format(Locale.US, "%.1f", latestWeight) else ""
         LogWeightDialog(
-            initialWeight = currentInitialWeight,
+            initialWeight = initialWeightStr,
             onDismiss = { showLogWeightDialog = false },
-            onSave = { weightKg ->
+            onSave = { weight ->
                 scope.launch {
                     db.weightLogDao().insertWeight(
                         WeightLog(
                             dateString = todayStr,
-                            weightKg = weightKg,
+                            weightKg = weight,
                             timestamp = System.currentTimeMillis()
                         )
                     )
-                    com.example.util.WidgetUpdater.updateAllWidgets(context)
                 }
                 showLogWeightDialog = false
             }
@@ -319,197 +303,473 @@ fun AnalyticsScreen(
             prefsManager = prefsManager
         )
     }
-}
 
-private data class DayCalorieData(
-    val date: String,
-    val intake: Int,
-    val target: Int,
-    val protein: Float = 0f,
-    val carbs: Float = 0f,
-    val fat: Float = 0f,
-    val dayLabel: String = ""
-)
-
-@Composable
-private fun CalorieDeficitSummaryCard(dailyIntakes: List<DayCalorieData>) {
-    val totalIntake = dailyIntakes.sumOf { it.intake }
-    val totalTarget = dailyIntakes.sumOf { it.target }
-    val avgIntake = if (dailyIntakes.isNotEmpty()) totalIntake / dailyIntakes.size else 0
-    val avgTarget = if (dailyIntakes.isNotEmpty()) totalTarget / dailyIntakes.size else 0
-    val netDifference = totalTarget - totalIntake // Positive = Deficit, Negative = Surplus
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
+        // Main Screen Header with Back & Actions
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Torna indietro",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                Column {
+                    Text(
+                        "Statistiche",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        "Panoramica andamento e progressi",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                IconButton(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    soundManager.playSound("click")
+                    showLogWeightDialog = true
+                }) {
+                    Icon(Icons.Default.MonitorWeight, contentDescription = "Registra Peso", tint = AppleBlue)
+                }
+                IconButton(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    soundManager.playSound("click")
+                    showCustomizationSheet = true
+                }) {
+                    Icon(Icons.Default.Tune, contentDescription = "Personalizza", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
+        // Scrollable Body
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 14.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Timeframe Segmented Picker (7G | 14G | 30G)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                listOf(7 to "7 Giorni", 14 to "14 Giorni", 30 to "30 Giorni").forEach { (days, label) ->
+                    val isSelected = selectedHorizonDays == days
+                    val pillBg = if (isSelected) {
+                        if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                    } else Color.Transparent
+                    val pillFg = if (isSelected) {
+                        if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
+                    } else MaterialTheme.colorScheme.onSurfaceVariant
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(pillBg)
+                            .then(
+                                if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
+                                else Modifier
+                            )
+                            .clickable {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                soundManager.playSound("click")
+                                selectedHorizonDays = days
+                            }
+                            .padding(vertical = 7.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = pillFg
+                        )
+                    }
+                }
+            }
+
+            // ==========================================
+            // 1. APPLE HIGHLIGHTS BENTO (2x2 Grid)
+            // ==========================================
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val calorieDiffLabel = if (avgDifference >= 0) "-$avgDifference kcal/g" else "+${-avgDifference} kcal/g"
+                    AppleHighlightTile(
+                        title = "Media Calorie",
+                        primaryValue = "$avgIntake kcal",
+                        subtitle = "Target: $avgTarget ($calorieDiffLabel)",
+                        icon = Icons.Default.LocalFireDepartment,
+                        iconBg = AppleOrange,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    val netLabel = if (netDifference >= 0) "-$netDifference kcal" else "+${-netDifference} kcal"
+                    val estKg = netDifference / 7700f
+                    val estKgStr = String.format(Locale.US, "%.1f", estKg)
+                    AppleHighlightTile(
+                        title = "Saldo Periodo",
+                        primaryValue = netLabel,
+                        subtitle = if (netDifference >= 0) "Deficit (~$estKgStr kg)" else "Surplus (~$estKgStr kg)",
+                        icon = if (netDifference >= 0) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
+                        iconBg = if (netDifference >= 0) Color(0xFF22C55E) else AppleRed,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val stepPct = if (stepGoal > 0) ((todaySteps.toFloat() / stepGoal) * 100).roundToInt() else 0
+                    AppleHighlightTile(
+                        title = "Passi Oggi",
+                        primaryValue = "$todaySteps",
+                        subtitle = "$stepPct% dell'obiettivo ($stepGoal)",
+                        icon = Icons.AutoMirrored.Filled.DirectionsWalk,
+                        iconBg = ApplePurple,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    val weightSubtitle = if (latestWeight > 0f) {
+                        "Target: 70.0 kg"
+                    } else "Nessun dato registrato"
+                    AppleHighlightTile(
+                        title = "Peso Attuale",
+                        primaryValue = if (latestWeight > 0f) "$latestWeight kg" else "-- kg",
+                        subtitle = weightSubtitle,
+                        icon = Icons.Default.MonitorWeight,
+                        iconBg = AppleBlue,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // ==========================================
+            // 2. UNIFIED INTERACTIVE CHART (Calories & Macros)
+            // ==========================================
+            AnimatedVisibility(visible = showCalorieChart) {
+                UnifiedIntakeExplorerCard(
+                    dailyIntakes = dailyIntakes,
+                    targetCalories = defaultTargetCalories,
+                    targetProtein = defaultTargetProtein,
+                    targetCarbs = defaultTargetCarbs,
+                    targetFat = defaultTargetFat
+                )
+            }
+
+            // ==========================================
+            // 3. MACRO DISTRIBUTION & DAILY AVERAGES
+            // ==========================================
+            AnimatedVisibility(visible = showMacroBreakdown) {
+                MacroDistributionCard(
+                    dailyIntakes = dailyIntakes,
+                    todayProtein = todayProtein,
+                    todayCarbs = todayCarbs,
+                    todayFat = todayFat,
+                    targetProtein = defaultTargetProtein,
+                    targetCarbs = defaultTargetCarbs,
+                    targetFat = defaultTargetFat
+                )
+            }
+
+            // ==========================================
+            // 4. MEAL CONSISTENCY & STREAK
+            // ==========================================
+            AnimatedVisibility(visible = showStreakCard) {
+                ConsistencyStreakCard(
+                    allMeals = allMeals,
+                    targetCalories = defaultTargetCalories
+                )
+            }
+
+            // ==========================================
+            // 5. WEIGHT PROGRESSION (Apple Health Curve)
+            // ==========================================
+            AnimatedVisibility(visible = showWeightChart) {
+                AppleWeightProgressionCard(
+                    weights = weights,
+                    targetWeightKg = 70.0f,
+                    onLogWeightClick = { showLogWeightDialog = true }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+}
+
+@Composable
+private fun UnifiedIntakeExplorerCard(
+    dailyIntakes: List<DayCalorieData>,
+    targetCalories: Int,
+    targetProtein: Int,
+    targetCarbs: Int,
+    targetFat: Int
+) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    var selectedMetric by remember { mutableStateOf(ChartMetricMode.CALORIES) }
+    var selectedDayIndex by remember { mutableStateOf<Int?>(null) }
+
+    AnalyticsCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header Row + Sub-Metric Selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "Bilancio Energetico (7 Giorni)",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Surface(
-                    color = if (netDifference >= 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(12.dp)
+                Column {
+                    Text(
+                        "Andamento Nutrizionale",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "Tocca una barra per i dettagli",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Sub-Metric Pills (Calorie | Proteine | Carbo | Grassi)
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .padding(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (netDifference >= 0) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = if (netDifference >= 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Text(
-                            text = if (netDifference >= 0) "Deficit" else "Surplus",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (netDifference >= 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
-                        )
+                    ChartMetricMode.values().forEach { mode ->
+                        val isSel = mode == selectedMetric
+                        val bg = if (isSel) {
+                            if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                        } else Color.Transparent
+                        val fg = if (isSel) {
+                            if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
+                        } else MaterialTheme.colorScheme.onSurfaceVariant
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(bg)
+                                .clickable {
+                                    selectedMetric = mode
+                                    selectedDayIndex = null
+                                }
+                                .padding(horizontal = 7.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = mode.label,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                ),
+                                color = fg
+                            )
+                        }
                     }
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                MetricColumn(label = "Media Assunti", value = "$avgIntake kcal/d", color = MaterialTheme.colorScheme.onSurface)
-                MetricColumn(label = "Media Obiettivo", value = "$avgTarget kcal/d", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                MetricColumn(
-                    label = "Saldo 7 Giorni",
-                    value = if (netDifference >= 0) "-$netDifference kcal" else "+${-netDifference} kcal",
-                    color = if (netDifference >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            // Target & Selected Day Info Banner
+            val inspectedDay = selectedDayIndex?.let { dailyIntakes.getOrNull(it) } ?: dailyIntakes.lastOrNull()
+            val (currentVal, targetVal, unit, metricColor) = when (selectedMetric) {
+                ChartMetricMode.CALORIES -> Quad(
+                    inspectedDay?.intake?.toFloat() ?: 0f,
+                    (inspectedDay?.target ?: targetCalories).toFloat(),
+                    "kcal",
+                    AppleOrange
+                )
+                ChartMetricMode.PROTEIN -> Quad(
+                    inspectedDay?.protein ?: 0f,
+                    targetProtein.toFloat(),
+                    "g",
+                    MaterialTheme.macroColors.protein
+                )
+                ChartMetricMode.CARBS -> Quad(
+                    inspectedDay?.carbs ?: 0f,
+                    targetCarbs.toFloat(),
+                    "g",
+                    MaterialTheme.macroColors.carbs
+                )
+                ChartMetricMode.FAT -> Quad(
+                    inspectedDay?.fat ?: 0f,
+                    targetFat.toFloat(),
+                    "g",
+                    MaterialTheme.macroColors.fat
                 )
             }
 
-            val estKgChange = netDifference / 7700f
-            Text(
-                text = if (netDifference >= 0) {
-                    "Variazione stimata massa grassa: ~${String.format(Locale.getDefault(), "%.2f", estKgChange)} kg in 7 giorni"
-                } else {
-                    "Surplus stimato massa grassa: ~${String.format(Locale.getDefault(), "%.2f", -estKgChange)} kg in 7 giorni"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = inspectedDay?.let { "${it.dayLabel} (${it.date.takeLast(5)})" } ?: "Oggi",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val delta = currentVal - targetVal
+                        val deltaStr = if (delta >= 0) "+${delta.roundToInt()} $unit" else "${delta.roundToInt()} $unit"
+                        Text(
+                            text = "Assunti: ${currentVal.roundToInt()} $unit ($deltaStr vs target)",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = metricColor
+                        )
+                    }
 
-@Composable
-private fun MetricColumn(label: String, value: String, color: Color) {
-    Column(horizontalAlignment = Alignment.Start) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = color)
-    }
-}
+                    Text(
+                        text = "Obiettivo: ${targetVal.roundToInt()} $unit",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-@Composable
-private fun CalorieBarChartCard(dailyIntakes: List<DayCalorieData>) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                "Calorie ultimi 7 giorni vs Obiettivo",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
+            // Interactive Bar Chart Canvas
             val textMeasurer = rememberTextMeasurer()
-            val primaryColor = MaterialTheme.colorScheme.primary
-            val warningColor = Color(0xFFF59E0B)
+            val onSurface = MaterialTheme.colorScheme.onSurface
             val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+            val itemCount = dailyIntakes.size.coerceAtLeast(1)
 
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(170.dp)
+                    .pointerInput(dailyIntakes, selectedMetric) {
+                        detectTapGestures { offset ->
+                            val stepX = size.width / itemCount
+                            val idx = (offset.x / stepX).toInt().coerceIn(0, itemCount - 1)
+                            selectedDayIndex = idx
+                        }
+                    }
             ) {
                 val canvasWidth = size.width
                 val canvasHeight = size.height
-                val bottomLabelHeight = 24.dp.toPx()
-                val topLabelHeight = 20.dp.toPx()
+                val bottomLabelHeight = 22.dp.toPx()
+                val topLabelHeight = 16.dp.toPx()
                 val chartHeight = canvasHeight - bottomLabelHeight - topLabelHeight
 
-                val maxCalorie = maxOf(
-                    2600f,
-                    (dailyIntakes.maxOfOrNull { maxOf(it.intake, it.target) }?.toFloat() ?: 2000f) * 1.15f
-                )
+                val maxVal = maxOf(
+                    targetVal * 1.25f,
+                    (dailyIntakes.maxOfOrNull {
+                        when (selectedMetric) {
+                            ChartMetricMode.CALORIES -> maxOf(it.intake.toFloat(), it.target.toFloat())
+                            ChartMetricMode.PROTEIN -> it.protein
+                            ChartMetricMode.CARBS -> it.carbs
+                            ChartMetricMode.FAT -> it.fat
+                        }
+                    } ?: targetVal) * 1.15f
+                ).coerceAtLeast(10f)
 
-                val itemCount = dailyIntakes.size.coerceAtLeast(1)
                 val stepX = canvasWidth / itemCount
-                val barWidth = (stepX * 0.45f).coerceAtMost(36.dp.toPx())
+                val barWidth = (stepX * 0.50f).coerceIn(12.dp.toPx(), 32.dp.toPx())
 
-                val avgTarget = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.target }.average().toFloat() else 2000f
-                val targetY = topLabelHeight + chartHeight * (1f - (avgTarget / maxCalorie))
+                // Dashed target reference line
+                val targetY = topLabelHeight + chartHeight * (1f - (targetVal / maxVal))
                 drawLine(
-                    color = onSurfaceVariant.copy(alpha = 0.6f),
+                    color = onSurfaceVariant.copy(alpha = 0.5f),
                     start = Offset(0f, targetY),
                     end = Offset(canvasWidth, targetY),
-                    strokeWidth = 2.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+                    strokeWidth = 1.5.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f)
                 )
 
                 dailyIntakes.forEachIndexed { index, dayData ->
                     val centerX = stepX * index + stepX / 2f
-                    val intakeHeight = (dayData.intake / maxCalorie) * chartHeight
-                    val barTopY = topLabelHeight + (chartHeight - intakeHeight)
+                    val dayValue = when (selectedMetric) {
+                        ChartMetricMode.CALORIES -> dayData.intake.toFloat()
+                        ChartMetricMode.PROTEIN -> dayData.protein
+                        ChartMetricMode.CARBS -> dayData.carbs
+                        ChartMetricMode.FAT -> dayData.fat
+                    }
 
-                    val isOverTarget = dayData.intake > dayData.target
-                    val barColor = if (isOverTarget) warningColor else primaryColor
+                    val barHeight = ((dayValue / maxVal) * chartHeight).coerceIn(4.dp.toPx(), chartHeight)
+                    val barTopY = topLabelHeight + (chartHeight - barHeight)
+                    val isSelected = selectedDayIndex == index
 
+                    val barColor = if (isSelected) {
+                        if (isNeo) Color(0xFFFFE500) else metricColor
+                    } else {
+                        metricColor.copy(alpha = 0.75f)
+                    }
+
+                    // Bar
                     drawRoundRect(
                         color = barColor,
                         topLeft = Offset(centerX - barWidth / 2f, barTopY),
-                        size = Size(barWidth, intakeHeight.coerceAtLeast(4.dp.toPx())),
-                        cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
+                        size = Size(barWidth, barHeight),
+                        cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx())
                     )
 
-                    if (dayData.intake > 0) {
-                        val valueLayout = textMeasurer.measure(
-                            text = "${dayData.intake}",
-                            style = TextStyle(fontSize = 10.sp, color = onSurfaceVariant, fontWeight = FontWeight.Bold)
-                        )
-                        drawText(
-                            textLayoutResult = valueLayout,
-                            topLeft = Offset(centerX - valueLayout.size.width / 2f, (barTopY - valueLayout.size.height - 2.dp.toPx()).coerceAtLeast(0f))
+                    if (isNeo) {
+                        drawRoundRect(
+                            color = Color.Black,
+                            topLeft = Offset(centerX - barWidth / 2f, barTopY),
+                            size = Size(barWidth, barHeight),
+                            cornerRadius = CornerRadius(5.dp.toPx(), 5.dp.toPx()),
+                            style = Stroke(width = 1.5.dp.toPx())
                         )
                     }
 
+                    // Day label
                     val dayLabel = dayData.dayLabel.ifEmpty { dayData.date.takeLast(2) }
-
-                    val dayLayout = textMeasurer.measure(
+                    val labelLayout = textMeasurer.measure(
                         text = dayLabel,
-                        style = TextStyle(fontSize = 11.sp, color = onSurfaceVariant, fontWeight = FontWeight.Medium)
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            color = if (isSelected) onSurface else onSurfaceVariant,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
                     )
                     drawText(
-                        textLayoutResult = dayLayout,
-                        topLeft = Offset(centerX - dayLayout.size.width / 2f, canvasHeight - bottomLabelHeight + 4.dp.toPx())
+                        textLayoutResult = labelLayout,
+                        topLeft = Offset(centerX - labelLayout.size.width / 2f, canvasHeight - bottomLabelHeight + 4.dp.toPx())
                     )
                 }
             }
@@ -517,19 +777,22 @@ private fun CalorieBarChartCard(dailyIntakes: List<DayCalorieData>) {
     }
 }
 
+private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
 @Composable
 private fun MacroDistributionCard(
     dailyIntakes: List<DayCalorieData>,
-    protein: Float,
-    carbs: Float,
-    fat: Float,
+    todayProtein: Float,
+    todayCarbs: Float,
+    todayFat: Float,
     targetProtein: Int,
     targetCarbs: Int,
     targetFat: Int
 ) {
-    val proteinCals = protein * 4f
-    val carbsCals = carbs * 4f
-    val fatCals = fat * 9f
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val proteinCals = todayProtein * 4f
+    val carbsCals = todayCarbs * 4f
+    val fatCals = todayFat * 9f
     val totalCals = (proteinCals + carbsCals + fatCals).coerceAtLeast(1f)
 
     val proteinPct = (proteinCals / totalCals * 100).toInt()
@@ -540,17 +803,12 @@ private fun MacroDistributionCard(
     val avgCarbs = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.carbs }.average().toFloat() else 0f
     val avgFat = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.fat }.average().toFloat() else 0f
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
+    AnalyticsCard {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -558,501 +816,112 @@ private fun MacroDistributionCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Distribuzione Macro di Oggi",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                    "Distribuzione Macronutrienti",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+                    ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    "100% Totale",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary
+                    "Oggi vs Media",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Segregated Cumulated Horizontal Bar (Barre percentuali staccate)
+            // Proportional Ratio Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(18.dp)
-                    .clip(RoundedCornerShape(9.dp))
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(7.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                val cWeight = carbsPct.toFloat().coerceAtLeast(0.1f)
-                val pWeight = proteinPct.toFloat().coerceAtLeast(0.1f)
-                val fWeight = fatPct.toFloat().coerceAtLeast(0.1f)
-
-                Box(
-                    modifier = Modifier
-                        .weight(cWeight)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.macroColors.carbs)
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(pWeight)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.macroColors.protein)
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(fWeight)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.macroColors.fat)
-                )
+                Box(modifier = Modifier.weight(carbsPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.carbs))
+                Box(modifier = Modifier.weight(proteinPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.protein))
+                Box(modifier = Modifier.weight(fatPct.coerceAtLeast(1).toFloat()).fillMaxHeight().background(MaterialTheme.macroColors.fat))
             }
 
-            // Percentages legend pills
+            // 3 Macro Detail Columns
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MacroPillLegend("Carboidrati", "$carbsPct%", MaterialTheme.macroColors.carbs)
-                MacroPillLegend("Proteine", "$proteinPct%", MaterialTheme.macroColors.protein)
-                MacroPillLegend("Grassi", "$fatPct%", MaterialTheme.macroColors.fat)
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-            // Summary of Daily Averages (Riepilogo delle medie giornaliere)
-            Text(
-                "Medie giornaliere (7 giorni)",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                MetricColumn(
-                    label = "Media Carboidrati",
-                    value = "${avgCarbs.roundToInt()}g / ${targetCarbs}g",
+                MacroStatColumn(
+                    name = "Carboidrati",
+                    pct = "$carbsPct%",
+                    today = "${todayCarbs.roundToInt()}g",
+                    avg = "Media: ${avgCarbs.roundToInt()}g",
+                    target = "Target: ${targetCarbs}g",
                     color = MaterialTheme.macroColors.carbs
                 )
-                MetricColumn(
-                    label = "Media Proteine",
-                    value = "${avgProtein.roundToInt()}g / ${targetProtein}g",
+                MacroStatColumn(
+                    name = "Proteine",
+                    pct = "$proteinPct%",
+                    today = "${todayProtein.roundToInt()}g",
+                    avg = "Media: ${avgProtein.roundToInt()}g",
+                    target = "Target: ${targetProtein}g",
                     color = MaterialTheme.macroColors.protein
                 )
-                MetricColumn(
-                    label = "Media Grassi",
-                    value = "${avgFat.roundToInt()}g / ${targetFat}g",
+                MacroStatColumn(
+                    name = "Grassi",
+                    pct = "$fatPct%",
+                    today = "${todayFat.roundToInt()}g",
+                    avg = "Media: ${avgFat.roundToInt()}g",
+                    target = "Target: ${targetFat}g",
                     color = MaterialTheme.macroColors.fat
                 )
             }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-            MacroProgressRow(
-                name = "Carboidrati",
-                currentGrams = carbs.toInt(),
-                targetGrams = targetCarbs,
-                percentage = carbsPct,
-                color = MaterialTheme.macroColors.carbs
-            )
-
-            MacroProgressRow(
-                name = "Proteine",
-                currentGrams = protein.toInt(),
-                targetGrams = targetProtein,
-                percentage = proteinPct,
-                color = MaterialTheme.macroColors.protein
-            )
-
-            MacroProgressRow(
-                name = "Grassi",
-                currentGrams = fat.toInt(),
-                targetGrams = targetFat,
-                percentage = fatPct,
-                color = MaterialTheme.macroColors.fat
-            )
         }
     }
 }
 
 @Composable
-private fun MacroPillLegend(name: String, percentage: String, color: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(color)
-        )
-        Text(
-            text = "$name $percentage",
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun MacroProgressRow(
+private fun MacroStatColumn(
     name: String,
-    currentGrams: Int,
-    targetGrams: Int,
-    percentage: Int,
+    pct: String,
+    today: String,
+    avg: String,
+    target: String,
     color: Color
 ) {
-    val progress = (currentGrams.toFloat() / targetGrams.coerceAtLeast(1)).coerceIn(0f, 1f)
-
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "$name: ${currentGrams}g / ${targetGrams}g ($percentage% cals)",
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "${(progress * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = color
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color))
+            Text(name, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
         }
-
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = color,
-            trackColor = color.copy(alpha = 0.2f)
-        )
+        Text(today, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = color)
+        Text(pct, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(avg, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
-private fun IndividualMacroTrendCard(
-    title: String,
-    macroName: String,
-    unit: String,
-    lineColor: Color,
-    targetValue: Float,
-    dailyData: List<Pair<String, Float>>
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    "Obiettivo: ${targetValue.toInt()}$unit",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = lineColor
-                )
-            }
-
-            val textMeasurer = rememberTextMeasurer()
-            val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-            ) {
-                val canvasWidth = size.width
-                val canvasHeight = size.height
-                val paddingX = 20.dp.toPx()
-                val paddingTop = 20.dp.toPx()
-                val paddingBottom = 24.dp.toPx()
-                val chartHeight = canvasHeight - paddingTop - paddingBottom
-                val chartWidth = canvasWidth - 2 * paddingX
-
-                val maxVal = maxOf(
-                    targetValue * 1.25f,
-                    (dailyData.maxOfOrNull { it.second } ?: 100f) * 1.15f
-                ).coerceAtLeast(10f)
-
-                val points = dailyData.mapIndexed { idx, (date, valGrams) ->
-                    val ratioX = if (dailyData.size > 1) idx.toFloat() / (dailyData.size - 1) else 0.5f
-                    val x = paddingX + ratioX * chartWidth
-                    val y = paddingTop + chartHeight * (1f - (valGrams / maxVal))
-                    Triple(Offset(x, y), date, valGrams)
-                }
-
-                // Target reference line
-                val targetY = paddingTop + chartHeight * (1f - (targetValue / maxVal))
-                drawLine(
-                    color = lineColor.copy(alpha = 0.4f),
-                    start = Offset(0f, targetY),
-                    end = Offset(canvasWidth, targetY),
-                    strokeWidth = 1.5f.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f)
-                )
-
-                if (points.isNotEmpty()) {
-                    // Line Path
-                    val linePath = Path().apply {
-                        moveTo(points[0].first.x, points[0].first.y)
-                        points.forEach { lineTo(it.first.x, it.first.y) }
-                    }
-                    drawPath(
-                        path = linePath,
-                        color = lineColor,
-                        style = Stroke(width = 3.dp.toPx())
-                    )
-
-                    // Draw points and values
-                    points.forEach { (pt, dateStr, valGrams) ->
-                        drawCircle(color = lineColor, radius = 5.dp.toPx(), center = pt)
-                        drawCircle(color = Color.White, radius = 2.5f.dp.toPx(), center = pt)
-
-                        val valueText = "${valGrams.toInt()}$unit"
-                        val valLayout = textMeasurer.measure(
-                            text = valueText,
-                            style = TextStyle(fontSize = 10.sp, color = onSurfaceVariant, fontWeight = FontWeight.Bold)
-                        )
-                        drawText(
-                            textLayoutResult = valLayout,
-                            topLeft = Offset(pt.x - valLayout.size.width / 2f, (pt.y - valLayout.size.height - 4.dp.toPx()).coerceAtLeast(0f))
-                        )
-
-                        val dayLabel = try {
-                            val dateObj = SessionManager.parseDateString(dateStr)
-                            SimpleDateFormat("EEE", Locale.US).format(dateObj).uppercase()
-                        } catch (e: Exception) {
-                            dateStr.takeLast(2)
-                        }
-
-                        val dayLayout = textMeasurer.measure(
-                            text = dayLabel,
-                            style = TextStyle(fontSize = 10.sp, color = onSurfaceVariant, fontWeight = FontWeight.Medium)
-                        )
-                        drawText(
-                            textLayoutResult = dayLayout,
-                            topLeft = Offset(pt.x - dayLayout.size.width / 2f, canvasHeight - paddingBottom + 4.dp.toPx())
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActivityStepsCard(
-    stepGoal: Int,
-    currentSteps: Int = 0
-) {
-    val estimatedKcal = (currentSteps * 0.04f).toInt().coerceAtLeast(0)
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Attività e Passi Giornalieri",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Icon(
-                    Icons.AutoMirrored.Filled.DirectionsWalk,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                MetricColumn(label = "Obiettivo Passi", value = "${String.format(Locale.getDefault(), "%,d", stepGoal)}", color = MaterialTheme.colorScheme.onSurface)
-                MetricColumn(label = "Passi Oggi", value = "${String.format(Locale.getDefault(), "%,d", currentSteps)}", color = Color(0xFFF59E0B))
-                MetricColumn(label = "Stima Calorie", value = "~$estimatedKcal kcal", color = MaterialTheme.colorScheme.primary)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SlimeCalendarGrid(
+private fun ConsistencyStreakCard(
     allMeals: List<MealEntry>,
     targetCalories: Int
 ) {
-    val todayStr = remember { SessionManager.formatDate(Date()) }
-    val last14Days = remember(todayStr) {
-        (13 downTo 0).map { daysAgo ->
-            SessionManager.getPreviousDay(todayStr, daysAgo)
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val today = remember { SessionManager.formatDate(Date()) }
+    val last7Days = remember(today) {
+        (6 downTo 0).map { SessionManager.getPreviousDay(today, it) }
+    }
+
+    val daysWithMeals = remember(allMeals, last7Days) {
+        last7Days.map { date ->
+            val count = allMeals.count { it.dateString == date }
+            date to count
         }
     }
+    val loggedCount = daysWithMeals.count { it.second > 0 }
 
-    val mealsByDate = remember(allMeals) {
-        allMeals.groupBy { it.dateString }
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
+    AnalyticsCard {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Registro e Serie (14 Giorni)",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                val loggedDaysCount = last14Days.count { (mealsByDate[it] ?: emptyList()).isNotEmpty() }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (loggedDaysCount > 0) {
-                        Icon(
-                            imageVector = Icons.Default.LocalFireDepartment,
-                            contentDescription = null,
-                            tint = Color(0xFFFEF08A),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = "$loggedDaysCount giorni registrati",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFFFEF08A)
-                        )
-                    } else {
-                        Text(
-                            text = "Nessun dato registrato",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                last14Days.take(7).forEach { date ->
-                    DayStatusCell(date = date, meals = mealsByDate[date] ?: emptyList(), targetCalories = targetCalories)
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                last14Days.takeLast(7).forEach { date ->
-                    DayStatusCell(date = date, meals = mealsByDate[date] ?: emptyList(), targetCalories = targetCalories)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DayStatusCell(
-    date: String,
-    meals: List<MealEntry>,
-    targetCalories: Int
-) {
-    val totalCals = meals.sumOf { it.calories }
-    val isLogged = totalCals > 0
-    val isTargetHit = isLogged && totalCals in (targetCalories * 0.85f).toInt()..(targetCalories * 1.15f).toInt()
-    val dayLabel = try {
-        val dateObj = SessionManager.parseDateString(date)
-        java.text.SimpleDateFormat("dd", Locale.US).format(dateObj)
-    } catch (e: Exception) {
-        date.takeLast(2)
-    }
-
-    val cellColor = when {
-        isTargetHit -> Color(0xFF22C55E)
-        isLogged -> Color(0xFFF59E0B)
-        else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-    }
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(cellColor.copy(alpha = 0.2f))
-                .border(1.dp, cellColor, RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = dayLabel,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (isLogged) cellColor else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun WeightProgressionCard(
-    weights: List<WeightLog>,
-    targetWeightKg: Float = 70.0f,
-    onLogWeightClick: () -> Unit
-) {
-    val sortedWeights = remember(weights) {
-        weights.sortedWith(compareBy({ it.dateString }, { it.timestamp }))
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1061,25 +930,137 @@ private fun WeightProgressionCard(
             ) {
                 Column {
                     Text(
-                        "Andamento Peso",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                        "Costanza Pasti Settimanale",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "$loggedCount su 7 giorni registrati",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    color = if (loggedCount >= 5) Color(0xFF22C55E).copy(alpha = 0.15f) else AppleOrange.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = if (loggedCount >= 5) "🔥 In Costanza" else "⚡ Da Migliorare",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (loggedCount >= 5) Color(0xFF22C55E) else AppleOrange
+                        )
+                    }
+                }
+            }
+
+            // 7 Days Pill Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                val sdf = SimpleDateFormat("EEE", Locale.US)
+                daysWithMeals.forEach { (date, mealCount) ->
+                    val isLogged = mealCount > 0
+                    val dayLabel = try {
+                        val d = SessionManager.parseDateString(date)
+                        sdf.format(d).uppercase().take(2)
+                    } catch (e: Exception) {
+                        date.takeLast(2)
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isLogged) Color(0xFF22C55E) else MaterialTheme.colorScheme.surfaceContainerHigh
+                                )
+                                .then(
+                                    if (isNeo) Modifier.border(1.5.dp, Color.Black, CircleShape) else Modifier
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isLogged) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            } else {
+                                Text("-", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Text(dayLabel, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppleWeightProgressionCard(
+    weights: List<WeightLog>,
+    targetWeightKg: Float = 70.0f,
+    onLogWeightClick: () -> Unit
+) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val sortedWeights = remember(weights) {
+        weights.sortedWith(compareBy({ it.dateString }, { it.timestamp }))
+    }
+
+    AnalyticsCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "Progressione Peso Corporeo",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+                        ),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     sortedWeights.lastOrNull()?.let { last ->
                         val diff = last.weightKg - targetWeightKg
-                        val diffStr = if (diff > 0) "+${String.format(Locale.US, "%.1f", diff)} kg dall'obiettivo"
-                                      else "${String.format(Locale.US, "%.1f", diff)} kg dall'obiettivo"
+                        val diffStr = if (diff > 0) "+%.1f kg vs target".format(diff) else "%.1f kg vs target".format(diff)
                         Text(
-                            text = "Attuale: ${last.weightKg} kg ($diffStr)",
+                            text = "Ultimo: ${last.weightKg} kg ($diffStr)",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = AppleBlue
                         )
                     }
                 }
-                TextButton(onClick = onLogWeightClick) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+
+                Button(
+                    onClick = onLogWeightClick,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isNeo) Color(0xFFFFE500) else AppleBlue,
+                        contentColor = if (isNeo) Color.Black else Color.White
+                    ),
+                    modifier = Modifier.height(34.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Registra Peso")
+                    Text("Registra", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                 }
             }
 
@@ -1087,50 +1068,31 @@ private fun WeightProgressionCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .height(110.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.MonitorWeight,
-                            contentDescription = null,
-                            modifier = Modifier.size(36.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            "Nessun peso registrato.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Button(
-                            onClick = onLogWeightClick,
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                        ) {
-                            Text("Registra il primo peso")
-                        }
-                    }
+                    Text(
+                        "Nessuna pesata registrata. Premi '+ Registra' per iniziare.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             } else {
                 val textMeasurer = rememberTextMeasurer()
-                val primaryColor = MaterialTheme.colorScheme.primary
-                val tertiaryColor = MaterialTheme.colorScheme.tertiary
                 val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(190.dp)
+                        .height(160.dp)
                 ) {
                     val canvasWidth = size.width
                     val canvasHeight = size.height
-                    val paddingX = 28.dp.toPx()
-                    val paddingTop = 28.dp.toPx()
-                    val paddingBottom = 28.dp.toPx()
+                    val paddingX = 24.dp.toPx()
+                    val paddingTop = 20.dp.toPx()
+                    val paddingBottom = 20.dp.toPx()
                     val chartHeight = canvasHeight - paddingTop - paddingBottom
                     val chartWidth = canvasWidth - 2 * paddingX
 
@@ -1139,93 +1101,66 @@ private fun WeightProgressionCard(
                     val maxW = (allWeights.maxOrNull() ?: 75f) + 1.5f
                     val rangeW = (maxW - minW).coerceAtLeast(0.5f)
 
-                    // Target weight dashed reference line
+                    // Target weight line
                     val targetY = paddingTop + chartHeight * (1f - (targetWeightKg - minW) / rangeW)
                     drawLine(
-                        color = tertiaryColor.copy(alpha = 0.7f),
+                        color = AppleOrange.copy(alpha = 0.6f),
                         start = Offset(0f, targetY),
                         end = Offset(canvasWidth, targetY),
-                        strokeWidth = 2.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+                        strokeWidth = 1.5.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
                     )
 
-                    val targetLabelLayout = textMeasurer.measure(
-                        text = "Obiettivo: ${targetWeightKg}kg",
-                        style = TextStyle(fontSize = 10.sp, color = tertiaryColor, fontWeight = FontWeight.Bold)
-                    )
-                    drawText(
-                        textLayoutResult = targetLabelLayout,
-                        topLeft = Offset(canvasWidth - paddingX - targetLabelLayout.size.width, (targetY - targetLabelLayout.size.height - 2.dp.toPx()).coerceAtLeast(0f))
-                    )
-
-                    data class WeightPoint(val offset: Offset, val entry: WeightLog)
                     val points = sortedWeights.mapIndexed { idx, entry ->
                         val ratioX = if (sortedWeights.size > 1) idx.toFloat() / (sortedWeights.size - 1) else 0.5f
                         val x = paddingX + ratioX * chartWidth
                         val y = paddingTop + chartHeight * (1f - (entry.weightKg - minW) / rangeW)
-                        WeightPoint(Offset(x, y), entry)
+                        Offset(x, y)
                     }
 
                     if (points.isNotEmpty()) {
-                        val firstPt = points[0].offset
-                        val lastPt = points[points.size - 1].offset
+                        val firstPt = points.first()
+                        val lastPt = points.last()
 
+                        // Gradient fill under curve
                         val fillPath = Path().apply {
                             moveTo(firstPt.x, paddingTop + chartHeight)
-                            points.forEach { lineTo(it.offset.x, it.offset.y) }
+                            points.forEach { lineTo(it.x, it.y) }
                             lineTo(lastPt.x, paddingTop + chartHeight)
                             close()
                         }
-
                         drawPath(
                             path = fillPath,
                             brush = Brush.verticalGradient(
-                                colors = listOf(primaryColor.copy(alpha = 0.40f), primaryColor.copy(alpha = 0.05f), Color.Transparent),
+                                colors = listOf(AppleBlue.copy(alpha = 0.35f), AppleBlue.copy(alpha = 0.03f)),
                                 startY = paddingTop,
                                 endY = paddingTop + chartHeight
                             )
                         )
 
+                        // Line stroke
                         val linePath = Path().apply {
                             moveTo(firstPt.x, firstPt.y)
-                            points.forEach { lineTo(it.offset.x, it.offset.y) }
+                            points.forEach { lineTo(it.x, it.y) }
                         }
                         drawPath(
                             path = linePath,
-                            color = primaryColor,
-                            style = Stroke(width = 3.5.dp.toPx())
+                            color = AppleBlue,
+                            style = Stroke(width = 3.dp.toPx())
                         )
 
-                        // Data points with outer halo, solid ring, inner white dot, and text label
-                        points.forEach { wp ->
-                            val pt = wp.offset
-                            val entry = wp.entry
-                            // Outer halo
-                            drawCircle(color = primaryColor.copy(alpha = 0.25f), radius = 8.dp.toPx(), center = pt)
-                            // Solid primary dot
-                            drawCircle(color = primaryColor, radius = 5.dp.toPx(), center = pt)
-                            // Inner white contrast dot
-                            drawCircle(color = Color.White, radius = 2.5f.dp.toPx(), center = pt)
+                        // Data points
+                        points.forEachIndexed { i, pt ->
+                            drawCircle(color = AppleBlue, radius = 4.5.dp.toPx(), center = pt)
+                            drawCircle(color = Color.White, radius = 2.dp.toPx(), center = pt)
 
-                            val labelText = "${entry.weightKg} kg"
-                            val textLayout = textMeasurer.measure(
-                                text = labelText,
-                                style = TextStyle(fontSize = 10.sp, color = onSurfaceVariant, fontWeight = FontWeight.Bold)
-                            )
-                            drawText(
-                                textLayoutResult = textLayout,
-                                topLeft = Offset(pt.x - textLayout.size.width / 2f, (pt.y - textLayout.size.height - 6.dp.toPx()).coerceAtLeast(0f))
-                            )
+                            // Show label for first, last, or every few
+                            if (i == 0 || i == points.size - 1 || points.size <= 5) {
+                                val label = "${sortedWeights[i].weightKg}"
+                                val l = textMeasurer.measure(label, TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = onSurfaceVariant))
+                                drawText(l, topLeft = Offset(pt.x - l.size.width / 2f, (pt.y - l.size.height - 4.dp.toPx()).coerceAtLeast(0f)))
+                            }
                         }
-
-                        val startDateLabel = points[0].entry.dateString.takeLast(5)
-                        val endDateLabel = points[points.size - 1].entry.dateString.takeLast(5)
-
-                        val startLayout = textMeasurer.measure(startDateLabel, TextStyle(fontSize = 10.sp, color = onSurfaceVariant))
-                        val endLayout = textMeasurer.measure(endDateLabel, TextStyle(fontSize = 10.sp, color = onSurfaceVariant))
-
-                        drawText(startLayout, topLeft = Offset(paddingX, canvasHeight - paddingBottom + 4.dp.toPx()))
-                        drawText(endLayout, topLeft = Offset(canvasWidth - paddingX - endLayout.size.width.toFloat(), canvasHeight - paddingBottom + 4.dp.toPx()))
                     }
                 }
             }
@@ -1239,14 +1174,9 @@ private fun CustomizationBottomSheet(
     onDismiss: () -> Unit,
     prefsManager: com.example.util.PreferencesManager
 ) {
-    val showCalorieDeficit by prefsManager.showCalorieDeficit.collectAsStateWithLifecycle()
     val showCalorieChart by prefsManager.showCalorieChart.collectAsStateWithLifecycle()
     val showMacroBreakdown by prefsManager.showMacroBreakdown.collectAsStateWithLifecycle()
-    val showProteinChart by prefsManager.showProteinChart.collectAsStateWithLifecycle()
-    val showCarbsChart by prefsManager.showCarbsChart.collectAsStateWithLifecycle()
-    val showFatChart by prefsManager.showFatChart.collectAsStateWithLifecycle()
     val showWeightChart by prefsManager.showWeightChart.collectAsStateWithLifecycle()
-    val showStepsChart by prefsManager.showStepsChart.collectAsStateWithLifecycle()
     val showStreakCard by prefsManager.showStreakCard.collectAsStateWithLifecycle()
 
     ModalBottomSheet(
@@ -1256,52 +1186,48 @@ private fun CustomizationBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                "Personalizza Dashboard",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp),
+                "Personalizza Statistiche",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                "Mostra o nascondi le card dei grafici secondo le tue preferenze.",
+                "Attiva o disattiva i moduli visibili nella schermata.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
 
             val items = listOf(
-                Triple("Deficit Calorico", "show_calorie_deficit", showCalorieDeficit),
-                Triple("Grafico Calorie", "show_calorie_chart", showCalorieChart),
+                Triple("Grafico Nutrizionale", "show_calorie_chart", showCalorieChart),
                 Triple("Ripartizione Macro", "show_macro_breakdown", showMacroBreakdown),
-                Triple("Grafico Carboidrati", "show_carbs_chart", showCarbsChart),
-                Triple("Grafico Proteine", "show_protein_chart", showProteinChart),
-                Triple("Grafico Grassi", "show_fat_chart", showFatChart),
-                Triple("Grafico Peso", "show_weight_chart", showWeightChart),
-                Triple("Grafico Passi", "show_steps_chart", showStepsChart),
-                Triple("Streak & Obiettivi", "show_streak_card", showStreakCard)
+                Triple("Progressione Peso", "show_weight_chart", showWeightChart),
+                Triple("Costanza & Pasti", "show_streak_card", showStreakCard)
             )
 
             items.forEach { (label, key, checked) ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                         .clickable { prefsManager.setCardVisibility(key, !checked) }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = 14.dp, vertical = 9.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
+                    Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
                     Switch(
                         checked = checked,
-                        onCheckedChange = { prefsManager.setCardVisibility(key, it) }
+                        onCheckedChange = { prefsManager.setCardVisibility(key, it) },
+                        modifier = Modifier.scale(0.85f)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }

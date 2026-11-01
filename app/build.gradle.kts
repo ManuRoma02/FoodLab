@@ -87,6 +87,9 @@ ksp {
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
+  ignoreList.add("TELEGRAM_.*")
+  ignoreList.add("TELEGRAM_BOT_TOKEN")
+  ignoreList.add("TELEGRAM_CHAT_ID")
 }
 
 // Some unused dependencies are commented out below instead of being removed.

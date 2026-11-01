@@ -23,3 +23,22 @@ val Shapes = Shapes(
     large = RoundedCornerShape(AppleCornerRadiusCard),
     extraLarge = RoundedCornerShape(AppleCornerRadiusModal)
 )
+
+// Neo-Brutalism Crisp Corner Radii
+val NeoBrutalCornerRadiusSmall = 6.dp
+val NeoBrutalCornerRadiusMedium = 8.dp
+val NeoBrutalCornerRadiusCard = 12.dp
+val NeoBrutalCornerRadiusModal = 14.dp
+val NeoBrutalCornerRadiusPill = 10.dp
+
+val NeoBrutalCardShape = RoundedCornerShape(NeoBrutalCornerRadiusCard)
+val NeoBrutalModalShape = RoundedCornerShape(NeoBrutalCornerRadiusModal)
+val NeoBrutalPillShape = RoundedCornerShape(NeoBrutalCornerRadiusPill)
+
+val NeoBrutalShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(NeoBrutalCornerRadiusSmall),
+    medium = RoundedCornerShape(NeoBrutalCornerRadiusMedium),
+    large = RoundedCornerShape(NeoBrutalCornerRadiusCard),
+    extraLarge = RoundedCornerShape(NeoBrutalCornerRadiusModal)
+)

@@ -56,15 +56,6 @@ class PetStatusWidgetProvider : AppWidgetProvider() {
     }
 }
 
-private fun getMealTypeForCurrentTime(): String {
-    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    return when (hour) {
-        in 5..10 -> MealTypes.BREAKFAST
-        in 11..14 -> MealTypes.LUNCH
-        in 15..17 -> MealTypes.SNACK
-        else -> MealTypes.DINNER
-    }
-}
 
 private fun percentageOf(consumed: Int, target: Int): Int {
     if (target <= 0) return 0
@@ -98,19 +89,7 @@ internal suspend fun updatePetWidget(context: Context, appWidgetManager: AppWidg
 
         val app = context.applicationContext as? com.example.FoodLabApplication
         val target = app?.repository?.resolveTargetForDateOnce(today) ?: run {
-            val calendar = java.util.Calendar.getInstance().apply {
-                time = SessionManager.parseDateString(today)
-            }
-            val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
-            val dayString = mapOf(
-                java.util.Calendar.MONDAY to "MONDAY",
-                java.util.Calendar.TUESDAY to "TUESDAY",
-                java.util.Calendar.WEDNESDAY to "WEDNESDAY",
-                java.util.Calendar.THURSDAY to "THURSDAY",
-                java.util.Calendar.FRIDAY to "FRIDAY",
-                java.util.Calendar.SATURDAY to "SATURDAY",
-                java.util.Calendar.SUNDAY to "SUNDAY"
-            )[dayOfWeek] ?: "FIXED"
+            val dayString = com.example.util.TargetResolver.getWeekdayName(today)
             db.dailyTargetDao().getTargetForDateOnce(today)
                 ?: db.dailyTargetDao().getTargetForDateOnce(dayString)
                 ?: db.dailyTargetDao().getFixedTargetOnce()

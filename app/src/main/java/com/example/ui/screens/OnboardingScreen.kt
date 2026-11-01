@@ -33,6 +33,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.macroColors
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
 import com.example.data.AppDatabase
 import com.example.data.DailyTarget
 import com.example.data.WeightLog
@@ -50,6 +52,30 @@ private data class OnboardingGoalOption(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val color: Color
 )
+
+@Composable
+private fun OnboardingCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(20.dp)
+    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+    val cardBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
+    Card(
+        shape = cardShape,
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = cardBorder,
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            ),
+        content = content
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -219,12 +245,7 @@ fun OnboardingScreen(
             }
 
             // 1. Biological Sex Selection
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OnboardingCard {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("SESSO BIOLOGICO", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -266,12 +287,7 @@ fun OnboardingScreen(
             }
 
             // 2. Physical Attributes (Age, Height, Weight)
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OnboardingCard {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text("PARAMETRI CORPOREI", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -310,12 +326,7 @@ fun OnboardingScreen(
             }
 
             // 3. Activity Level
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OnboardingCard {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("LIVELLO DI ATTIVITÀ", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                     val activities = listOf(
@@ -355,12 +366,7 @@ fun OnboardingScreen(
             }
 
             // 4. Goal
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OnboardingCard {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("OBIETTIVO", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                     val goals = listOf(
@@ -391,13 +397,8 @@ fun OnboardingScreen(
                 }
             }
 
-            // 5. Apple-style Live Target Projection Card
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            // 5. Live Target Projection Card
+            OnboardingCard {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -472,26 +473,27 @@ fun OnboardingScreen(
 
 @Composable
 private fun OnboardingMacroBadge(label: String, value: String, color: Color) {
+    val isNeo = MaterialTheme.isNeoBrutalist
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = color.copy(alpha = 0.15f),
-            border = BorderStroke(1.dp, color.copy(alpha = 0.35f))
+            shape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp),
+            color = if (isNeo) color.copy(alpha = 0.22f) else color.copy(alpha = 0.15f),
+            border = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, color.copy(alpha = 0.35f))
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = color,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold),
+                color = if (isNeo) Color.Black else color,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
             )
         }
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNeo) FontWeight.Bold else FontWeight.SemiBold),
+            color = if (isNeo) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

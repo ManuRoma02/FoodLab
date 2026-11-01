@@ -59,34 +59,7 @@ object StreakCalculator {
     }
 
     internal fun resolveTargetCalories(date: String, targets: List<DailyTarget>): Int {
-        val specific = targets.firstOrNull { it.dateString == date }
-        if (specific != null) return specific.targetCalories
-
-        val weekdayName = getWeekdayName(date)
-        val weekdayTarget = targets.firstOrNull { it.dateString == weekdayName }
-        if (weekdayTarget != null) return weekdayTarget.targetCalories
-
-        return targets.firstOrNull { it.dateString == "FIXED" }?.targetCalories ?: DailyTarget.DEFAULT_TARGET_CALORIES
-    }
-
-    private fun getWeekdayName(date: String): String {
-        return try {
-            val calendar = Calendar.getInstance().apply {
-                time = SessionManager.parseDateString(date)
-            }
-            when (calendar.get(Calendar.DAY_OF_WEEK)) {
-                Calendar.MONDAY -> "MONDAY"
-                Calendar.TUESDAY -> "TUESDAY"
-                Calendar.WEDNESDAY -> "WEDNESDAY"
-                Calendar.THURSDAY -> "THURSDAY"
-                Calendar.FRIDAY -> "FRIDAY"
-                Calendar.SATURDAY -> "SATURDAY"
-                Calendar.SUNDAY -> "SUNDAY"
-                else -> ""
-            }
-        } catch (_: Exception) {
-            ""
-        }
+        return TargetResolver.resolveTargetCalories(date, targets)
     }
 
     private fun previousDay(date: String): String {

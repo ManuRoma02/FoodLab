@@ -13,6 +13,8 @@ import com.example.ui.theme.AppleOrange
 import com.example.ui.theme.AppleBlue
 import com.example.ui.theme.AppleGreen
 import com.example.ui.theme.AppleRed
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
 import androidx.compose.foundation.Image
 import com.example.R
 import androidx.activity.compose.BackHandler
@@ -905,10 +907,22 @@ fun SearchScreen(
 
     if (showSaveTemplateDialog) {
         androidx.compose.ui.window.Dialog(onDismissRequest = { showSaveTemplateDialog = false }) {
+            val isNeo = MaterialTheme.isNeoBrutalist
+            val dialogShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(16.dp)
+            val dialogBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else null
+            val dialogBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
             Card(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .then(
+                        if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = Color.Black, cornerRadius = 12.dp)
+                        else Modifier
+                    ),
+                shape = dialogShape,
+                colors = CardDefaults.cardColors(containerColor = dialogBg),
+                border = dialogBorder
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -982,12 +996,22 @@ fun SearchScreen(
 
     if (showScannerDialog) {
         androidx.compose.ui.window.Dialog(onDismissRequest = { showScannerDialog = false }) {
+            val isNeo = MaterialTheme.isNeoBrutalist
+            val scannerShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(20.dp)
+            val scannerBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else null
+            val scannerBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(16.dp)
+                    .then(
+                        if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = Color.Black, cornerRadius = 12.dp)
+                        else Modifier
+                    ),
+                shape = scannerShape,
+                colors = CardDefaults.cardColors(containerColor = scannerBg),
+                border = scannerBorder
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),

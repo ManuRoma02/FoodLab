@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.BuildConfig
 import com.example.ui.theme.macroColors
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
 import com.example.util.LocalSoundManager
 import com.example.util.OtaUpdateInfo
 import com.example.util.OtaUpdateManager
@@ -46,11 +48,21 @@ fun OtaUpdateCard(
     val soundManager = LocalSoundManager.current
     val state by otaManager.state.collectAsStateWithLifecycle()
 
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(20.dp)
+    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+    val cardBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
     Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-        modifier = modifier.fillMaxWidth()
+        shape = cardShape,
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = cardBorder,
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            )
     ) {
         Column(
             modifier = Modifier.padding(18.dp),

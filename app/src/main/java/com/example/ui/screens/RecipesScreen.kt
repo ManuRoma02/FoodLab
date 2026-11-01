@@ -38,6 +38,8 @@ import com.example.ui.SessionManager
 import com.example.util.LocalSoundManager
 import com.example.util.MealTypes
 import com.example.ui.theme.macroColors
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
@@ -151,11 +153,21 @@ fun RecipesScreen(
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
+                val isNeo = MaterialTheme.isNeoBrutalist
+                val emptyShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(22.dp)
+                val emptyBorder = if (isNeo) androidx.compose.foundation.BorderStroke(2.dp, Color.Black) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                val emptyBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                            else Modifier
+                        ),
+                    shape = emptyShape,
+                    colors = CardDefaults.cardColors(containerColor = emptyBg),
+                    border = emptyBorder
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
@@ -281,13 +293,22 @@ private fun RecipeCard(
         totalFat / servings
     }
 
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(22.dp)
+    val cardBorder = if (isNeo) androidx.compose.foundation.BorderStroke(2.dp, Color.Black) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val cardBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            )
             .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        shape = cardShape,
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = cardBorder
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

@@ -29,19 +29,7 @@ class StreakGuardWorker(
             val caloriesConsumed = meals.sumOf { it.calories }
             val app = context.applicationContext as? com.example.FoodLabApplication
             val target = app?.repository?.resolveTargetForDateOnce(today) ?: run {
-                val calendar = java.util.Calendar.getInstance().apply {
-                    time = SessionManager.parseDateString(today)
-                }
-                val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
-                val dayString = mapOf(
-                    java.util.Calendar.MONDAY to "MONDAY",
-                    java.util.Calendar.TUESDAY to "TUESDAY",
-                    java.util.Calendar.WEDNESDAY to "WEDNESDAY",
-                    java.util.Calendar.THURSDAY to "THURSDAY",
-                    java.util.Calendar.FRIDAY to "FRIDAY",
-                    java.util.Calendar.SATURDAY to "SATURDAY",
-                    java.util.Calendar.SUNDAY to "SUNDAY"
-                )[dayOfWeek] ?: "FIXED"
+                val dayString = TargetResolver.getWeekdayName(today)
                 db.dailyTargetDao().getTargetForDateOnce(today)
                     ?: db.dailyTargetDao().getTargetForDateOnce(dayString)
                     ?: db.dailyTargetDao().getFixedTargetOnce()

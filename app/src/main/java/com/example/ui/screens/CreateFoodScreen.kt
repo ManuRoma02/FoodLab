@@ -320,14 +320,7 @@ fun CreateFoodScreen(
             }
 
             // Input Mode Selector Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp)),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-            ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            FoodLabSectionCard {
                     Text("MODALITÀ CALCOLO", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp), color = MaterialTheme.colorScheme.onSurface)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -371,7 +364,6 @@ fun CreateFoodScreen(
                         }
                     }
                 }
-            }
 
             // Dish Info Card
             FoodLabSectionCard {

@@ -9,20 +9,16 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class ThemeSkin(val displayName: String) {
     ORIGINAL("Originale"),
     RETRO_DARK("Midnight"),
-    TITANIUM("Titanium Pro"),
-    NORD("Nordic Frost"),
-    CATPPUCCIN("Deep Mauve"),
-    WARM_EMBER("Warm Ember");
+    NEO_BRUTALISM("Neo-Brutalism");
 
     companion object {
         fun fromString(name: String?): ThemeSkin {
             return when (name) {
                 "ORIGINAL" -> ORIGINAL
-                "MATRIX", "TITANIUM" -> TITANIUM
-                "GAMEBOY", "NORD" -> NORD
-                "CYBERPUNK", "CATPPUCCIN" -> CATPPUCCIN
-                "AMBER_CRT", "WARM_EMBER" -> WARM_EMBER
                 "RETRO_DARK" -> RETRO_DARK
+                "NEO_BRUTALISM", "NEOBRUTALISM", "NEO_BRUTAL" -> NEO_BRUTALISM
+                // Fallbacks for deprecated skins to ensure backward compatibility
+                "TITANIUM", "MATRIX", "NORD", "GAMEBOY", "CATPPUCCIN", "CYBERPUNK", "WARM_EMBER", "AMBER_CRT" -> ORIGINAL
                 else -> values().firstOrNull { it.name == name } ?: ORIGINAL
             }
         }
@@ -146,7 +142,7 @@ class PreferencesManager private constructor(context: Context) {
 
     fun reset() {
         prefs.edit { clear() }
-        _themeSkin.value = ThemeSkin.RETRO_DARK
+        _themeSkin.value = ThemeSkin.ORIGINAL
         _syncSteps.value = false
         _soundEnabled.value = false
         _notificationsEnabled.value = false

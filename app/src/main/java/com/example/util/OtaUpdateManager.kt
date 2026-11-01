@@ -177,9 +177,25 @@ class OtaUpdateManager(
         onProgress: ((Float, Long, Long) -> Unit)? = null
     ): Result<File> = withContext(Dispatchers.IO) {
         _state.value = OtaUpdateState.Downloading(0f, 0L, 0L)
+        // 1. Sanitize version name against path traversal (CWE-22)
+        val cleanVersionName = info.versionName.filter { it.isLetterOrDigit() || it == '.' || it == '-' }
+        if (cleanVersionName.isBlank() || info.versionName.contains('/') || info.versionName.contains('\\') || info.versionName.contains("..")) {
+            val err = "Nome versione non valido o potenziale percorso non sicuro: ${info.versionName}"
+            _state.value = OtaUpdateState.Error(err)
+            return@withContext Result.failure(SecurityException(err))
+        }
+
+        // 2. Enforce secure HTTPS download scheme (CWE-319)
+        val parsedUri = Uri.parse(info.apkUrl)
+        if (parsedUri.scheme?.lowercase() != "https") {
+            val err = "URL di download non sicuro (richiesto HTTPS): ${info.apkUrl}"
+            _state.value = OtaUpdateState.Error(err)
+            return@withContext Result.failure(SecurityException(err))
+        }
+
         val updatesDir = File(context.cacheDir, "ota_updates").apply { mkdirs() }
-        val destination = File(updatesDir, "FoodLab_v${info.versionName}.apk")
-        val tempDestination = File(updatesDir, "FoodLab_v${info.versionName}.apk.tmp")
+        val destination = File(updatesDir, "FoodLab_v$cleanVersionName.apk")
+        val tempDestination = File(updatesDir, "FoodLab_v$cleanVersionName.apk.tmp")
 
         try {
             val req = Request.Builder().url(info.apkUrl).build()
@@ -215,15 +231,20 @@ class OtaUpdateManager(
                 }
             }
 
-            // Verify SHA-256 integrity if checksum is provided
-            if (info.sha256.isNotBlank()) {
-                val computedHash = calculateSha256(tempDestination)
-                if (!computedHash.equals(info.sha256, ignoreCase = true)) {
-                    try { tempDestination.delete() } catch (_: Exception) {}
-                    val err = "Verifica integrità fallita: SHA-256 non corrispondente"
-                    _state.value = OtaUpdateState.Error(err)
-                    return@withContext Result.failure(SecurityException(err))
-                }
+            // 3. Mandatory SHA-256 integrity verification (CWE-494)
+            if (info.sha256.isBlank() || !info.sha256.matches(Regex("^[a-fA-F0-9]{64}$"))) {
+                try { if (tempDestination.exists()) tempDestination.delete() } catch (_: Exception) {}
+                val err = "Verifica integrità fallita: checksum SHA-256 mancante o non valido"
+                _state.value = OtaUpdateState.Error(err)
+                return@withContext Result.failure(SecurityException(err))
+            }
+
+            val computedHash = calculateSha256(tempDestination)
+            if (!computedHash.equals(info.sha256, ignoreCase = true)) {
+                try { tempDestination.delete() } catch (_: Exception) {}
+                val err = "Verifica integrità fallita: SHA-256 non corrispondente"
+                _state.value = OtaUpdateState.Error(err)
+                return@withContext Result.failure(SecurityException(err))
             }
 
             // Cleanup older APKs to prevent cache bloat

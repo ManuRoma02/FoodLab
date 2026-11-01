@@ -52,7 +52,7 @@ All agents working on FoodLab must strictly uphold Andrej Karpathy's coding guid
 
 * Maintain structural knowledge graph continuity across sessions (`codebase-memory-mcp` / tree-sitter AST).
 * Respect established canonical conventions:
-  * Room DB migrations (currently v6) and Room entities.
+  * Room DB migrations (currently v12) and Room entities.
   * Proportional 2×2 layout rules for AppWidgets (`widget_pet_status.xml`, `widget_daily_calories.xml`).
   * Canonical meal enum names (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACK`).
   * JDK 22 and non-destructive Gradle builds.

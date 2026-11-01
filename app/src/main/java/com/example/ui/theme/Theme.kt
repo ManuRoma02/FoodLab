@@ -8,6 +8,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 import com.example.util.ThemeSkin
 
@@ -38,6 +39,16 @@ private val DarkColorScheme = darkColorScheme(
     outlineVariant = OutlineVariant
 )
 
+val LocalThemeSkin = staticCompositionLocalOf { ThemeSkin.ORIGINAL }
+
+val MaterialTheme.isNeoBrutalist: Boolean
+    @Composable
+    get() = LocalThemeSkin.current == ThemeSkin.NEO_BRUTALISM
+
+val MaterialTheme.themeSkin: ThemeSkin
+    @Composable
+    get() = LocalThemeSkin.current
+
 @Composable
 fun MyApplicationTheme(
     darkTheme: Boolean = true, // Force dark theme for tactical feel
@@ -47,14 +58,17 @@ fun MyApplicationTheme(
 ) {
     val colorScheme = colorSchemeForSkin(themeSkin)
     val macroColors = macroColorsForSkin(themeSkin)
+    val shapes = if (themeSkin == ThemeSkin.NEO_BRUTALISM) NeoBrutalShapes else Shapes
+    val typography = if (themeSkin == ThemeSkin.NEO_BRUTALISM) NeoBrutalTypography else Typography
 
     androidx.compose.runtime.CompositionLocalProvider(
-        LocalMacroColors provides macroColors
+        LocalMacroColors provides macroColors,
+        LocalThemeSkin provides themeSkin
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography,
-            shapes = Shapes,
+            typography = typography,
+            shapes = shapes,
             content = content
         )
     }

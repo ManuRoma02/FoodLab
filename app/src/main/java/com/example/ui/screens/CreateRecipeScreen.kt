@@ -37,6 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.*
 import com.example.util.LocalSoundManager
 import com.example.ui.theme.macroColors
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
 import kotlinx.coroutines.launch
 
 private val CalorieBlue = Color(0xFF38BDF8)
@@ -276,11 +278,21 @@ fun CreateRecipeScreen(
             }
 
             // Live Hero Macro Summary Card
+            val isNeo = MaterialTheme.isNeoBrutalist
+            val heroShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(22.dp)
+            val heroBorder = if (isNeo) androidx.compose.foundation.BorderStroke(2.dp, Color.Black) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+            val heroBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                        else Modifier
+                    ),
+                shape = heroShape,
+                colors = CardDefaults.cardColors(containerColor = heroBg),
+                border = heroBorder
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -387,11 +399,20 @@ fun CreateRecipeScreen(
                         val factor = weight / 100f
                         val itemCals = (food.caloriesPer100g * factor).toInt()
 
+                        val itemShape = if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(20.dp)
+                        val itemBorder = if (isNeo) androidx.compose.foundation.BorderStroke(2.dp, Color.Black) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                        val itemBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
                         Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 10.dp)
+                                    else Modifier
+                                ),
+                            shape = itemShape,
+                            colors = CardDefaults.cardColors(containerColor = itemBg),
+                            border = itemBorder
                         ) {
                             Column(
                                 modifier = Modifier.padding(14.dp),

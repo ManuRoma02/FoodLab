@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
 import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Icecream
 import androidx.compose.material.icons.filled.Favorite
@@ -121,14 +123,23 @@ fun RetroScannerDialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(decorFitsSystemWindows = false)
     ) {
+        val isNeo = MaterialTheme.isNeoBrutalist
+        val dialogShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(20.dp)
+        val dialogBorder = if (isNeo) BorderStroke(2.dp, androidx.compose.ui.graphics.Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        val dialogBg = if (isNeo) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.surfaceContainer
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
                 .imePadding()
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                .then(
+                    if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = androidx.compose.ui.graphics.Color.Black, cornerRadius = 12.dp)
+                    else Modifier
+                ),
+            shape = dialogShape,
+            colors = CardDefaults.cardColors(containerColor = dialogBg),
+            border = dialogBorder
         ) {
             Column(
                 modifier = Modifier
@@ -274,14 +285,23 @@ fun LogWeightDialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(decorFitsSystemWindows = false)
     ) {
+        val isNeo = MaterialTheme.isNeoBrutalist
+        val dialogShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(20.dp)
+        val dialogBorder = if (isNeo) BorderStroke(2.dp, androidx.compose.ui.graphics.Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        val dialogBg = if (isNeo) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.surfaceContainer
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
                 .imePadding()
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                .then(
+                    if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = androidx.compose.ui.graphics.Color.Black, cornerRadius = 12.dp)
+                    else Modifier
+                ),
+            shape = dialogShape,
+            colors = CardDefaults.cardColors(containerColor = dialogBg),
+            border = dialogBorder
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
@@ -374,11 +394,28 @@ fun EditMealEntryDialog(
     val currentQty = quantityText.toIntOrNull()
     val isNegativeOrInvalid = currentQty == null || currentQty <= 0
     val editedQuantity = currentQty?.coerceAtLeast(0) ?: 0
-    val ratio = if (meal.quantityGrams > 0) editedQuantity.toFloat() / meal.quantityGrams.toFloat() else 0f
-    val editedCalories = (meal.calories * ratio).toInt()
-    val editedProtein = meal.protein * ratio
-    val editedCarbs = meal.carbs * ratio
-    val editedFat = meal.fat * ratio
+    val nutrition = if (meal.caloriesPer100g > 0 || meal.proteinPer100g > 0f || meal.carbsPer100g > 0f || meal.fatPer100g > 0f) {
+        com.example.util.NutritionCalculator.fromPer100g(
+            quantityGrams = editedQuantity,
+            caloriesPer100g = meal.caloriesPer100g,
+            proteinPer100g = meal.proteinPer100g,
+            carbsPer100g = meal.carbsPer100g,
+            fatPer100g = meal.fatPer100g
+        )
+    } else {
+        com.example.util.NutritionCalculator.rescaleExisting(
+            oldQuantityGrams = meal.quantityGrams,
+            newQuantityGrams = editedQuantity,
+            calories = meal.calories,
+            protein = meal.protein,
+            carbs = meal.carbs,
+            fat = meal.fat
+        )
+    }
+    val editedCalories = nutrition.calories
+    val editedProtein = nutrition.protein
+    val editedCarbs = nutrition.carbs
+    val editedFat = nutrition.fat
     val accent = mealAccentColor(meal.mealType)
 
     fun updateGrams(newVal: Int) {
@@ -748,13 +785,22 @@ fun StepOptionsDialog(
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         val soundManager = com.example.util.LocalSoundManager.current
         val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+        val isNeo = MaterialTheme.isNeoBrutalist
+        val dialogShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(24.dp)
+        val dialogBorder = if (isNeo) BorderStroke(2.dp, androidx.compose.ui.graphics.Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+        val dialogBg = if (isNeo) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.surfaceContainer
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                .padding(16.dp)
+                .then(
+                    if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = androidx.compose.ui.graphics.Color.Black, cornerRadius = 12.dp)
+                    else Modifier
+                ),
+            shape = dialogShape,
+            colors = CardDefaults.cardColors(containerColor = dialogBg),
+            border = dialogBorder
         ) {
             Column(
                 modifier = Modifier

@@ -122,7 +122,8 @@ class OtaUpdateManagerTest {
             versionCode = 35,
             versionName = "1.0.35",
             apkUrl = "https://example.com/app-v1.0.35.apk",
-            changelog = "Test new release"
+            changelog = "Test new release",
+            sha256 = "78eda42ba38a4ab03ca69c7bec6bc6406607579bda7f5bdf254540451add318f"
         )
 
         val result = manager.downloadUpdate(context, info)
@@ -218,6 +219,73 @@ class OtaUpdateManagerTest {
         assertFalse("Temp APK should be deleted on checksum failure", tempFile.exists())
         val finalFile = File(updatesDir, "FoodLab_v1.0.37.apk")
         assertFalse("Final APK should not be created on checksum failure", finalFile.exists())
+        assertTrue(manager.state.value is OtaUpdateState.Error)
+    }
+
+    @Test
+    fun testDownloadUpdate_withMissingSha256_failsWithSecurityException() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mockBytes = "mock apk binary payload".toByteArray()
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                Response.Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body(mockBytes.toResponseBody("application/vnd.android.package-archive".toMediaType()))
+                    .build()
+            }
+            .build()
+
+        val manager = OtaUpdateManager(client = client)
+        val info = OtaUpdateInfo(
+            versionCode = 38,
+            versionName = "1.0.38",
+            apkUrl = "https://example.com/app-v1.0.38.apk",
+            changelog = "Missing checksum release",
+            sha256 = ""
+        )
+
+        val result = manager.downloadUpdate(context, info)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is SecurityException)
+        assertTrue(manager.state.value is OtaUpdateState.Error)
+    }
+
+    @Test
+    fun testDownloadUpdate_withInsecureHttpUrl_failsWithSecurityException() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val manager = OtaUpdateManager()
+        val info = OtaUpdateInfo(
+            versionCode = 39,
+            versionName = "1.0.39",
+            apkUrl = "http://example.com/insecure-app.apk",
+            changelog = "Insecure scheme",
+            sha256 = "78eda42ba38a4ab03ca69c7bec6bc6406607579bda7f5bdf254540451add318f"
+        )
+
+        val result = manager.downloadUpdate(context, info)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is SecurityException)
+        assertTrue(manager.state.value is OtaUpdateState.Error)
+    }
+
+    @Test
+    fun testDownloadUpdate_withPathTraversalVersion_failsWithSecurityException() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val manager = OtaUpdateManager()
+        val info = OtaUpdateInfo(
+            versionCode = 40,
+            versionName = "../../etc/passwd",
+            apkUrl = "https://example.com/traversal.apk",
+            changelog = "Path traversal attack",
+            sha256 = "78eda42ba38a4ab03ca69c7bec6bc6406607579bda7f5bdf254540451add318f"
+        )
+
+        val result = manager.downloadUpdate(context, info)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is SecurityException)
         assertTrue(manager.state.value is OtaUpdateState.Error)
     }
 }

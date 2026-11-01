@@ -245,4 +245,20 @@ class GeminiFoodScannerModelsTest {
         assertTrue(scan.calories > 0)
         assertTrue(scan.estimatedGrams > 0)
     }
+
+    @Test
+    fun defensiveNormalizationOfAdversarialStrings() {
+        val longString = "A".repeat(500)
+        val maliciousControlChars = "Spaghetti [31malla Carbonara"
+        val adversarialResult = GeminiFoodScanResult(
+            foodName = maliciousControlChars,
+            notes = longString,
+            detectedItems = listOf("Item1 ", "B".repeat(200))
+        )
+        val normalized = adversarialResult.normalized()
+        assertEquals("Spaghetti[31malla Carbonara", normalized.foodName)
+        assertEquals(500, normalized.notes?.length)
+        assertEquals("Item1", normalized.detectedItems[0])
+        assertEquals(80, normalized.detectedItems[1].length)
+    }
 }

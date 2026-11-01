@@ -23,6 +23,12 @@ import com.example.ui.theme.ApplePurple
 import com.example.ui.theme.AppleCornerRadiusCard
 import com.example.ui.theme.AppleCardShape
 import com.example.ui.theme.macroColors
+import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.neoHardShadow
+import com.example.ui.theme.neoBorder
+import com.example.ui.theme.foodLabCardModifier
+import com.example.ui.theme.foodLabCardShape
+import com.example.ui.theme.foodLabCardBorder
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.positionInRoot
@@ -154,26 +160,35 @@ fun CompactWeightChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val chipShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(22.dp)
+    val chipBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val chipBg = if (isNeo) Color(0xFFFFF4B8) else MaterialTheme.colorScheme.surfaceContainer
+
     Row(
         modifier = modifier
             .heightIn(min = 44.dp)
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 8.dp)
+                else Modifier
+            )
             .applePressEffect(pressedScale = 0.94f, onClick = onClick)
-            .clip(RoundedCornerShape(22.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
+            .clip(chipShape)
+            .background(chipBg)
+            .border(chipBorder.width, chipBorder.brush, chipShape)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             weightText,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold),
+            color = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary
         )
         Icon(
             Icons.Default.Edit,
             contentDescription = "Edit weight",
-            tint = MaterialTheme.colorScheme.primary,
+            tint = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(16.dp)
         )
     }
@@ -187,6 +202,7 @@ fun FoodLabScreenHeader(
     onBack: (() -> Unit)? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -199,23 +215,27 @@ fun FoodLabScreenHeader(
             modifier = Modifier.weight(1f)
         ) {
             if (onBack != null) {
+                val backShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp)
+                val backBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                val backBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh
+
                 Box(
                     modifier = Modifier
                         .size(38.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .border(
-                            0.5.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                            RoundedCornerShape(12.dp)
+                        .then(
+                            if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                            else Modifier
                         )
+                        .clip(backShape)
+                        .background(backBg)
+                        .border(backBorder.width, backBorder.brush, backShape)
                         .applePressEffect(pressedScale = 0.92f, onClick = onBack),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Torna indietro",
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        tint = if (isNeo) Color.Black else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -225,18 +245,20 @@ fun FoodLabScreenHeader(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.3).sp
+                        fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold,
+                        letterSpacing = if (isNeo) 0.sp else (-0.3).sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = if (isNeo) Color.Black else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 if (subtitle.isNotBlank()) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = if (isNeo) FontWeight.Bold else FontWeight.Normal
+                        ),
+                        color = if (isNeo) Color(0xFF333333) else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
@@ -258,22 +280,30 @@ fun FoodLabSectionCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(22.dp)
+    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(
+        1.dp,
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(22.dp),
-                spotColor = Color.Black.copy(alpha = 0.16f),
-                ambientColor = Color.Black.copy(alpha = 0.08f)
-            )
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                RoundedCornerShape(22.dp)
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier.shadow(
+                    elevation = 4.dp,
+                    shape = cardShape,
+                    spotColor = Color.Black.copy(alpha = 0.16f),
+                    ambientColor = Color.Black.copy(alpha = 0.08f)
+                )
             ),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        shape = cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+        ),
+        border = cardBorder
     ) {
         Column(
             modifier = Modifier
@@ -293,28 +323,39 @@ fun FoodLabActionButton(
     modifier: Modifier = Modifier,
     danger: Boolean = false
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val buttonShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(14.dp)
+    val borderColor = if (isNeo) Color.Black else (if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+    val borderWidth = if (isNeo) 2.dp else 1.dp
+    val containerColor = if (isNeo) {
+        if (danger) Color(0xFFFF8A80) else Color(0xFFFFE500)
+    } else {
+        if (danger) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val contentColor = if (isNeo) Color.Black else (if (danger) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary)
+
     Button(
         onClick = onClick,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         modifier = modifier
             .height(44.dp)
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 8.dp)
+                else Modifier
+            )
             .applePressEffect(pressedScale = 0.92f, onClick = onClick)
-            .border(
-                1.dp,
-                if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                RoundedCornerShape(14.dp)
-            ),
-        shape = RoundedCornerShape(14.dp),
+            .border(borderWidth, borderColor, buttonShape),
+        shape = buttonShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (danger) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-            contentColor = if (danger) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary
+            containerColor = containerColor,
+            contentColor = contentColor
         )
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = contentColor)
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold),
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
@@ -328,17 +369,25 @@ fun DashboardDateButton(
     enabled: Boolean = true,
     icon: @Composable () -> Unit
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val btnShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(14.dp)
+    val btnBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
     Box(
         modifier = Modifier
             .size(44.dp)
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 8.dp)
+                else Modifier
+            )
             .applePressEffect(pressedScale = 0.9f, onClick = if (enabled) onClick else null)
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+            .clip(btnShape)
+            .background(if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(btnBorder.width, btnBorder.brush, btnShape)
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center
     ) {
-        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        CompositionLocalProvider(LocalContentColor provides (if (isNeo) Color.Black else MaterialTheme.colorScheme.onSurface)) {
             icon()
         }
     }
@@ -476,6 +525,7 @@ fun MealItemRow(
     dragDropState: MealDragDropState? = null
 ) {
     val haptic = LocalHapticFeedback.current
+    val isNeo = MaterialTheme.isNeoBrutalist
     var itemCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val isBeingDragged = dragDropState?.isDragging == true && dragDropState?.draggedMeal?.id == meal.id
 
@@ -668,6 +718,7 @@ fun QuickFavoritesRow(
     if (favoriteFoods.isEmpty()) return
 
     val haptic = LocalHapticFeedback.current
+    val isNeo = MaterialTheme.isNeoBrutalist
     val soundManager = LocalSoundManager.current
 
     Column(
@@ -1264,23 +1315,31 @@ fun UnifiedHeroHeader(
     onStepClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(14.dp) else RoundedCornerShape(24.dp)
+    val cardBorder = if (isNeo) BorderStroke(2.5.dp, Color.Black) else BorderStroke(
+        1.dp,
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .semantics { testTag = "dashboard_hero_card" }
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(24.dp),
-                spotColor = Color.Black.copy(alpha = 0.22f),
-                ambientColor = Color.Black.copy(alpha = 0.12f)
-            )
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                RoundedCornerShape(24.dp)
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = Color.Black, cornerRadius = 14.dp)
+                else Modifier.shadow(
+                    elevation = 8.dp,
+                    shape = cardShape,
+                    spotColor = Color.Black.copy(alpha = 0.22f),
+                    ambientColor = Color.Black.copy(alpha = 0.12f)
+                )
             ),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        shape = cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+        ),
+        border = cardBorder
     ) {
         Column(
             modifier = Modifier
@@ -1316,10 +1375,18 @@ fun UnifiedHeroHeader(
                         )
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(99.dp))
+                                .clip(if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(99.dp))
                                 .background(
-                                    if (remainingCalories < 0) AppleRed.copy(alpha = 0.15f)
-                                    else AppleGreen.copy(alpha = 0.15f)
+                                    if (isNeo) {
+                                        if (remainingCalories < 0) Color(0xFFFF8A80) else Color(0xFFB3FCE0)
+                                    } else {
+                                        if (remainingCalories < 0) AppleRed.copy(alpha = 0.15f)
+                                        else AppleGreen.copy(alpha = 0.15f)
+                                    }
+                                )
+                                .then(
+                                    if (isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(6.dp))
+                                    else Modifier
                                 )
                                 .padding(horizontal = 8.dp, vertical = 3.dp)
                                 .align(Alignment.CenterVertically)
@@ -1327,11 +1394,11 @@ fun UnifiedHeroHeader(
                             Text(
                                 text = if (remainingCalories >= 0) "RIMASTE" else "IN ECCESSO",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold,
                                     fontSize = 10.sp,
                                     letterSpacing = 0.5.sp
                                 ),
-                                color = if (remainingCalories < 0) AppleRed else AppleGreen
+                                color = if (isNeo) Color.Black else (if (remainingCalories < 0) AppleRed else AppleGreen)
                             )
                         }
                     }
@@ -1347,17 +1414,21 @@ fun UnifiedHeroHeader(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // FoodLab Mascot in styled Apple glass container
+                val mascotShape = if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(22.dp)
+                val mascotBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                val mascotBg = if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f)
+
+                // FoodLab Mascot in styled container
                 Box(
                     modifier = Modifier
                         .size(86.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f))
-                        .border(
-                            0.5.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                            RoundedCornerShape(22.dp)
-                        ),
+                        .then(
+                            if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 10.dp)
+                            else Modifier
+                        )
+                        .clip(mascotShape)
+                        .background(mascotBg)
+                        .border(mascotBorder.width, mascotBorder.brush, mascotShape),
                     contentAlignment = Alignment.Center
                 ) {
                     AnimatedFoodLabMascot(
@@ -1399,17 +1470,25 @@ fun UnifiedHeroHeader(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f), thickness = 0.5.dp)
 
             // Bottom Section: Integrated Steps Rail
+            val stepsShape = if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(16.dp)
+            val stepsBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+            val stepsBg = if (isNeo) Color(0xFFF7F5ED) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 44.dp)
+                    .then(
+                        if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 10.dp)
+                        else Modifier
+                    )
                     .applePressEffect(pressedScale = 0.98f, onClick = onStepClick)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f))
+                    .clip(stepsShape)
+                    .background(stepsBg)
                     .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
-                        RoundedCornerShape(16.dp)
+                        stepsBorder.width,
+                        stepsBorder.brush,
+                        stepsShape
                     )
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1474,6 +1553,7 @@ fun UnifiedMealsCard(
     dragDropState: MealDragDropState? = null
 ) {
     val haptic = LocalHapticFeedback.current
+    val isNeo = MaterialTheme.isNeoBrutalist
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -1573,16 +1653,25 @@ fun UnifiedMealsCard(
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = if (meals.isNotEmpty()) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        val addBtnShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(20.dp)
+                        val addBtnBg = if (isNeo) Color(0xFFFFE500) else accentColor.copy(alpha = 0.15f)
+                        val addBtnBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
+                        val addBtnTint = if (isNeo) Color.Black else accentColor
+
                         Box(
                             modifier = Modifier
                                 .heightIn(min = 44.dp)
+                                .then(
+                                    if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                    else Modifier
+                                )
                                 .applePressEffect(pressedScale = 0.92f) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onAddMealClick(typeKey)
                                 }
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(accentColor.copy(alpha = 0.15f))
-                                .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                                .clip(addBtnShape)
+                                .background(addBtnBg)
+                                .border(addBtnBorder.width, addBtnBorder.brush, addBtnShape)
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -1590,33 +1679,41 @@ fun UnifiedMealsCard(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
-                                Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = accentColor)
+                                Icon(Icons.Default.Add, contentDescription = null, tint = addBtnTint, modifier = Modifier.size(14.dp))
+                                Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold), color = addBtnTint)
                             }
                         }
                     }
                 }
 
-                // Cupertino Inset Grouped Container
+                // Inset Grouped Container
+                val mealCardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(24.dp)
+                val mealBorderWidth = if (isNeo) 2.dp else cardBorderWidth
+                val mealBorderColor = if (isNeo) Color.Black else cardBorderColor
+                val mealContainer = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onGloballyPositioned { coordinates ->
                             dragDropState?.registerMealBounds(typeKey, coordinates.boundsInRoot())
                         }
-                        .shadow(
-                            elevation = if (isHoveredTarget) 10.dp else 4.dp,
-                            shape = RoundedCornerShape(24.dp),
-                            spotColor = if (isHoveredTarget) accentColor.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f),
-                            ambientColor = Color.Black.copy(alpha = 0.10f)
+                        .then(
+                            if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                            else Modifier.shadow(
+                                elevation = if (isHoveredTarget) 10.dp else 4.dp,
+                                shape = mealCardShape,
+                                spotColor = if (isHoveredTarget) accentColor.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.18f),
+                                ambientColor = Color.Black.copy(alpha = 0.10f)
+                            )
                         )
                         .border(
-                            cardBorderWidth,
-                            cardBorderColor,
-                            RoundedCornerShape(24.dp)
+                            mealBorderWidth,
+                            mealBorderColor,
+                            mealCardShape
                         ),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+                    shape = mealCardShape,
+                    colors = CardDefaults.cardColors(containerColor = mealContainer)
                 ) {
                     if (meals.isNotEmpty()) {
                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1706,6 +1803,7 @@ fun MonthlyStreakDialog(
 ) {
     val soundManager = LocalSoundManager.current
     val haptic = LocalHapticFeedback.current
+    val isNeo = MaterialTheme.isNeoBrutalist
     val todayStr = remember { SessionManager.formatDate(java.util.Date()) }
     var selectedDate by remember { mutableStateOf(todayStr) }
     var showConfirmClearDialog by remember { mutableStateOf(false) }
@@ -2182,19 +2280,19 @@ fun MonthlyStreakDialog(
     }
 }
 
-fun mealAccentColor(mealType: String): Color = when (mealType.lowercase(Locale.getDefault())) {
-    "breakfast", "colazione" -> Color(0xFF22C55E)
-    "lunch", "pranzo" -> Color(0xFF3B82F6)
-    "snack" -> Color(0xFFF59E0B)
-    "dinner", "cena" -> Color(0xFFA855F7)
+fun mealAccentColor(mealType: String): Color = when (com.example.util.MealTypes.canonicalize(mealType)) {
+    com.example.util.MealTypes.BREAKFAST -> Color(0xFF22C55E)
+    com.example.util.MealTypes.LUNCH -> Color(0xFF3B82F6)
+    com.example.util.MealTypes.SNACK -> Color(0xFFF59E0B)
+    com.example.util.MealTypes.DINNER -> Color(0xFFA855F7)
     else -> Color(0xFF22C55E)
 }
 
-fun mealIcon(mealType: String): ImageVector = when (mealType.lowercase(Locale.getDefault())) {
-    "breakfast", "colazione" -> Icons.Default.EggAlt
-    "lunch", "pranzo" -> Icons.Default.LunchDining
-    "snack" -> Icons.Default.Icecream
-    "dinner", "cena" -> Icons.Default.DinnerDining
+fun mealIcon(mealType: String): ImageVector = when (com.example.util.MealTypes.canonicalize(mealType)) {
+    com.example.util.MealTypes.BREAKFAST -> Icons.Default.EggAlt
+    com.example.util.MealTypes.LUNCH -> Icons.Default.LunchDining
+    com.example.util.MealTypes.SNACK -> Icons.Default.Icecream
+    com.example.util.MealTypes.DINNER -> Icons.Default.DinnerDining
     else -> Icons.Default.Restaurant
 }
 
@@ -2208,21 +2306,30 @@ fun MacroPreviewCard(
     subtitle: String,
     modifier: Modifier = Modifier
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(22.dp)
+    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val cardBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            )
+            .clip(cardShape)
+            .background(cardBg)
+            .border(cardBorder.width, cardBorder.brush, cardShape)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
             Column {
-                Text("MACRONUTRIENTI", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp), color = MaterialTheme.colorScheme.onSurface)
+                Text("MACRONUTRIENTI", style = MaterialTheme.typography.titleSmall.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold, letterSpacing = 0.3.sp), color = MaterialTheme.colorScheme.onSurface)
                 Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("$calories kcal", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = accent)
+            Text("$calories kcal", style = MaterialTheme.typography.titleSmall.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold), color = accent)
         }
         MacroDistributionBar(carbs = carbs, protein = protein, fat = fat)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -2275,15 +2382,28 @@ fun MacroDistributionBar(
 
 @Composable
 fun NutrientPill(label: String, value: Float, color: Color, modifier: Modifier = Modifier) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val pillShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(16.dp)
+    val pillBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, color.copy(alpha = 0.35f))
+    val pillBg = if (isNeo) color.copy(alpha = 0.22f) else color.copy(alpha = 0.12f)
+
     Column(
         modifier = modifier
-            .background(color.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .background(pillBg, pillShape)
+            .border(pillBorder.width, pillBorder.brush, pillShape)
             .padding(horizontal = 8.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(String.format(java.util.Locale.getDefault(), "%.1fg", value), style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = color)
-        Text(label.uppercase(java.util.Locale.getDefault()), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            String.format(java.util.Locale.getDefault(), "%.1fg", value),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold),
+            color = if (isNeo) Color.Black else color
+        )
+        Text(
+            label.uppercase(java.util.Locale.getDefault()),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = if (isNeo) FontWeight.Bold else FontWeight.SemiBold),
+            color = if (isNeo) Color(0xFF333333) else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -2322,24 +2442,5 @@ private fun MiniNutrientChip(label: String, value: String, color: Color, modifie
 }
 
 private fun resolveCalendarDayTarget(date: String, targets: List<com.example.data.DailyTarget>, defaultTarget: Int = 2000): Int {
-    val specific = targets.firstOrNull { it.dateString == date }
-    if (specific != null) return specific.targetCalories
-
-    val calendar = Calendar.getInstance().apply {
-        time = SessionManager.parseDateString(date)
-    }
-    val weekdayName = when (calendar.get(Calendar.DAY_OF_WEEK)) {
-        Calendar.MONDAY -> "MONDAY"
-        Calendar.TUESDAY -> "TUESDAY"
-        Calendar.WEDNESDAY -> "WEDNESDAY"
-        Calendar.THURSDAY -> "THURSDAY"
-        Calendar.FRIDAY -> "FRIDAY"
-        Calendar.SATURDAY -> "SATURDAY"
-        Calendar.SUNDAY -> "SUNDAY"
-        else -> ""
-    }
-    val weekdayTarget = targets.firstOrNull { it.dateString == weekdayName }
-    if (weekdayTarget != null) return weekdayTarget.targetCalories
-
-    return targets.firstOrNull { it.dateString == "FIXED" }?.targetCalories ?: defaultTarget
+    return com.example.util.TargetResolver.resolveTargetCalories(date, targets, defaultTarget)
 }

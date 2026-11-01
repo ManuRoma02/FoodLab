@@ -1,9 +1,9 @@
 {
-  "versionCode": 33,
-  "versionName": "1.0.33",
+  "versionCode": 34,
+  "versionName": "1.0.34",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Barra navigazione**: scorrimento fluido con **rimbalzo elastico**\n• **Prestazioni**: zero lag grazie a rendering **GPU** a 120 FPS\n• **Aggiornamenti OTA**: installazione in-app con un tocco",
-  "releaseDate": "2026-10-21",
+  "changelog": "• **Tema Neo-Brutalism**: stile grafico ad alto contrasto con ombre nette e bordi spessi\n• **Apple Design**: schermate **Impostazioni** e **Statistiche** completamente riprogettate in stile iOS Health\n• **Grafico Interattivo**: andamento nutrizionale unificato con selezione macro e orizzonte temporale 7/14/30 giorni",
+  "releaseDate": "2026-10-31",
   "forceUpdate": false,
-  "sha256": "13a9facef1fb4358e3c8d119badb60d2748748732694d7cad480d6c7ff8dc304"
+  "sha256": "8b25cb77ac5f5290e513af80f8610833575f735ddcf33ac22abafa405439c344"
 }
