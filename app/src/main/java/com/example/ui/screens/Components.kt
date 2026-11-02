@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 
 
 import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.NeoBrutalAmber
 import com.example.ui.theme.neoHardShadow
 import com.example.ui.theme.neoBorder
 import com.example.ui.theme.foodLabCardModifier
@@ -130,7 +131,7 @@ fun BottomNavBar(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFFFFE500))
+                                .background(NeoBrutalAmber)
                                 .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
                         )
                     } else {
@@ -493,7 +494,7 @@ fun ImprovedTagButton(
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
     val targetBg = if (isNeo) {
-        if (isSelected) Color(0xFFFFE500) else Color.White
+        if (isSelected) NeoBrutalAmber else Color.White
     } else {
         if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer
     }
@@ -649,7 +650,7 @@ fun SearchResultCard(
                     ) {
                         Surface(
                             shape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp),
-                            color = if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            color = if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                             border = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                         ) {
                             Text(

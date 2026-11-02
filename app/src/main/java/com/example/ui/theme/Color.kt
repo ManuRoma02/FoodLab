@@ -143,43 +143,53 @@ val OriginalColorScheme = darkColorScheme(
     outlineVariant = OutlineVariant
 )
 
-// 3. NEO_BRUTALISM: High-contrast brutalist canvas with stark black borders and saturated punchy accents
+// 3. NEO_BRUTALISM: Calibrated brutalist canvas with warm parchment stone, stark black borders and high-contrast accents
+val NeoBrutalBackground = Color(0xFFF3EFE6) // Restful warm parchment stone (cuts optical glare)
+val NeoBrutalSurface = Color(0xFFFFFDF9)    // Crisp warm card surface
+val NeoBrutalSurfaceContainerHigh = Color(0xFFE5DEC9) // Muted warm stone for pills and secondary surfaces
+val NeoBrutalSurfaceVariant = Color(0xFFECE6D8)
+val NeoBrutalAmber = Color(0xFFFFC700)      // Rich warm brutalist amber gold (13:1 contrast with black)
+val NeoBrutalCoral = Color(0xFFE11D48)      // Deep rich ruby/coral red
+val NeoBrutalMint = Color(0xFF059669)       // Deep rich emerald mint
+val NeoBrutalCyan = Color(0xFF0284C7)       // Deep cobalt/ocean cyan
+val NeoBrutalBorder = Color(0xFF000000)     // Stark black outlines
+
 val NeoBrutalismColorScheme = lightColorScheme(
-    primary = Color(0xFFFF3366), // Saturated Neo Coral / Shocking Pink
+    primary = NeoBrutalCoral,
     onPrimary = Color(0xFF000000), // Pure Black text
-    primaryContainer = Color(0xFFFFE500), // Electric Cyber Yellow
+    primaryContainer = NeoBrutalAmber,
     onPrimaryContainer = Color(0xFF000000),
-    secondary = Color(0xFF00E599), // Electric Acid Mint
+    secondary = NeoBrutalMint,
     onSecondary = Color(0xFF000000),
-    secondaryContainer = Color(0xFFB3FCE0),
+    secondaryContainer = Color(0xFFA7F3D0),
     onSecondaryContainer = Color(0xFF000000),
-    tertiary = Color(0xFF00D2FF), // Electric Cyan
+    tertiary = NeoBrutalCyan,
     onTertiary = Color(0xFF000000),
-    tertiaryContainer = Color(0xFF8CEEFF),
+    tertiaryContainer = Color(0xFFBAE6FD),
     onTertiaryContainer = Color(0xFF000000),
-    error = Color(0xFFFF2A2A),
+    error = Color(0xFFDC2626),
     onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFFFF8A80),
+    errorContainer = Color(0xFFFECACA),
     onErrorContainer = Color(0xFF000000),
-    background = Color(0xFFFFFDF5), // Off-white brutal canvas
+    background = NeoBrutalBackground,
     onBackground = Color(0xFF000000), // Solid pitch black
-    surface = Color(0xFFFFFFFF), // Crisp card surface
+    surface = NeoBrutalSurface,
     onSurface = Color(0xFF000000), // Solid pitch black
-    surfaceVariant = Color(0xFFFFF9D2), // Canary yellow tint
-    onSurfaceVariant = Color(0xFF1A1A1A),
-    surfaceContainerLow = Color(0xFFF7F5ED),
-    surfaceContainer = Color(0xFFFFFFFF),
-    surfaceContainerHigh = Color(0xFFFFF4B8),
-    surfaceContainerHighest = Color(0xFFFFE500),
-    outline = Color(0xFF000000), // Solid stark black outlines
-    outlineVariant = Color(0xFF000000)
+    surfaceVariant = NeoBrutalSurfaceVariant,
+    onSurfaceVariant = Color(0xFF262626),
+    surfaceContainerLow = Color(0xFFECE7DC),
+    surfaceContainer = NeoBrutalSurface,
+    surfaceContainerHigh = NeoBrutalSurfaceContainerHigh,
+    surfaceContainerHighest = NeoBrutalAmber,
+    outline = NeoBrutalBorder,
+    outlineVariant = NeoBrutalBorder
 )
 
 fun themePreviewColor(skin: ThemeSkin): Color {
     return when (skin) {
         ThemeSkin.ORIGINAL -> Color(0xFFFF9500)
         ThemeSkin.RETRO_DARK -> AppleBlue
-        ThemeSkin.NEO_BRUTALISM -> Color(0xFFFFE500)
+        ThemeSkin.NEO_BRUTALISM -> NeoBrutalAmber
     }
 }
 
@@ -213,10 +223,10 @@ fun macroColorsForSkin(skin: ThemeSkin): MacroColors {
             fat = Color(0xFF64D2FF)
         )
         ThemeSkin.NEO_BRUTALISM -> MacroColors(
-            calories = Color(0xFFFF3366), // Saturated coral
-            carbs = Color(0xFFFFB800),    // Electric gold
-            protein = Color(0xFF00C853),  // Vibrant acid green
-            fat = Color(0xFF00B0FF)       // Electric blue
+            calories = NeoBrutalCoral,
+            carbs = Color(0xFFD97706),    // Rich amber ochre with high contrast on light canvas
+            protein = NeoBrutalMint,
+            fat = NeoBrutalCyan
         )
     }
 }

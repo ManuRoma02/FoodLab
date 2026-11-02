@@ -138,7 +138,7 @@ private fun IosIconTile(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (isNeo && backgroundColor == Color(0xFFFFE500)) Color.Black else iconTint,
+            tint = if (isNeo && backgroundColor == NeoBrutalAmber) Color.Black else iconTint,
             modifier = Modifier.size(17.dp)
         )
     }
@@ -527,7 +527,7 @@ fun SettingsScreen(
                 SettingsCategory.values().forEach { cat ->
                     val isSelected = cat == selectedCategory
                     val pillBg = if (isSelected) {
-                        if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                        if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
                     } else Color.Transparent
                     val pillFg = if (isSelected) {
                         if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
@@ -651,7 +651,7 @@ fun SettingsScreen(
                                                 val selected = opt == selectedTargetKey
                                                 val chipShape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp)
                                                 val chipBg = if (isNeo) {
-                                                    if (selected) Color(0xFFFFE500) else Color(0xFFF7F5ED)
+                                                    if (selected) NeoBrutalAmber else Color.White
                                                 } else {
                                                     if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh
                                                 }
@@ -800,7 +800,7 @@ fun SettingsScreen(
                                                 )
                                             },
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary,
+                                                containerColor = if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary,
                                                 contentColor = if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
                                             ),
                                             shape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp),
@@ -1013,7 +1013,7 @@ fun SettingsScreen(
                                             themes.forEach { theme ->
                                                 val isSelected = theme == activeTheme
                                                 val pillBg = if (isSelected) {
-                                                    if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                                                    if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
                                                 } else Color.Transparent
                                                 val pillFg = if (isSelected) {
                                                     if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
@@ -1078,7 +1078,7 @@ fun SettingsScreen(
                                                 },
                                                 modifier = Modifier.scale(0.85f),
                                                 colors = SwitchDefaults.colors(
-                                                    checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
+                                                    checkedTrackColor = if (isNeo) NeoBrutalMint else AppleGreen
                                                 )
                                             )
                                         }
@@ -1105,7 +1105,7 @@ fun SettingsScreen(
                                                 },
                                                 modifier = Modifier.scale(0.85f),
                                                 colors = SwitchDefaults.colors(
-                                                    checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
+                                                    checkedTrackColor = if (isNeo) NeoBrutalMint else AppleGreen
                                                 )
                                             )
                                         }
@@ -1133,7 +1133,7 @@ fun SettingsScreen(
                                                 },
                                                 modifier = Modifier.scale(0.85f),
                                                 colors = SwitchDefaults.colors(
-                                                    checkedTrackColor = if (isNeo) Color(0xFF00E599) else AppleGreen
+                                                    checkedTrackColor = if (isNeo) NeoBrutalMint else AppleGreen
                                                 )
                                             )
                                         }

@@ -1,9 +1,9 @@
 {
-  "versionCode": 37,
-  "versionName": "1.0.37",
+  "versionCode": 38,
+  "versionName": "1.0.38",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Armonizzazione Header**: rimosse frecce incoerenti nei tab principali e standardizzati **titoli e azioni**\n• **Selettore Categorie Responsive**: sezione alimenti con **4 segmenti orizzontali** visibili senza scorrimento laterale\n• **Spaziature Unificate**: estesa l'area inferiore a **140dp** in tutte le sezioni per zero sovrapposizioni con la barra",
+  "changelog": "• **Palette Neo-Brutalism Calibrata**: sfondo carta warm stone anti-abbaglio, contrasto aumentato e colori saturi più riposanti\n• **Legibilità Totale**: corretto badge streak, capsule calendario con bordi definiti e contrasto testo superiore a 12:1\n• **Rifiniture Componenti**: indicatori di progresso, pulsanti e selettori armonizzati nei tre temi senza sovrapposizioni",
   "releaseDate": "2026-11-02",
   "forceUpdate": false,
-  "sha256": "48fb1379f6af083730d1a8fa51cee433698f42e86207e0472115a2f4da850d92"
+  "sha256": "1804561505abf39c4bcacdea2b3720902f4f1e8b60b03d113d5b47b50483f855"
 }

@@ -24,6 +24,7 @@ import com.example.ui.theme.AppleCornerRadiusCard
 import com.example.ui.theme.AppleCardShape
 import com.example.ui.theme.macroColors
 import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.NeoBrutalAmber
 import com.example.ui.theme.neoHardShadow
 import com.example.ui.theme.neoBorder
 import com.example.ui.theme.foodLabCardModifier
@@ -163,7 +164,7 @@ fun CompactWeightChip(
     val isNeo = MaterialTheme.isNeoBrutalist
     val chipShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(22.dp)
     val chipBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-    val chipBg = if (isNeo) Color(0xFFFFF4B8) else MaterialTheme.colorScheme.surfaceContainer
+    val chipBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
 
     Row(
         modifier = modifier
@@ -328,7 +329,7 @@ fun FoodLabActionButton(
     val borderColor = if (isNeo) Color.Black else (if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
     val borderWidth = if (isNeo) 2.dp else 1.dp
     val containerColor = if (isNeo) {
-        if (danger) Color(0xFFFF8A80) else Color(0xFFFFE500)
+        if (danger) Color(0xFFFF8A80) else NeoBrutalAmber
     } else {
         if (danger) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh
     }
@@ -399,6 +400,11 @@ fun SmoothProgressRail(
     color: Color,
     modifier: Modifier = Modifier
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val railShape = if (isNeo) RoundedCornerShape(4.dp) else RoundedCornerShape(99.dp)
+    val railTrackBg = if (isNeo) Color(0xFFE2DBCB) else MaterialTheme.colorScheme.surfaceContainerLow
+    val railBorder = if (isNeo) Modifier.border(1.dp, Color.Black, railShape) else Modifier
+
     val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
         animationSpec = appleSpring(
@@ -411,15 +417,16 @@ fun SmoothProgressRail(
     Box(
         modifier = modifier
             .height(10.dp)
-            .clip(RoundedCornerShape(99.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(1.dp)
+            .then(railBorder)
+            .clip(railShape)
+            .background(railTrackBg)
+            .padding(if (isNeo) 0.5.dp else 1.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(animatedProgress)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(99.dp))
+                .clip(railShape)
                 .background(color)
         )
     }
@@ -1016,12 +1023,21 @@ fun HorizontalDatePicker(
         }
     }
 
+    val isNeo = MaterialTheme.isNeoBrutalist
+    val containerShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(20.dp)
+    val containerBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val containerBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+            .then(
+                if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 12.dp)
+                else Modifier
+            )
+            .clip(containerShape)
+            .background(containerBg)
+            .border(containerBorder.width, containerBorder.brush, containerShape)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -1035,12 +1051,17 @@ fun HorizontalDatePicker(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val streakBg = if (isNeo) NeoBrutalAmber else AppleOrange.copy(alpha = 0.18f)
+                val streakBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, AppleOrange.copy(alpha = 0.4f))
+                val streakFg = if (isNeo) Color.Black else AppleOrange
+                val streakShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(16.dp)
+
                 Box(
                     modifier = Modifier
                         .heightIn(min = 44.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFFFEF08A).copy(alpha = 0.18f))
-                        .border(1.dp, Color(0xFFFEF08A).copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                        .clip(streakShape)
+                        .background(streakBg)
+                        .border(streakBorder.width, streakBorder.brush, streakShape)
                         .applePressEffect(pressedScale = 0.94f, onClick = onOpenStreakCalendar)
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
@@ -1052,13 +1073,13 @@ fun HorizontalDatePicker(
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = null,
-                            tint = Color(0xFFFEF08A),
-                            modifier = Modifier.size(14.dp)
+                            tint = streakFg,
+                            modifier = Modifier.size(16.dp)
                         )
                         Text(
                             "${streakCount}D STREAK",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFFFEF08A)
+                            color = streakFg
                         )
                     }
                 }
@@ -1077,7 +1098,7 @@ fun HorizontalDatePicker(
                 Icon(
                     imageVector = Icons.Default.DateRange,
                     contentDescription = "Streak Calendar",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -1095,23 +1116,48 @@ fun HorizontalDatePicker(
             val dayName = remember(parsedDate) { java.text.SimpleDateFormat("EEE", Locale.US).format(parsedDate).uppercase() }
             val dayNumber = remember(parsedDate) { java.text.SimpleDateFormat("dd", Locale.US).format(parsedDate) }
 
+            val targetBg = if (isNeo) {
+                if (isSelected) NeoBrutalAmber else if (isToday) Color(0xFFF3EFE6) else Color.White
+            } else {
+                if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
+            }
+            val targetBorder = if (isNeo) {
+                if (isSelected || isToday) Color.Black else Color.Black.copy(alpha = 0.25f)
+            } else {
+                if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent
+            }
+            val targetBorderWidth = if (isNeo) {
+                if (isSelected || isToday) 1.5.dp else 1.dp
+            } else 1.dp
+
+            val targetDayTextColor = if (isNeo) {
+                if (isSelected) Color.Black else if (isToday) Color.Black else Color(0xFF555555)
+            } else {
+                if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            val targetNumTextColor = if (isNeo) {
+                Color.Black
+            } else {
+                if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+            }
+
             val animatedBg by androidx.compose.animation.animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent,
+                targetValue = targetBg,
                 animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "dayBg"
             )
             val animatedBorder by androidx.compose.animation.animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent,
+                targetValue = targetBorder,
                 animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "dayBorder"
             )
             val animatedDayTextColor by androidx.compose.animation.animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                targetValue = targetDayTextColor,
                 animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "dayTextColor"
             )
             val animatedNumTextColor by androidx.compose.animation.animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                targetValue = targetNumTextColor,
                 animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "numTextColor"
             )
@@ -1133,6 +1179,8 @@ fun HorizontalDatePicker(
                 label = "dayBob"
             )
 
+            val capsuleShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(14.dp)
+
             Column(
                 modifier = Modifier
                     .width(44.dp)
@@ -1143,9 +1191,9 @@ fun HorizontalDatePicker(
                         translationY = selectedDayBob
                     }
                     .applePressEffect(pressedScale = 0.92f) { onDateChange(date) }
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(capsuleShape)
                     .background(animatedBg)
-                    .border(1.dp, animatedBorder, RoundedCornerShape(14.dp))
+                    .border(targetBorderWidth, animatedBorder, capsuleShape)
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -1416,7 +1464,7 @@ fun UnifiedHeroHeader(
             ) {
                 val mascotShape = if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(22.dp)
                 val mascotBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                val mascotBg = if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f)
+                val mascotBg = if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f)
 
                 // FoodLab Mascot in styled container
                 Box(
@@ -1654,7 +1702,7 @@ fun UnifiedMealsCard(
                             color = if (meals.isNotEmpty()) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val addBtnShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(20.dp)
-                        val addBtnBg = if (isNeo) Color(0xFFFFE500) else accentColor.copy(alpha = 0.15f)
+                        val addBtnBg = if (isNeo) NeoBrutalAmber else accentColor.copy(alpha = 0.15f)
                         val addBtnBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
                         val addBtnTint = if (isNeo) Color.Black else accentColor
 

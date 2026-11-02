@@ -402,7 +402,7 @@ fun AnalyticsScreen(
                 listOf(7 to "7 Giorni", 14 to "14 Giorni", 30 to "30 Giorni").forEach { (days, label) ->
                     val isSelected = selectedHorizonDays == days
                     val pillBg = if (isSelected) {
-                        if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                        if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
                     } else Color.Transparent
                     val pillFg = if (isSelected) {
                         if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
@@ -607,7 +607,7 @@ private fun UnifiedIntakeExplorerCard(
                 ChartMetricMode.values().forEach { mode ->
                     val isSel = mode == selectedMetric
                     val bg = if (isSel) {
-                        if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                        if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
                     } else Color.Transparent
                     val fg = if (isSel) {
                         if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
@@ -673,8 +673,9 @@ private fun UnifiedIntakeExplorerCard(
             }
 
             Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(10.dp),
+                color = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(10.dp),
+                border = if (isNeo) BorderStroke(1.5.dp, Color.Black) else null,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -804,7 +805,7 @@ private fun UnifiedIntakeExplorerCard(
                         val barTopY = topLabelHeight + (chartHeight - barHeight)
 
                         val barColor = if (isSelected) {
-                            if (isNeo) Color(0xFFFFE500) else metricColor
+                            if (isNeo) NeoBrutalAmber else metricColor
                         } else {
                             metricColor.copy(alpha = 0.85f)
                         }
@@ -1180,7 +1181,7 @@ private fun AppleWeightProgressionCard(
                     onClick = onLogWeightClick,
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isNeo) Color(0xFFFFE500) else AppleBlue,
+                        containerColor = if (isNeo) NeoBrutalAmber else AppleBlue,
                         contentColor = if (isNeo) Color.Black else Color.White
                     ),
                     modifier = Modifier.height(34.dp),

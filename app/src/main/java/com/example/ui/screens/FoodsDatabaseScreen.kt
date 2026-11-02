@@ -102,6 +102,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.NeoBrutalAmber
 import androidx.compose.foundation.BorderStroke
 
 
@@ -356,7 +357,7 @@ private fun FoodsListContent(
             filterOptions.forEach { (key, label) ->
                 val isSelected = selectedFilter == key
                 val bg = if (isSelected) {
-                    if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                    if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
                 } else Color.Transparent
                 val fg = if (isSelected) {
                     if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
