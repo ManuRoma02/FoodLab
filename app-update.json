@@ -1,9 +1,9 @@
 {
-  "versionCode": 36,
-  "versionName": "1.0.36",
+  "versionCode": 37,
+  "versionName": "1.0.37",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Navigazione a Categorie**: impostazioni suddivise in **4 macro-aree Apple** senza fisarmoniche disordinate\n• **Gerarchia Visiva**: rimossi **pulsanti aggressivi** e icone duplicate per un'esperienza sobria e pulita\n• **Statistiche Apple Health**: grafico con **tracce verticali**, selettore responsive e fondo pagina libero da sovrapposizioni",
+  "changelog": "• **Armonizzazione Header**: rimosse frecce incoerenti nei tab principali e standardizzati **titoli e azioni**\n• **Selettore Categorie Responsive**: sezione alimenti con **4 segmenti orizzontali** visibili senza scorrimento laterale\n• **Spaziature Unificate**: estesa l'area inferiore a **140dp** in tutte le sezioni per zero sovrapposizioni con la barra",
   "releaseDate": "2026-11-02",
   "forceUpdate": false,
-  "sha256": "7ad6d2306cab4f408be5ca5025fc148cfc476d651afbccfc2d5c325a2fe6359b"
+  "sha256": "48fb1379f6af083730d1a8fa51cee433698f42e86207e0472115a2f4da850d92"
 }

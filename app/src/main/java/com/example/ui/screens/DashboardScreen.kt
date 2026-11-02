@@ -322,7 +322,7 @@ fun DashboardScreen(
                 LazyColumn(
                     state = pageListState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 110.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 140.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Unified Hero Header

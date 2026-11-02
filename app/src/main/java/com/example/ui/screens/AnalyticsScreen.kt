@@ -313,58 +313,73 @@ fun AnalyticsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Main Screen Header with Back & Actions
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Torna indietro",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-                Column {
-                    Text(
-                        "Statistiche",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        "Panoramica andamento e progressi",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+        // Unified Header
+        FoodLabScreenHeader(
+            title = "Statistiche",
+            subtitle = "Panoramica andamento e progressi",
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            onBack = null,
+            trailing = {
+                val buttonShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp)
+                val buttonBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                val buttonBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    soundManager.playSound("click")
-                    showLogWeightDialog = true
-                }) {
-                    Icon(Icons.Default.MonitorWeight, contentDescription = "Registra Peso", tint = AppleBlue)
-                }
-                IconButton(onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    soundManager.playSound("click")
-                    showCustomizationSheet = true
-                }) {
-                    Icon(Icons.Default.Tune, contentDescription = "Personalizza", tint = MaterialTheme.colorScheme.primary)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .then(
+                                if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                else Modifier
+                            )
+                            .clip(buttonShape)
+                            .background(buttonBg)
+                            .border(buttonBorder.width, buttonBorder.brush, buttonShape)
+                            .applePressEffect(pressedScale = 0.92f) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                soundManager.playSound("click")
+                                showLogWeightDialog = true
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MonitorWeight,
+                            contentDescription = "Registra Peso",
+                            tint = AppleBlue,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .then(
+                                if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                else Modifier
+                            )
+                            .clip(buttonShape)
+                            .background(buttonBg)
+                            .border(buttonBorder.width, buttonBorder.brush, buttonShape)
+                            .applePressEffect(pressedScale = 0.92f) {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                soundManager.playSound("click")
+                                showCustomizationSheet = true
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "Personalizza",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
-        }
+        )
 
         // Scrollable Body
         Column(

@@ -101,6 +101,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.input.pointer.pointerInput
+import com.example.ui.theme.isNeoBrutalist
+import androidx.compose.foundation.BorderStroke
 
 
 @Composable
@@ -295,38 +297,96 @@ private fun FoodsListContent(
     onFoodClick: (com.example.data.FoodItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNeo = MaterialTheme.isNeoBrutalist
     Column(modifier = modifier) {
-        // Search Input
+        // Search Input - Apple Spotlight Style
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            placeholder = { Text("Cerca alimento, marca, codice a barre...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+            placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = MaterialTheme.colorScheme.primary) },
+            trailingIcon = if (searchQuery.isNotBlank()) {
+                {
+                    IconButton(
+                        onClick = { onSearchQueryChange("") },
+                        modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Cancella ricerca",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else null,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(18.dp)
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Categories
-        val filterOptions = listOf("TUTTI", "I MIEI CIBI", "RICETTE", "PREFERITI")
+        // Categories Segmented Selector (All 4 categories on screen at once, no cutoffs)
+        val filterOptions = listOf(
+            "TUTTI" to "Tutti",
+            "I MIEI CIBI" to "Miei Cibi",
+            "RICETTE" to "Ricette",
+            "PREFERITI" to "Preferiti"
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .clip(if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(12.dp))
+                .background(if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh)
+                .then(
+                    if (isNeo) Modifier.border(2.dp, Color.Black, RoundedCornerShape(10.dp))
+                    else Modifier
+                )
+                .padding(3.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            filterOptions.forEach { filter ->
-                ImprovedTagButton(filter, selectedFilter == filter) { onFilterChange(filter) }
+            filterOptions.forEach { (key, label) ->
+                val isSelected = selectedFilter == key
+                val bg = if (isSelected) {
+                    if (isNeo) Color(0xFFFFE500) else MaterialTheme.colorScheme.primary
+                } else Color.Transparent
+                val fg = if (isSelected) {
+                    if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
+                } else MaterialTheme.colorScheme.onSurfaceVariant
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(10.dp))
+                        .background(bg)
+                        .then(
+                            if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
+                            else Modifier
+                        )
+                        .applePressEffect(pressedScale = 0.96f) {
+                            onFilterChange(key)
+                        }
+                        .padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 11.sp
+                        ),
+                        color = fg,
+                        maxLines = 1
+                    )
+                }
             }
         }
 
@@ -335,7 +395,7 @@ private fun FoodsListContent(
         // Main List
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 110.dp),
+            contentPadding = PaddingValues(bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
