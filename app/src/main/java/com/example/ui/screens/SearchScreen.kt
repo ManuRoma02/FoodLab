@@ -238,7 +238,7 @@ fun SearchScreen(
                                     appleHaptics.tactileClick()
                                     viewModel.updateSearchQuery("")
                                 },
-                                modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                                modifier = Modifier.applePressEffect(pressedScale = 0.96f)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
@@ -252,7 +252,7 @@ fun SearchScreen(
                                 appleHaptics.tactileClick()
                                 showMediaSourcePicker = true
                             },
-                            modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                            modifier = Modifier.applePressEffect(pressedScale = 0.96f)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
@@ -266,7 +266,7 @@ fun SearchScreen(
                                 scanError = null
                                 startCameraScan()
                             },
-                            modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                            modifier = Modifier.applePressEffect(pressedScale = 0.96f)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CameraAlt,

@@ -105,12 +105,8 @@ class Repository(
 
     suspend fun insertTemplate(template: MealTemplate): Long = templateDao.insertTemplate(template)
     suspend fun insertTemplateItems(items: List<MealTemplateItem>) = templateDao.insertTemplateItems(items)
-    suspend fun insertTemplateWithItems(template: MealTemplate, items: List<MealTemplateItem>): Long {
-        val templateId = templateDao.insertTemplate(template)
-        val remappedItems = items.map { it.copy(templateId = templateId.toInt()) }
-        templateDao.insertTemplateItems(remappedItems)
-        return templateId
-    }
+    suspend fun insertTemplateWithItems(template: MealTemplate, items: List<MealTemplateItem>): Long =
+        templateDao.insertTemplateWithItems(template, items)
     suspend fun deleteTemplate(id: Int) = templateDao.deleteTemplate(id)
 
     suspend fun wipeMeals() = mealDao.wipeMeals()

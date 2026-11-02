@@ -54,8 +54,10 @@ class PedometerWidgetProvider : AppWidgetProvider() {
             for (id in appWidgetIds) {
                 updatePedometerWidget(context, appWidgetManager, id, saved)
             }
-            triggerSensorUpdate(context)
-            triggerHealthConnectSync(context)
+            if (intent.action != "com.example.UPDATE_WIDGETS") {
+                triggerSensorUpdate(context)
+                triggerHealthConnectSync(context)
+            }
         }
     }
 
@@ -125,19 +127,21 @@ class PedometerWidgetProvider : AppWidgetProvider() {
         val pendingResult = try { goAsync() } catch (_: Exception) { null }
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             try {
-                if (hcManager.checkPermissionsGranted()) {
-                    val result = hcManager.syncDailyData()
-                    result.onSuccess { data ->
-                        val hcSteps = data.steps.toInt()
-                        val currentSteps = StepCounterStore.savedSteps(context)
-                        if (hcSteps > currentSteps) {
-                            StepCounterStore.setSteps(context, hcSteps)
-                            val appWidgetManager = AppWidgetManager.getInstance(context)
-                            val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, PedometerWidgetProvider::class.java))
-                            for (id in appWidgetIds) {
-                                updatePedometerWidget(context, appWidgetManager, id, hcSteps)
+                kotlinx.coroutines.withTimeout(5000L) {
+                    if (hcManager.checkPermissionsGranted()) {
+                        val result = hcManager.syncDailyData()
+                        result.onSuccess { data ->
+                            val hcSteps = data.steps.toInt()
+                            val currentSteps = StepCounterStore.savedSteps(context)
+                            if (hcSteps > currentSteps) {
+                                StepCounterStore.setSteps(context, hcSteps)
+                                val appWidgetManager = AppWidgetManager.getInstance(context)
+                                val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, PedometerWidgetProvider::class.java))
+                                for (id in appWidgetIds) {
+                                    updatePedometerWidget(context, appWidgetManager, id, hcSteps)
+                                }
+                                com.example.util.WidgetUpdater.updateAllWidgets(context)
                             }
-                            com.example.util.WidgetUpdater.updateAllWidgets(context)
                         }
                     }
                 }

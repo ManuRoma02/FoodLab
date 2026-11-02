@@ -53,7 +53,6 @@ import com.example.data.DailyTarget
 import com.example.data.MealEntry
 import com.example.ui.DashboardViewModel
 import com.example.ui.FoodSearchViewModel
-import com.example.ui.StatsViewModel
 import com.example.ui.SettingsViewModel
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.drawText
@@ -310,7 +309,7 @@ private fun FoodsListContent(
                 {
                     IconButton(
                         onClick = { onSearchQueryChange("") },
-                        modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                        modifier = Modifier.applePressEffect(pressedScale = 0.96f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,

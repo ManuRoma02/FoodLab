@@ -145,6 +145,14 @@ interface MealTemplateDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTemplateItems(items: List<MealTemplateItem>)
 
+    @Transaction
+    suspend fun insertTemplateWithItems(template: MealTemplate, items: List<MealTemplateItem>): Long {
+        val templateId = insertTemplate(template)
+        val remappedItems = items.map { it.copy(templateId = templateId.toInt()) }
+        insertTemplateItems(remappedItems)
+        return templateId
+    }
+
     @Query("DELETE FROM meal_templates WHERE id = :templateId")
     suspend fun deleteTemplate(templateId: Int)
 

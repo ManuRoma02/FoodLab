@@ -212,15 +212,15 @@ fun macroColorsForSkin(skin: ThemeSkin): MacroColors {
     return when (skin) {
         ThemeSkin.ORIGINAL -> MacroColors(
             calories = Color(0xFFFF9500),
-            carbs = Color(0xFFFFD60A),
-            protein = Color(0xFF30D158),
-            fat = Color(0xFFFFFFFF)
+            carbs = Color(0xFFF59E0B),
+            protein = Color(0xFF22C55E),
+            fat = Color(0xFF06B6D4)
         )
         ThemeSkin.RETRO_DARK -> MacroColors(
             calories = AppleOrange,
-            carbs = AppleYellow,
-            protein = AppleGreen,
-            fat = Color(0xFF64D2FF)
+            carbs = Color(0xFFF59E0B),
+            protein = Color(0xFF22C55E),
+            fat = Color(0xFF06B6D4)
         )
         ThemeSkin.NEO_BRUTALISM -> MacroColors(
             calories = NeoBrutalCoral,

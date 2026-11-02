@@ -10,10 +10,10 @@ import com.example.R
 class SoundManager(context: Context) {
     private val appContext = context.applicationContext
     private val soundPool: SoundPool
-    private val soundMap = mutableMapOf<String, Int>()
-    private val loadedSoundIds = mutableSetOf<Int>()
-    private val pendingOneShots = mutableSetOf<String>()
-    private val activeStreams = mutableSetOf<Int>()
+    private val soundMap = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val loadedSoundIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+    private val pendingOneShots = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    private val activeStreams = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
     private val prefs = context.getSharedPreferences("sound_prefs", Context.MODE_PRIVATE)
 
     var volume: Float

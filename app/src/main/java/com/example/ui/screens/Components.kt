@@ -689,7 +689,7 @@ fun SearchResultCard(
                     )
                     IconButton(
                         onClick = onToggleFavorite,
-                        modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                        modifier = Modifier.applePressEffect(pressedScale = 0.96f)
                     ) {
                         Icon(
                             imageVector = if (food.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -705,7 +705,7 @@ fun SearchResultCard(
                 if (showAddIcon && onAddClick != null) {
                     IconButton(
                         onClick = onAddClick,
-                        modifier = Modifier.applePressEffect(pressedScale = 0.85f)
+                        modifier = Modifier.applePressEffect(pressedScale = 0.96f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,

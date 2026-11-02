@@ -47,9 +47,10 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.data.AppDatabase
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.MealEntry
 import com.example.data.WeightLog
+import com.example.ui.AnalyticsViewModel
 import com.example.ui.SessionManager
 import com.example.ui.theme.*
 import com.example.util.LocalPreferencesManager
@@ -185,20 +186,19 @@ private fun AppleHighlightTile(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
-    db: AppDatabase = AppDatabase.getDatabase(LocalContext.current),
+    viewModel: AnalyticsViewModel = viewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val soundManager = LocalSoundManager.current
     val prefsManager = LocalPreferencesManager.current
-    val scope = rememberCoroutineScope()
     val isNeo = MaterialTheme.isNeoBrutalist
 
-    val weights by db.weightLogDao().getAllWeightsDesc().collectAsStateWithLifecycle(initialValue = emptyList())
-    val allMeals by db.mealEntryDao().getAllMeals().collectAsStateWithLifecycle(initialValue = emptyList())
-    val allTargets by db.dailyTargetDao().getAllTargets().collectAsStateWithLifecycle(initialValue = emptyList())
-    val fixedTarget by db.dailyTargetDao().getFixedTarget().collectAsStateWithLifecycle(initialValue = null)
+    val weights by viewModel.weights.collectAsStateWithLifecycle()
+    val allMeals by viewModel.allMeals.collectAsStateWithLifecycle()
+    val allTargets by viewModel.allTargets.collectAsStateWithLifecycle()
+    val fixedTarget by viewModel.fixedTarget.collectAsStateWithLifecycle()
 
     // Visibility toggles
     val showCalorieDeficit by prefsManager.showCalorieDeficit.collectAsStateWithLifecycle()
@@ -287,15 +287,7 @@ fun AnalyticsScreen(
             initialWeight = initialWeightStr,
             onDismiss = { showLogWeightDialog = false },
             onSave = { weight ->
-                scope.launch {
-                    db.weightLogDao().insertWeight(
-                        WeightLog(
-                            dateString = todayStr,
-                            weightKg = weight,
-                            timestamp = System.currentTimeMillis()
-                        )
-                    )
-                }
+                viewModel.insertWeight(weight, todayStr)
                 showLogWeightDialog = false
             }
         )
@@ -330,7 +322,7 @@ fun AnalyticsScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(44.dp)
                             .then(
                                 if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
                                 else Modifier
@@ -338,7 +330,7 @@ fun AnalyticsScreen(
                             .clip(buttonShape)
                             .background(buttonBg)
                             .border(buttonBorder.width, buttonBorder.brush, buttonShape)
-                            .applePressEffect(pressedScale = 0.92f) {
+                            .applePressEffect(pressedScale = 0.94f) {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 soundManager.playSound("click")
                                 showLogWeightDialog = true
@@ -349,13 +341,13 @@ fun AnalyticsScreen(
                             imageVector = Icons.Default.MonitorWeight,
                             contentDescription = "Registra Peso",
                             tint = AppleBlue,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(44.dp)
                             .then(
                                 if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
                                 else Modifier
@@ -363,7 +355,7 @@ fun AnalyticsScreen(
                             .clip(buttonShape)
                             .background(buttonBg)
                             .border(buttonBorder.width, buttonBorder.brush, buttonShape)
-                            .applePressEffect(pressedScale = 0.92f) {
+                            .applePressEffect(pressedScale = 0.94f) {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 soundManager.playSound("click")
                                 showCustomizationSheet = true

@@ -7,6 +7,7 @@ import android.content.Intent
 import com.example.widget.DailyCaloriesWidgetProvider
 import com.example.widget.PedometerWidgetProvider
 import com.example.widget.PetStatusWidgetProvider
+import com.example.widget.QuickAddWidgetProvider
 
 object WidgetUpdater {
     fun updateAllWidgets(context: Context) {
@@ -41,6 +42,16 @@ object WidgetUpdater {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, pedometerIds)
                 }
                 context.sendBroadcast(pedometerIntent)
+            }
+
+            // 4. Quick Add Widget
+            val quickAddIds = appWidgetManager.getAppWidgetIds(ComponentName(context, QuickAddWidgetProvider::class.java))
+            if (quickAddIds.isNotEmpty()) {
+                val quickAddIntent = Intent(context, QuickAddWidgetProvider::class.java).apply {
+                    action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, quickAddIds)
+                }
+                context.sendBroadcast(quickAddIntent)
             }
         } catch (e: Exception) {
             android.util.Log.e("WidgetUpdater", "Failed to update widgets", e)

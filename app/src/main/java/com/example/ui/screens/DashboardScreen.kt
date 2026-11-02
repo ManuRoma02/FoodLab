@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -182,11 +183,13 @@ fun DashboardScreen(
         }
     }
 
+    val currentSelectedDate by rememberUpdatedState(currentDate)
+
     // Synchronize currentDate when pager settles on a new page
     LaunchedEffect(pagerState, today) {
         snapshotFlow { pagerState.settledPage }.collect { settledPage ->
             val pageDate = dateForPageIndex(settledPage, today)
-            if (pageDate != currentDate) {
+            if (pageDate != currentSelectedDate) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 soundManager.playSound("click")
                 onDateChange(pageDate)
@@ -382,7 +385,8 @@ fun DashboardScreen(
         }
 
         // 3. Floating Apple Ghost Card during drag
-        if (dragDropState.isDragging && dragDropState.draggedMeal != null) {
+        val currentDraggedMeal = dragDropState.draggedMeal
+        if (dragDropState.isDragging && currentDraggedMeal != null) {
             // Safety backdrop: tapping anywhere cancels an active stuck drag
             Box(
                 modifier = Modifier
@@ -401,7 +405,7 @@ fun DashboardScreen(
                 else -> Color(0xFFF59E0B)
             }
             GhostMealCard(
-                meal = dragDropState.draggedMeal!!,
+                meal = currentDraggedMeal,
                 dragDropState = dragDropState,
                 accentColor = sourceAccentColor,
                 containerOffset = dashboardTopLeftInRoot

@@ -1,9 +1,9 @@
 {
-  "versionCode": 38,
-  "versionName": "1.0.38",
+  "versionCode": 39,
+  "versionName": "1.0.39",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Palette Neo-Brutalism Calibrata**: sfondo carta warm stone anti-abbaglio, contrasto aumentato e colori saturi più riposanti\n• **Legibilità Totale**: corretto badge streak, capsule calendario con bordi definiti e contrasto testo superiore a 12:1\n• **Rifiniture Componenti**: indicatori di progresso, pulsanti e selettori armonizzati nei tre temi senza sovrapposizioni",
+  "changelog": "• **Architettura ViewModels**: rimossi bypass diretti Room DB in **RecipesScreen** e **AnalyticsScreen**, transazioni **@Transaction** atomiche\n• **Thread Safety & Stabilità**: corretto **SoundManager** con collezioni concorrenti, prevenuti ANR pedometro e risolto date closure **Dashboard**\n• **Apple Design & Motion**: barre progresso GPU via **graphicsLayer**, colori macro uniformati e touch target minimi a **44dp**\n• **AppWidgets Sincronizzati**: integrato **QuickAddWidgetProvider** e superfici dark **#121212**",
   "releaseDate": "2026-11-02",
   "forceUpdate": false,
-  "sha256": "1804561505abf39c4bcacdea2b3720902f4f1e8b60b03d113d5b47b50483f855"
+  "sha256": "e687cdfbc69a10119a4a173c63e35faf4539d70fd25adccafd67f4e167a916b6"
 }

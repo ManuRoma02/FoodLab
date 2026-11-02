@@ -33,7 +33,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.*
+import com.example.ui.RecipesViewModel
 import com.example.ui.SessionManager
 import com.example.util.LocalSoundManager
 import com.example.util.MealTypes
@@ -53,16 +55,15 @@ private val ProteinGreen = Color(0xFF22C55E)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipesScreen(
-    db: AppDatabase = AppDatabase.getDatabase(LocalContext.current),
+    viewModel: RecipesViewModel = viewModel(),
     onNavigateBack: () -> Unit = {},
     onNavigateToCreateRecipe: () -> Unit = {}
 ) {
-    val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val soundManager = LocalSoundManager.current
     val today = remember { SessionManager.formatDate(Date()) }
 
-    val templatesWithItems by db.mealTemplateDao().getAllTemplatesWithItems().collectAsStateWithLifecycle(initialValue = emptyList())
+    val templatesWithItems by viewModel.allTemplates.collectAsStateWithLifecycle(initialValue = emptyList())
 
     Column(
         modifier = Modifier
@@ -89,7 +90,7 @@ fun RecipesScreen(
                     IconButton(
                         onClick = onNavigateBack,
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     ) {
@@ -219,34 +220,15 @@ fun RecipesScreen(
                     RecipeCard(
                         recipeWithItems = recipeWithItems,
                         onDelete = {
-                            scope.launch {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                soundManager.playSound("click")
-                                db.mealTemplateDao().deleteTemplate(recipeWithItems.template.id)
-                            }
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            soundManager.playSound("click")
+                            viewModel.deleteRecipe(recipeWithItems.template.id)
                         },
                         onLogToMeal = { mealType ->
-                            scope.launch {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                soundManager.playSound("coin")
-                                val servings = recipeWithItems.template.servings.coerceAtLeast(1)
-                                recipeWithItems.items.forEach { item ->
-                                    val portionGrams = (item.quantityGrams.toFloat() / servings).toInt().coerceAtLeast(1)
-                                    val entry = MealEntry(
-                                        dateString = today,
-                                        mealType = mealType,
-                                        foodId = item.foodId,
-                                        foodName = item.foodName,
-                                        quantityGrams = portionGrams,
-                                        calories = (item.caloriesPer100g * portionGrams / 100f).toInt(),
-                                        protein = item.proteinPer100g * portionGrams / 100f,
-                                        carbs = item.carbsPer100g * portionGrams / 100f,
-                                        fat = item.fatPer100g * portionGrams / 100f
-                                    )
-                                    db.mealEntryDao().insertMeal(entry)
-                                }
-                                onNavigateBack()
-                            }
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            soundManager.playSound("coin")
+                            viewModel.logRecipeMeal(recipeWithItems, mealType, today)
+                            onNavigateBack()
                         }
                     )
                 }

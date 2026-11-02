@@ -166,11 +166,6 @@ private fun IosSettingsRow(
                 soundManager.playSound("click")
                 onClick()
             }
-            .clickable {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                soundManager.playSound("click")
-                onClick()
-            }
     } else {
         modifier.fillMaxWidth()
     }

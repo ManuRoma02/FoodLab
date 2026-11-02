@@ -104,7 +104,6 @@ import com.example.data.DailyTarget
 import com.example.data.MealEntry
 import com.example.ui.DashboardViewModel
 import com.example.ui.FoodSearchViewModel
-import com.example.ui.StatsViewModel
 import com.example.ui.SettingsViewModel
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.drawText
@@ -424,8 +423,11 @@ fun SmoothProgressRail(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(animatedProgress)
-                .fillMaxHeight()
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = animatedProgress
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+                }
                 .clip(railShape)
                 .background(color)
         )
@@ -1221,9 +1223,9 @@ fun AppleCalorieMacroRings(
     carbsProgress: Float,
     fatProgress: Float,
     calorieColor: Color = AppleOrange,
-    proteinColor: Color = AppleBlue,
-    carbsColor: Color = AppleGreen,
-    fatColor: Color = ApplePurple,
+    proteinColor: Color = Color(0xFF22C55E),
+    carbsColor: Color = Color(0xFFF59E0B),
+    fatColor: Color = Color(0xFF06B6D4),
     modifier: Modifier = Modifier,
     strokeWidth: androidx.compose.ui.unit.Dp = 7.dp,
     ringGap: androidx.compose.ui.unit.Dp = 3.dp,

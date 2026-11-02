@@ -48,7 +48,6 @@ import com.example.data.DailyTarget
 import com.example.data.MealEntry
 import com.example.ui.DashboardViewModel
 import com.example.ui.FoodSearchViewModel
-import com.example.ui.StatsViewModel
 import com.example.ui.SettingsViewModel
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.drawText
