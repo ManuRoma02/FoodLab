@@ -508,12 +508,14 @@ fun SettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(
+                        if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                        else Modifier
+                    )
                     .clip(if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp))
                     .background(if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh)
                     .then(
-                        if (isNeo) Modifier
-                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                            .neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                        if (isNeo) Modifier.border(2.dp, Color.Black, RoundedCornerShape(8.dp))
                         else Modifier
                     )
                     .padding(3.dp),

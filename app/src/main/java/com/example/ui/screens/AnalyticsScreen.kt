@@ -118,12 +118,12 @@ private fun AppleHighlightTile(
 
     Box(
         modifier = modifier
-            .clip(shape)
-            .background(bg)
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 10.dp)
                 else Modifier
             )
+            .clip(shape)
+            .background(bg)
             .border(border.width, border.brush, shape)
             .padding(12.dp)
     ) {

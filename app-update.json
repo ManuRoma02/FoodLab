@@ -1,9 +1,9 @@
 {
-  "versionCode": 39,
-  "versionName": "1.0.39",
+  "versionCode": 40,
+  "versionName": "1.0.40",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Architettura ViewModels**: rimossi bypass diretti Room DB in **RecipesScreen** e **AnalyticsScreen**, transazioni **@Transaction** atomiche\n• **Thread Safety & Stabilità**: corretto **SoundManager** con collezioni concorrenti, prevenuti ANR pedometro e risolto date closure **Dashboard**\n• **Apple Design & Motion**: barre progresso GPU via **graphicsLayer**, colori macro uniformati e touch target minimi a **44dp**\n• **AppWidgets Sincronizzati**: integrato **QuickAddWidgetProvider** e superfici dark **#121212**",
-  "releaseDate": "2026-11-02",
+  "changelog": "• **Tema Neo-Brutalism**: risolto bug di ordinamento ombra che oscurava le **statistiche** in **AnalyticsScreen**\n• **Barra Categorie**: ripristinata corretta visibilità per le icone e i testi dei selettori in **SettingsScreen**\n• **Contrasto Bottoni & Icone**: contrasto ottimizzato per azioni su tinte primarie e secondarie con testi e icone bianche nitide",
+  "releaseDate": "2026-11-03",
   "forceUpdate": false,
-  "sha256": "e687cdfbc69a10119a4a173c63e35faf4539d70fd25adccafd67f4e167a916b6"
+  "sha256": "23248c02fba271bc3b10bdae5813eeb24c9d97d6ce5a202be0dffec6a210f6be"
 }
