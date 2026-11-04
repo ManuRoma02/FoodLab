@@ -45,6 +45,10 @@ val MaterialTheme.isNeoBrutalist: Boolean
     @Composable
     get() = LocalThemeSkin.current == ThemeSkin.NEO_BRUTALISM
 
+val MaterialTheme.isBentoCraft: Boolean
+    @Composable
+    get() = LocalThemeSkin.current == ThemeSkin.BENTO_CRAFT
+
 val MaterialTheme.themeSkin: ThemeSkin
     @Composable
     get() = LocalThemeSkin.current
@@ -58,8 +62,16 @@ fun MyApplicationTheme(
 ) {
     val colorScheme = colorSchemeForSkin(themeSkin)
     val macroColors = macroColorsForSkin(themeSkin)
-    val shapes = if (themeSkin == ThemeSkin.NEO_BRUTALISM) NeoBrutalShapes else Shapes
-    val typography = if (themeSkin == ThemeSkin.NEO_BRUTALISM) NeoBrutalTypography else Typography
+    val shapes = when (themeSkin) {
+        ThemeSkin.NEO_BRUTALISM -> NeoBrutalShapes
+        ThemeSkin.BENTO_CRAFT -> BentoCraftShapes
+        else -> Shapes
+    }
+    val typography = when (themeSkin) {
+        ThemeSkin.NEO_BRUTALISM -> NeoBrutalTypography
+        ThemeSkin.BENTO_CRAFT -> BentoCraftTypography
+        else -> Typography
+    }
 
     androidx.compose.runtime.CompositionLocalProvider(
         LocalMacroColors provides macroColors,

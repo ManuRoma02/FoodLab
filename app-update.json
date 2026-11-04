@@ -1,9 +1,9 @@
 {
-  "versionCode": 40,
-  "versionName": "1.0.40",
+  "versionCode": 41,
+  "versionName": "1.0.41",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Tema Neo-Brutalism**: risolto bug di ordinamento ombra che oscurava le **statistiche** in **AnalyticsScreen**\n• **Barra Categorie**: ripristinata corretta visibilità per le icone e i testi dei selettori in **SettingsScreen**\n• **Contrasto Bottoni & Icone**: contrasto ottimizzato per azioni su tinte primarie e secondarie con testi e icone bianche nitide",
-  "releaseDate": "2026-11-03",
+  "changelog": "• **Tema Bento Craft**: nuovo design system artigianale con palette **cioccolato fondente**, **rosa fragola** e **crema vaniglia**\n• **Bento UI Layout**: dashboard rinnovata con tessere asimmetriche per **calorie**, **mascotte**, **passi** e griglia 3 colonne per i **macro**\n• **Navigazione & Impostazioni**: **BottomNavBar** Bento a molla fluida e nuovo selettore temi 2×2 in **SettingsScreen**",
+  "releaseDate": "2026-11-04",
   "forceUpdate": false,
-  "sha256": "23248c02fba271bc3b10bdae5813eeb24c9d97d6ce5a202be0dffec6a210f6be"
+  "sha256": "a668a2ec3c116badec47d976fe0c4273be506609a6ac178b7fc15077560e4fa5"
 }

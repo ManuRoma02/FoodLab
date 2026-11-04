@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -72,14 +73,19 @@ private fun IosSectionHeader(
     modifier: Modifier = Modifier
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
+    val isBento = MaterialTheme.isBentoCraft
     Text(
         text = title.uppercase(),
         style = MaterialTheme.typography.labelSmall.copy(
-            fontWeight = if (isNeo) FontWeight.Black else FontWeight.SemiBold,
+            fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.SemiBold,
             letterSpacing = 0.8.sp,
             fontSize = 11.sp
         ),
-        color = if (isNeo) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        color = when {
+            isNeo -> Color.Black
+            isBento -> BentoCocoa
+            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+        },
         modifier = modifier.padding(start = 6.dp, bottom = 4.dp, top = 6.dp)
     )
 }
@@ -90,15 +96,34 @@ private fun IosGroupCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val shape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(18.dp)
-    val border = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-    val bg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+    val isBento = MaterialTheme.isBentoCraft
+    val shape = when {
+        isNeo -> RoundedCornerShape(12.dp)
+        isBento -> RoundedCornerShape(22.dp)
+        else -> RoundedCornerShape(18.dp)
+    }
+    val border = when {
+        isNeo -> BorderStroke(2.dp, Color.Black)
+        isBento -> BorderStroke(1.8.dp, BentoBorder)
+        else -> BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    }
+    val bg = when {
+        isNeo -> Color.White
+        isBento -> BentoSurface
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
+                else if (isBento) Modifier.shadow(
+                    elevation = 4.dp,
+                    shape = shape,
+                    spotColor = BentoCocoa.copy(alpha = 0.12f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                )
                 else Modifier
             ),
         shape = shape,
@@ -998,56 +1023,76 @@ fun SettingsScreen(
                                             .padding(horizontal = 14.dp, vertical = 10.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        val themes = ThemeSkin.values()
-                                        Row(
+                                        val allThemes = listOf(
+                                            listOf(ThemeSkin.ORIGINAL, ThemeSkin.RETRO_DARK),
+                                            listOf(ThemeSkin.NEO_BRUTALISM, ThemeSkin.BENTO_CRAFT)
+                                        )
+                                        Column(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clip(RoundedCornerShape(10.dp))
+                                                .clip(RoundedCornerShape(12.dp))
                                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                                .padding(4.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                .padding(6.dp),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
-                                            themes.forEach { theme ->
-                                                val isSelected = theme == activeTheme
-                                                val pillBg = if (isSelected) {
-                                                    if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
-                                                } else Color.Transparent
-                                                val pillFg = if (isSelected) {
-                                                    if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
-                                                } else MaterialTheme.colorScheme.onSurfaceVariant
-
-                                                Box(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(pillBg)
-                                                        .then(
-                                                            if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
-                                                            else Modifier
-                                                        )
-                                                        .clickable {
-                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                            soundManager.playSound("click")
-                                                            preferencesManager.setThemeSkin(theme)
-                                                        }
-                                                        .padding(vertical = 7.dp),
-                                                    contentAlignment = Alignment.Center
+                                            for (rowThemes in allThemes) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                 ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                                    ) {
+                                                    for (theme in rowThemes) {
+                                                        val isSelected = theme == activeTheme
+                                                        val pillBg = if (isSelected) {
+                                                            when {
+                                                                isNeo -> NeoBrutalAmber
+                                                                theme == ThemeSkin.BENTO_CRAFT -> BentoBerryPink
+                                                                else -> MaterialTheme.colorScheme.primary
+                                                            }
+                                                        } else Color.Transparent
+                                                        val pillFg = if (isSelected) {
+                                                            if (isNeo) Color.Black else Color.White
+                                                        } else MaterialTheme.colorScheme.onSurfaceVariant
+
                                                         Box(
                                                             modifier = Modifier
-                                                                .size(7.dp)
-                                                                .clip(CircleShape)
-                                                                .background(themePreviewColor(theme))
-                                                        )
-                                                        Text(
-                                                            text = theme.displayName,
-                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                            color = pillFg
-                                                        )
+                                                                .weight(1f)
+                                                                .clip(RoundedCornerShape(8.dp))
+                                                                .background(pillBg)
+                                                                .then(
+                                                                    if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
+                                                                    else if (isSelected && theme == ThemeSkin.BENTO_CRAFT) Modifier.border(1.5.dp, BentoBorder, RoundedCornerShape(8.dp))
+                                                                    else Modifier
+                                                                )
+                                                                .clickable {
+                                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                                    soundManager.playSound("click")
+                                                                    preferencesManager.setThemeSkin(theme)
+                                                                }
+                                                                .padding(vertical = 9.dp, horizontal = 8.dp),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                            ) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(8.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(themePreviewColor(theme))
+                                                                )
+                                                                Text(
+                                                                    text = theme.displayName,
+                                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                                                        fontSize = 11.sp
+                                                                    ),
+                                                                    color = pillFg,
+                                                                    maxLines = 1,
+                                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                                )
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }

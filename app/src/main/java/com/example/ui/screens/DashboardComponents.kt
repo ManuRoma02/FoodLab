@@ -24,6 +24,12 @@ import com.example.ui.theme.AppleCornerRadiusCard
 import com.example.ui.theme.AppleCardShape
 import com.example.ui.theme.macroColors
 import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.isBentoCraft
+import com.example.ui.theme.BentoCocoa
+import com.example.ui.theme.BentoBerryPink
+import com.example.ui.theme.BentoSurface
+import com.example.ui.theme.BentoSurfaceContainerHigh
+import com.example.ui.theme.BentoBorder
 import com.example.ui.theme.NeoBrutalAmber
 import com.example.ui.theme.neoHardShadow
 import com.example.ui.theme.neoBorder
@@ -161,9 +167,27 @@ fun CompactWeightChip(
     modifier: Modifier = Modifier
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val chipShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(22.dp)
-    val chipBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-    val chipBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+    val isBento = MaterialTheme.isBentoCraft
+    val chipShape = when {
+        isNeo -> RoundedCornerShape(8.dp)
+        isBento -> RoundedCornerShape(99.dp)
+        else -> RoundedCornerShape(22.dp)
+    }
+    val chipBorder = when {
+        isNeo -> BorderStroke(1.5.dp, Color.Black)
+        isBento -> BorderStroke(1.5.dp, BentoBorder)
+        else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    }
+    val chipBg = when {
+        isNeo -> Color.White
+        isBento -> BentoSurfaceContainerHigh
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
+    val chipContentColor = when {
+        isNeo -> Color.Black
+        isBento -> BentoCocoa
+        else -> MaterialTheme.colorScheme.primary
+    }
 
     Row(
         modifier = modifier
@@ -182,13 +206,15 @@ fun CompactWeightChip(
     ) {
         Text(
             weightText,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold),
-            color = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+            ),
+            color = chipContentColor
         )
         Icon(
             Icons.Default.Edit,
             contentDescription = "Edit weight",
-            tint = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary,
+            tint = chipContentColor,
             modifier = Modifier.size(16.dp)
         )
     }
@@ -1026,15 +1052,34 @@ fun HorizontalDatePicker(
     }
 
     val isNeo = MaterialTheme.isNeoBrutalist
-    val containerShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(20.dp)
-    val containerBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-    val containerBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+    val isBento = MaterialTheme.isBentoCraft
+    val containerShape = when {
+        isNeo -> RoundedCornerShape(12.dp)
+        isBento -> RoundedCornerShape(22.dp)
+        else -> RoundedCornerShape(20.dp)
+    }
+    val containerBorder = when {
+        isNeo -> BorderStroke(2.dp, Color.Black)
+        isBento -> BorderStroke(1.8.dp, BentoBorder)
+        else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    }
+    val containerBg = when {
+        isNeo -> Color.White
+        isBento -> BentoSurface
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 12.dp)
+                else if (isBento) Modifier.shadow(
+                    elevation = 4.dp,
+                    shape = containerShape,
+                    spotColor = BentoCocoa.copy(alpha = 0.12f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                )
                 else Modifier
             )
             .clip(containerShape)
@@ -1053,10 +1098,26 @@ fun HorizontalDatePicker(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val streakBg = if (isNeo) NeoBrutalAmber else AppleOrange.copy(alpha = 0.18f)
-                val streakBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, AppleOrange.copy(alpha = 0.4f))
-                val streakFg = if (isNeo) Color.Black else AppleOrange
-                val streakShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(16.dp)
+                val streakBg = when {
+                    isNeo -> NeoBrutalAmber
+                    isBento -> BentoBerryPink
+                    else -> AppleOrange.copy(alpha = 0.18f)
+                }
+                val streakBorder = when {
+                    isNeo -> BorderStroke(1.5.dp, Color.Black)
+                    isBento -> BorderStroke(1.5.dp, BentoBorder)
+                    else -> BorderStroke(1.dp, AppleOrange.copy(alpha = 0.4f))
+                }
+                val streakFg = when {
+                    isNeo -> Color.Black
+                    isBento -> Color.White
+                    else -> AppleOrange
+                }
+                val streakShape = when {
+                    isNeo -> RoundedCornerShape(8.dp)
+                    isBento -> RoundedCornerShape(99.dp)
+                    else -> RoundedCornerShape(16.dp)
+                }
 
                 Box(
                     modifier = Modifier
@@ -1100,7 +1161,11 @@ fun HorizontalDatePicker(
                 Icon(
                     imageVector = Icons.Default.DateRange,
                     contentDescription = "Streak Calendar",
-                    tint = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary,
+                    tint = when {
+                        isNeo -> Color.Black
+                        isBento -> BentoBerryPink
+                        else -> MaterialTheme.colorScheme.primary
+                    },
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -1118,29 +1183,31 @@ fun HorizontalDatePicker(
             val dayName = remember(parsedDate) { java.text.SimpleDateFormat("EEE", Locale.US).format(parsedDate).uppercase() }
             val dayNumber = remember(parsedDate) { java.text.SimpleDateFormat("dd", Locale.US).format(parsedDate) }
 
-            val targetBg = if (isNeo) {
-                if (isSelected) NeoBrutalAmber else if (isToday) Color(0xFFF3EFE6) else Color.White
-            } else {
-                if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
+            val targetBg = when {
+                isNeo -> if (isSelected) NeoBrutalAmber else if (isToday) Color(0xFFF3EFE6) else Color.White
+                isBento -> if (isSelected) BentoBerryPink else if (isToday) BentoSurfaceContainerHigh else BentoSurface
+                else -> if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
             }
-            val targetBorder = if (isNeo) {
-                if (isSelected || isToday) Color.Black else Color.Black.copy(alpha = 0.25f)
-            } else {
-                if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent
+            val targetBorder = when {
+                isNeo -> if (isSelected || isToday) Color.Black else Color.Black.copy(alpha = 0.25f)
+                isBento -> if (isSelected || isToday) BentoBorder else BentoBorder.copy(alpha = 0.20f)
+                else -> if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent
             }
-            val targetBorderWidth = if (isNeo) {
-                if (isSelected || isToday) 1.5.dp else 1.dp
-            } else 1.dp
+            val targetBorderWidth = when {
+                isNeo -> if (isSelected || isToday) 1.5.dp else 1.dp
+                isBento -> if (isSelected || isToday) 1.5.dp else 1.dp
+                else -> 1.dp
+            }
 
-            val targetDayTextColor = if (isNeo) {
-                if (isSelected) Color.Black else if (isToday) Color.Black else Color(0xFF555555)
-            } else {
-                if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            val targetDayTextColor = when {
+                isNeo -> if (isSelected) Color.Black else if (isToday) Color.Black else Color(0xFF555555)
+                isBento -> if (isSelected) Color.White else if (isToday) BentoCocoa else BentoCocoa.copy(alpha = 0.7f)
+                else -> if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             }
-            val targetNumTextColor = if (isNeo) {
-                Color.Black
-            } else {
-                if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+            val targetNumTextColor = when {
+                isNeo -> Color.Black
+                isBento -> if (isSelected) Color.White else BentoCocoa
+                else -> if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
             }
 
             val animatedBg by androidx.compose.animation.animateColorAsState(
@@ -1346,6 +1413,308 @@ private fun AppleMacroMetricLine(
 }
 
 @Composable
+private fun BentoMacroCell(
+    label: String,
+    consumed: Int,
+    target: Int,
+    color: Color,
+    bgColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val progress = if (target > 0) (consumed.toFloat() / target).coerceIn(0f, 1f) else 0f
+
+    Card(
+        modifier = modifier
+            .shadow(
+                elevation = 3.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = BentoCocoa.copy(alpha = 0.08f)
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        border = BorderStroke(1.5.dp, BentoBorder)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(RoundedCornerShape(99.dp))
+                        .background(color)
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    ),
+                    color = BentoCocoa,
+                    maxLines = 1
+                )
+            }
+
+            Text(
+                text = "${consumed}g / ${target}g",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = BentoCocoa.copy(alpha = 0.85f),
+                maxLines = 1
+            )
+
+            SmoothProgressRail(
+                progress = progress,
+                color = color,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BentoHeroHeader(
+    remainingCalories: Int,
+    targetCalories: Int,
+    loggedCalories: Int,
+    burnedCalories: Int,
+    proteinConsumed: Float,
+    proteinTarget: Float,
+    carbsConsumed: Float,
+    carbsTarget: Float,
+    fatConsumed: Float,
+    fatTarget: Float,
+    steps: Int,
+    stepsTarget: Int,
+    isMascotTyping: Boolean,
+    weightText: String,
+    onWeightClick: () -> Unit,
+    onStepClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { testTag = "dashboard_hero_card" },
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // Bento Cell 1: Daily Calorie Hero (Deep Cocoa Card with Cream text & Berry Pink badge)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 6.dp,
+                    shape = RoundedCornerShape(22.dp),
+                    spotColor = BentoCocoa.copy(alpha = 0.20f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.10f)
+                ),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = BentoCocoa),
+            border = BorderStroke(2.dp, BentoBorder)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Top status bar inside calorie card
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(if (remainingCalories < 0) Color(0xFFEF4444) else BentoBerryPink)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (remainingCalories >= 0) "RIMASTE" else "IN ECCESSO",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 10.sp,
+                                letterSpacing = 0.6.sp
+                            ),
+                            color = Color.White
+                        )
+                    }
+
+                    CompactWeightChip(
+                        weightText = weightText,
+                        onClick = onWeightClick
+                    )
+                }
+
+                // Big Calorie Number & KCAL label
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = if (remainingCalories >= 0) "$remainingCalories" else "${-remainingCalories}",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 38.sp,
+                            letterSpacing = (-1.5).sp
+                        ),
+                        color = Color(0xFFFFFDF9)
+                    )
+                    Text(
+                        text = "KCAL",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = BentoBerryPink,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
+
+                Text(
+                    text = "Obiettivo $targetCalories kcal • Consumate $loggedCalories • Bruciate $burnedCalories",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = Color(0xFFFFFDF9).copy(alpha = 0.75f)
+                )
+            }
+        }
+
+        // Bento Row 2: Mascot Box (Asymmetric Left) + Steps Box (Asymmetric Right)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Mascot Bento Box (38% width)
+            Card(
+                modifier = Modifier
+                    .weight(0.38f)
+                    .height(104.dp)
+                    .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp), spotColor = BentoCocoa.copy(alpha = 0.12f)),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = BentoSurface),
+                border = BorderStroke(1.8.dp, BentoBorder)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedFoodLabMascot(
+                        state = when {
+                            remainingCalories < 0 -> MascotState.OverTarget
+                            isMascotTyping -> MascotState.Typing
+                            else -> MascotState.Idle
+                        },
+                        modifier = Modifier.size(72.dp)
+                    )
+                }
+            }
+
+            // Steps Bento Box (62% width)
+            Card(
+                modifier = Modifier
+                    .weight(0.62f)
+                    .height(104.dp)
+                    .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp), spotColor = BentoCocoa.copy(alpha = 0.12f))
+                    .applePressEffect(pressedScale = 0.96f, onClick = onStepClick),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = BentoSurface),
+                border = BorderStroke(1.8.dp, BentoBorder)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "PASSI GIORNALIERI",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                letterSpacing = 0.4.sp
+                            ),
+                            color = BentoCocoa
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.DirectionsWalk,
+                            contentDescription = "Passi",
+                            tint = BentoBerryPink,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "$steps / $stepsTarget passi",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        ),
+                        color = BentoCocoa.copy(alpha = 0.85f)
+                    )
+
+                    SmoothProgressRail(
+                        progress = (steps.toFloat() / stepsTarget.coerceAtLeast(1)).coerceIn(0f, 1f),
+                        color = BentoBerryPink,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                    )
+                }
+            }
+        }
+
+        // Bento Row 3: 3 Separate Macro Bento Pillar Cards (Carbs, Protein, Fat)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            BentoMacroCell(
+                label = "Carboidrati",
+                consumed = carbsConsumed.roundToInt(),
+                target = carbsTarget.roundToInt(),
+                color = MaterialTheme.macroColors.carbs,
+                bgColor = Color(0xFFFFFBEB),
+                modifier = Modifier.weight(1f)
+            )
+
+            BentoMacroCell(
+                label = "Proteine",
+                consumed = proteinConsumed.roundToInt(),
+                target = proteinTarget.roundToInt(),
+                color = MaterialTheme.macroColors.protein,
+                bgColor = Color(0xFFF0FDF4),
+                modifier = Modifier.weight(1f)
+            )
+
+            BentoMacroCell(
+                label = "Grassi",
+                consumed = fatConsumed.roundToInt(),
+                target = fatTarget.roundToInt(),
+                color = MaterialTheme.macroColors.fat,
+                bgColor = Color(0xFFF0F9FF),
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
 fun UnifiedHeroHeader(
     remainingCalories: Int,
     targetCalories: Int,
@@ -1365,6 +1734,30 @@ fun UnifiedHeroHeader(
     onStepClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isBento = MaterialTheme.isBentoCraft
+    if (isBento) {
+        BentoHeroHeader(
+            remainingCalories = remainingCalories,
+            targetCalories = targetCalories,
+            loggedCalories = loggedCalories,
+            burnedCalories = burnedCalories,
+            proteinConsumed = proteinConsumed,
+            proteinTarget = proteinTarget,
+            carbsConsumed = carbsConsumed,
+            carbsTarget = carbsTarget,
+            fatConsumed = fatConsumed,
+            fatTarget = fatTarget,
+            steps = steps,
+            stepsTarget = stepsTarget,
+            isMascotTyping = isMascotTyping,
+            weightText = weightText,
+            onWeightClick = onWeightClick,
+            onStepClick = onStepClick,
+            modifier = modifier
+        )
+        return
+    }
+
     val isNeo = MaterialTheme.isNeoBrutalist
     val cardShape = if (isNeo) RoundedCornerShape(14.dp) else RoundedCornerShape(24.dp)
     val cardBorder = if (isNeo) BorderStroke(2.5.dp, Color.Black) else BorderStroke(
@@ -1604,6 +1997,7 @@ fun UnifiedMealsCard(
 ) {
     val haptic = LocalHapticFeedback.current
     val isNeo = MaterialTheme.isNeoBrutalist
+    val isBento = MaterialTheme.isBentoCraft
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -1622,7 +2016,7 @@ fun UnifiedMealsCard(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.3.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -1674,22 +2068,23 @@ fun UnifiedMealsCard(
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(accentColor.copy(alpha = 0.16f)),
+                                .clip(if (isBento) RoundedCornerShape(99.dp) else RoundedCornerShape(8.dp))
+                                .background(if (isBento) BentoSurfaceContainerHigh else accentColor.copy(alpha = 0.16f))
+                                .then(if (isBento) Modifier.border(1.2.dp, BentoBorder, RoundedCornerShape(99.dp)) else Modifier),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(icon, contentDescription = title, tint = accentColor, modifier = Modifier.size(16.dp))
+                            Icon(icon, contentDescription = title, tint = if (isBento) BentoCocoa else accentColor, modifier = Modifier.size(16.dp))
                         }
                         Text(
                             title,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
                         )
                         if (meals.isNotEmpty()) {
                             Text(
                                 "(${meals.size})",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -1701,18 +2096,35 @@ fun UnifiedMealsCard(
                         Text(
                             if (meals.isNotEmpty()) "$totalCals KCAL" else "0 KCAL",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = if (meals.isNotEmpty()) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isBento) (if (meals.isNotEmpty()) BentoBerryPink else BentoCocoa.copy(alpha = 0.6f)) else (if (meals.isNotEmpty()) accentColor else MaterialTheme.colorScheme.onSurfaceVariant)
                         )
-                        val addBtnShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(20.dp)
-                        val addBtnBg = if (isNeo) NeoBrutalAmber else accentColor.copy(alpha = 0.15f)
-                        val addBtnBorder = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
-                        val addBtnTint = if (isNeo) Color.Black else accentColor
+                        val addBtnShape = when {
+                            isNeo -> RoundedCornerShape(8.dp)
+                            isBento -> RoundedCornerShape(99.dp)
+                            else -> RoundedCornerShape(20.dp)
+                        }
+                        val addBtnBg = when {
+                            isNeo -> NeoBrutalAmber
+                            isBento -> BentoBerryPink
+                            else -> accentColor.copy(alpha = 0.15f)
+                        }
+                        val addBtnBorder = when {
+                            isNeo -> BorderStroke(1.5.dp, Color.Black)
+                            isBento -> BorderStroke(1.5.dp, BentoBorder)
+                            else -> BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
+                        }
+                        val addBtnTint = when {
+                            isNeo -> Color.Black
+                            isBento -> Color.White
+                            else -> accentColor
+                        }
 
                         Box(
                             modifier = Modifier
                                 .heightIn(min = 44.dp)
                                 .then(
                                     if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                    else if (isBento) Modifier.shadow(elevation = 3.dp, shape = addBtnShape, spotColor = BentoCocoa.copy(alpha = 0.15f))
                                     else Modifier
                                 )
                                 .applePressEffect(pressedScale = 0.92f) {
@@ -1730,17 +2142,33 @@ fun UnifiedMealsCard(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, tint = addBtnTint, modifier = Modifier.size(14.dp))
-                                Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold), color = addBtnTint)
+                                Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.Bold), color = addBtnTint)
                             }
                         }
                     }
                 }
 
                 // Inset Grouped Container
-                val mealCardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(24.dp)
-                val mealBorderWidth = if (isNeo) 2.dp else cardBorderWidth
-                val mealBorderColor = if (isNeo) Color.Black else cardBorderColor
-                val mealContainer = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+                val mealCardShape = when {
+                    isNeo -> RoundedCornerShape(12.dp)
+                    isBento -> RoundedCornerShape(22.dp)
+                    else -> RoundedCornerShape(24.dp)
+                }
+                val mealBorderWidth = when {
+                    isNeo -> 2.dp
+                    isBento -> 1.8.dp
+                    else -> cardBorderWidth
+                }
+                val mealBorderColor = when {
+                    isNeo -> Color.Black
+                    isBento -> if (isHoveredTarget) accentColor else BentoBorder
+                    else -> cardBorderColor
+                }
+                val mealContainer = when {
+                    isNeo -> Color.White
+                    isBento -> BentoSurface
+                    else -> MaterialTheme.colorScheme.surfaceContainer
+                }
 
                 Card(
                     modifier = Modifier
@@ -1750,6 +2178,12 @@ fun UnifiedMealsCard(
                         }
                         .then(
                             if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                            else if (isBento) Modifier.shadow(
+                                elevation = if (isHoveredTarget) 10.dp else 4.dp,
+                                shape = mealCardShape,
+                                spotColor = if (isHoveredTarget) accentColor.copy(alpha = 0.35f) else BentoCocoa.copy(alpha = 0.12f),
+                                ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                            )
                             else Modifier.shadow(
                                 elevation = if (isHoveredTarget) 10.dp else 4.dp,
                                 shape = mealCardShape,

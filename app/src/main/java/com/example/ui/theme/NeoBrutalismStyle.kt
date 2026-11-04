@@ -62,19 +62,33 @@ fun Modifier.foodLabCardModifier(
     borderColor: Color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
 ): Modifier {
     val isNeo = MaterialTheme.isNeoBrutalist
-    return if (isNeo) {
-        this
-            .neoHardShadow(offset = neoOffset, color = Color.Black, cornerRadius = neoCornerRadius)
-            .border(2.dp, Color.Black, RoundedCornerShape(neoCornerRadius))
-    } else {
-        this
-            .shadow(
-                elevation = elevation,
-                shape = shape,
-                spotColor = Color.Black.copy(alpha = 0.18f),
-                ambientColor = Color.Black.copy(alpha = 0.10f)
-            )
-            .border(borderWidth, borderColor, shape)
+    val isBento = MaterialTheme.isBentoCraft
+    return when {
+        isNeo -> {
+            this
+                .neoHardShadow(offset = neoOffset, color = Color.Black, cornerRadius = neoCornerRadius)
+                .border(2.dp, Color.Black, RoundedCornerShape(neoCornerRadius))
+        }
+        isBento -> {
+            this
+                .shadow(
+                    elevation = 6.dp,
+                    shape = RoundedCornerShape(22.dp),
+                    spotColor = BentoCocoa.copy(alpha = 0.12f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                )
+                .border(2.dp, BentoBorder, RoundedCornerShape(22.dp))
+        }
+        else -> {
+            this
+                .shadow(
+                    elevation = elevation,
+                    shape = shape,
+                    spotColor = Color.Black.copy(alpha = 0.18f),
+                    ambientColor = Color.Black.copy(alpha = 0.10f)
+                )
+                .border(borderWidth, borderColor, shape)
+        }
     }
 }
 
@@ -89,6 +103,10 @@ fun Modifier.foodLabPressEffect(
     onClick: (() -> Unit)? = null
 ): Modifier {
     val isNeo = MaterialTheme.isNeoBrutalist
+    val isBento = MaterialTheme.isBentoCraft
+    if (isBento) {
+        return this.applePressEffect(pressedScale = 0.93f, onClick = onClick)
+    }
     if (!isNeo) {
         return this.applePressEffect(pressedScale = pressedScale, onClick = onClick)
     }
@@ -115,10 +133,10 @@ fun foodLabCardShape(
     defaultShape: Shape = RoundedCornerShape(22.dp),
     neoCornerRadius: Dp = 12.dp
 ): Shape {
-    return if (MaterialTheme.isNeoBrutalist) {
-        RoundedCornerShape(neoCornerRadius)
-    } else {
-        defaultShape
+    return when {
+        MaterialTheme.isNeoBrutalist -> RoundedCornerShape(neoCornerRadius)
+        MaterialTheme.isBentoCraft -> RoundedCornerShape(22.dp)
+        else -> defaultShape
     }
 }
 
@@ -128,9 +146,9 @@ fun foodLabCardBorder(
     neoWidth: Dp = 2.dp,
     neoColor: Color = Color.Black
 ): BorderStroke {
-    return if (MaterialTheme.isNeoBrutalist) {
-        BorderStroke(neoWidth, neoColor)
-    } else {
-        defaultBorder
+    return when {
+        MaterialTheme.isNeoBrutalist -> BorderStroke(neoWidth, neoColor)
+        MaterialTheme.isBentoCraft -> BorderStroke(2.dp, BentoBorder)
+        else -> defaultBorder
     }
 }

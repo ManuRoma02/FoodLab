@@ -40,6 +40,11 @@ import kotlinx.coroutines.launch
 
 
 import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.isBentoCraft
+import com.example.ui.theme.BentoCocoa
+import com.example.ui.theme.BentoBerryPink
+import com.example.ui.theme.BentoSurface
+import com.example.ui.theme.BentoBorder
 import com.example.ui.theme.NeoBrutalAmber
 import com.example.ui.theme.neoHardShadow
 import com.example.ui.theme.neoBorder
@@ -53,6 +58,7 @@ fun BottomNavBar(
 ) {
     val soundManager = LocalSoundManager.current
     val isNeo = MaterialTheme.isNeoBrutalist
+    val isBento = MaterialTheme.isBentoCraft
     val selectedIndex = when {
         currentRoute == Routes.Dashboard -> 0
         currentRoute == Routes.FoodsDatabase ||
@@ -63,17 +69,29 @@ fun BottomNavBar(
         else -> 0
     }
 
-    val navShape = if (isNeo) RoundedCornerShape(14.dp) else RoundedCornerShape(32.dp)
-    val navColor = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.82f)
-    val navBorder = if (isNeo) BorderStroke(2.5.dp, Color.Black) else BorderStroke(
-        width = 1.dp,
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                Color.White.copy(alpha = 0.28f),
-                Color.White.copy(alpha = 0.05f)
+    val navShape = when {
+        isNeo -> RoundedCornerShape(14.dp)
+        isBento -> RoundedCornerShape(26.dp)
+        else -> RoundedCornerShape(32.dp)
+    }
+    val navColor = when {
+        isNeo -> Color.White
+        isBento -> BentoSurface
+        else -> MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.82f)
+    }
+    val navBorder = when {
+        isNeo -> BorderStroke(2.5.dp, Color.Black)
+        isBento -> BorderStroke(2.dp, BentoBorder)
+        else -> BorderStroke(
+            width = 1.dp,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.28f),
+                    Color.White.copy(alpha = 0.05f)
+                )
             )
         )
-    )
+    }
 
     Box(
         modifier = modifier
@@ -87,6 +105,12 @@ fun BottomNavBar(
                 .fillMaxWidth()
                 .then(
                     if (isNeo) Modifier.neoHardShadow(offset = 5.dp, color = Color.Black, cornerRadius = 14.dp)
+                    else if (isBento) Modifier.shadow(
+                        elevation = 8.dp,
+                        shape = navShape,
+                        spotColor = BentoCocoa.copy(alpha = 0.16f),
+                        ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                    )
                     else Modifier.shadow(
                         elevation = 16.dp,
                         shape = navShape,
@@ -133,6 +157,14 @@ fun BottomNavBar(
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(NeoBrutalAmber)
                                 .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
+                        )
+                    } else if (isBento) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(BentoBerryPink)
+                                .border(1.5.dp, BentoBorder, RoundedCornerShape(20.dp))
                         )
                     } else {
                         // Pill container background
@@ -319,8 +351,17 @@ fun NavBarItem(
     onClick: () -> Unit
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val primaryColor = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary
-    val unselectedColor = if (isNeo) Color(0xFF333333) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+    val isBento = MaterialTheme.isBentoCraft
+    val primaryColor = when {
+        isNeo -> Color.Black
+        isBento -> Color.White
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val unselectedColor = when {
+        isNeo -> Color(0xFF333333)
+        isBento -> BentoCocoa.copy(alpha = 0.70f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+    }
 
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) primaryColor else unselectedColor,
@@ -493,13 +534,22 @@ fun ImprovedTagButton(
     onClick: () -> Unit
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val targetBg = if (isNeo) {
-        if (isSelected) NeoBrutalAmber else Color.White
-    } else {
-        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer
+    val isBento = MaterialTheme.isBentoCraft
+    val targetBg = when {
+        isNeo -> if (isSelected) NeoBrutalAmber else Color.White
+        isBento -> if (isSelected) BentoBerryPink else BentoSurface
+        else -> if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer
     }
-    val targetText = if (isNeo) Color.Black else (if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
-    val targetBorder = if (isNeo) Color.Black else (if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+    val targetText = when {
+        isNeo -> Color.Black
+        isBento -> if (isSelected) Color.White else BentoCocoa
+        else -> if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val targetBorder = when {
+        isNeo -> Color.Black
+        isBento -> if (isSelected) BentoBorder else BentoBorder.copy(alpha = 0.35f)
+        else -> if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+    }
 
     val animatedBg by animateColorAsState(
         targetValue = targetBg,
@@ -525,8 +575,12 @@ fun ImprovedTagButton(
         label = "tagScale"
     )
 
-    val tagShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(14.dp)
-    val borderWidth = if (isNeo) 2.dp else 1.dp
+    val tagShape = when {
+        isNeo -> RoundedCornerShape(8.dp)
+        isBento -> RoundedCornerShape(99.dp)
+        else -> RoundedCornerShape(14.dp)
+    }
+    val borderWidth = if (isNeo || isBento) 1.8.dp else 1.dp
 
     Box(
         modifier = Modifier
@@ -536,6 +590,7 @@ fun ImprovedTagButton(
             }
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 8.dp)
+                else if (isBento) Modifier.shadow(elevation = 2.dp, shape = tagShape, spotColor = BentoCocoa.copy(alpha = 0.12f))
                 else Modifier
             )
             .applePressEffect(pressedScale = 0.93f, onClick = onClick)
@@ -548,7 +603,7 @@ fun ImprovedTagButton(
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold,
+                fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.Bold,
                 letterSpacing = 0.3.sp
             ),
             color = animatedText
@@ -559,9 +614,22 @@ fun ImprovedTagButton(
 @Composable
 fun MacroBadge(label: String, value: String, color: Color) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val badgeShape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp)
-    val bgColor = if (isNeo) color.copy(alpha = 0.25f) else color.copy(alpha = 0.12f)
-    val borderStroke = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(0.5.dp, color.copy(alpha = 0.3f))
+    val isBento = MaterialTheme.isBentoCraft
+    val badgeShape = when {
+        isNeo -> RoundedCornerShape(6.dp)
+        isBento -> RoundedCornerShape(99.dp)
+        else -> RoundedCornerShape(8.dp)
+    }
+    val bgColor = when {
+        isNeo -> color.copy(alpha = 0.25f)
+        isBento -> color.copy(alpha = 0.16f)
+        else -> color.copy(alpha = 0.12f)
+    }
+    val borderStroke = when {
+        isNeo -> BorderStroke(1.5.dp, Color.Black)
+        isBento -> BorderStroke(1.2.dp, BentoBorder)
+        else -> BorderStroke(0.5.dp, color.copy(alpha = 0.3f))
+    }
 
     Surface(
         shape = badgeShape,
@@ -569,18 +637,28 @@ fun MacroBadge(label: String, value: String, color: Color) {
         border = borderStroke
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "$label ",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                color = if (isNeo) Color.Black else color
+                color = when {
+                    isNeo -> Color.Black
+                    isBento -> BentoCocoa
+                    else -> color
+                }
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNeo) FontWeight.ExtraBold else FontWeight.SemiBold),
-                color = if (isNeo) Color.Black else MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = if (isNeo || isBento) FontWeight.ExtraBold else FontWeight.SemiBold
+                ),
+                color = when {
+                    isNeo -> Color.Black
+                    isBento -> BentoCocoa
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
             )
         }
     }

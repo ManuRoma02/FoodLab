@@ -42,3 +42,22 @@ val NeoBrutalShapes = Shapes(
     large = RoundedCornerShape(NeoBrutalCornerRadiusCard),
     extraLarge = RoundedCornerShape(NeoBrutalCornerRadiusModal)
 )
+
+// Bento Craft Corner Radii (Warm, Organic & Chunky Bento Grid)
+val BentoCraftCornerRadiusSmall = 10.dp
+val BentoCraftCornerRadiusMedium = 16.dp
+val BentoCraftCornerRadiusCard = 22.dp
+val BentoCraftCornerRadiusModal = 26.dp
+val BentoCraftCornerRadiusPill = 99.dp
+
+val BentoCraftCardShape = RoundedCornerShape(BentoCraftCornerRadiusCard)
+val BentoCraftModalShape = RoundedCornerShape(BentoCraftCornerRadiusModal)
+val BentoCraftPillShape = RoundedCornerShape(BentoCraftCornerRadiusPill)
+
+val BentoCraftShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(BentoCraftCornerRadiusSmall),
+    medium = RoundedCornerShape(BentoCraftCornerRadiusMedium),
+    large = RoundedCornerShape(BentoCraftCornerRadiusCard),
+    extraLarge = RoundedCornerShape(BentoCraftCornerRadiusModal)
+)

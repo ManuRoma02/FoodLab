@@ -185,11 +185,53 @@ val NeoBrutalismColorScheme = lightColorScheme(
     outlineVariant = NeoBrutalBorder
 )
 
+// 4. BENTO_CRAFT: Artisanal bakery & craft bento design system (Deep Cocoa, Berry Pink & Warm Oat Cream)
+val BentoCocoa = Color(0xFF382218)           // Rich dark chocolate cocoa ink & borders
+val BentoBerryPink = Color(0xFFDE3163)       // Vibrant handcrafted strawberry/berry pink
+val BentoBackground = Color(0xFFFAF4ED)      // Warm artisanal oat & vanilla cream canvas
+val BentoSurface = Color(0xFFFFFDF9)         // Pure fresh bakery card surface
+val BentoSurfaceContainer = Color(0xFFF6EDE2)// Biscuit oat container
+val BentoSurfaceContainerHigh = Color(0xFFEFE2D3) // Muted warm almond stone for pills & chips
+val BentoSurfaceVariant = Color(0xFFFCE7ED)  // Soft strawberry blush tint
+val BentoBorder = Color(0xFF382218)          // Crisp cocoa border outlines
+
+val BentoCraftColorScheme = lightColorScheme(
+    primary = BentoBerryPink,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = BentoCocoa,
+    onPrimaryContainer = Color(0xFFFFF8F0),
+    secondary = BentoCocoa,
+    onSecondary = Color(0xFFFFF8F0),
+    secondaryContainer = BentoSurfaceContainerHigh,
+    onSecondaryContainer = BentoCocoa,
+    tertiary = Color(0xFFD97706),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFEF3C7),
+    onTertiaryContainer = BentoCocoa,
+    error = Color(0xFFDC2626),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = BentoCocoa,
+    background = BentoBackground,
+    onBackground = BentoCocoa,
+    surface = BentoSurface,
+    onSurface = BentoCocoa,
+    surfaceVariant = BentoSurfaceVariant,
+    onSurfaceVariant = Color(0xFF5A3D31),
+    surfaceContainerLow = Color(0xFFFDF8F3),
+    surfaceContainer = BentoSurface,
+    surfaceContainerHigh = BentoSurfaceContainerHigh,
+    surfaceContainerHighest = BentoSurfaceVariant,
+    outline = BentoBorder,
+    outlineVariant = BentoBorder.copy(alpha = 0.25f)
+)
+
 fun themePreviewColor(skin: ThemeSkin): Color {
     return when (skin) {
         ThemeSkin.ORIGINAL -> Color(0xFFFF9500)
         ThemeSkin.RETRO_DARK -> AppleBlue
         ThemeSkin.NEO_BRUTALISM -> NeoBrutalAmber
+        ThemeSkin.BENTO_CRAFT -> BentoBerryPink
     }
 }
 
@@ -198,6 +240,7 @@ fun colorSchemeForSkin(skin: ThemeSkin): ColorScheme {
         ThemeSkin.ORIGINAL -> OriginalColorScheme
         ThemeSkin.RETRO_DARK -> RetroDarkColorScheme
         ThemeSkin.NEO_BRUTALISM -> NeoBrutalismColorScheme
+        ThemeSkin.BENTO_CRAFT -> BentoCraftColorScheme
     }
 }
 
@@ -227,6 +270,12 @@ fun macroColorsForSkin(skin: ThemeSkin): MacroColors {
             carbs = Color(0xFFD97706),    // Rich amber ochre with high contrast on light canvas
             protein = NeoBrutalMint,
             fat = NeoBrutalCyan
+        )
+        ThemeSkin.BENTO_CRAFT -> MacroColors(
+            calories = BentoBerryPink,
+            carbs = Color(0xFFD97706),    // Golden honey biscuit
+            protein = Color(0xFF16A34A),  // Matcha green
+            fat = Color(0xFF0284C7)       // Blueberry sky
         )
     }
 }

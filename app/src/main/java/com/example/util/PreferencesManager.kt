@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class ThemeSkin(val displayName: String) {
     ORIGINAL("Originale"),
     RETRO_DARK("Midnight"),
-    NEO_BRUTALISM("Neo-Brutalism");
+    NEO_BRUTALISM("Neo-Brutalism"),
+    BENTO_CRAFT("Bento Craft");
 
     companion object {
         fun fromString(name: String?): ThemeSkin {
@@ -17,6 +18,7 @@ enum class ThemeSkin(val displayName: String) {
                 "ORIGINAL" -> ORIGINAL
                 "RETRO_DARK" -> RETRO_DARK
                 "NEO_BRUTALISM", "NEOBRUTALISM", "NEO_BRUTAL" -> NEO_BRUTALISM
+                "BENTO_CRAFT", "BENTO", "BENTO_ARTISAN", "BENTO_UI" -> BENTO_CRAFT
                 // Fallbacks for deprecated skins to ensure backward compatibility
                 "TITANIUM", "MATRIX", "NORD", "GAMEBOY", "CATPPUCCIN", "CYBERPUNK", "WARM_EMBER", "AMBER_CRT" -> ORIGINAL
                 else -> values().firstOrNull { it.name == name } ?: ORIGINAL

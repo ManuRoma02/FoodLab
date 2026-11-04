@@ -74,4 +74,51 @@ class DashboardHeroCalorieTest {
         composeTestRule.onNodeWithText("PASSI GIORNALIERI").assertIsDisplayed()
         composeTestRule.onNodeWithText("6200 / 10000 passi").assertIsDisplayed()
     }
+
+    @Test
+    fun testUnifiedHeroHeader_bentoCraftTheme() {
+        var weightClicked = false
+        var stepClicked = false
+
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                com.example.ui.theme.MyApplicationTheme(themeSkin = com.example.util.ThemeSkin.BENTO_CRAFT) {
+                    UnifiedHeroHeader(
+                        remainingCalories = 1450,
+                        targetCalories = 2200,
+                        loggedCalories = 750,
+                        burnedCalories = 300,
+                        proteinConsumed = 60f,
+                        proteinTarget = 150f,
+                        carbsConsumed = 90f,
+                        carbsTarget = 220f,
+                        fatConsumed = 25f,
+                        fatTarget = 70f,
+                        steps = 8500,
+                        stepsTarget = 10000,
+                        weightText = "71.5 KG",
+                        onWeightClick = { weightClicked = true },
+                        onStepClick = { stepClicked = true }
+                    )
+                }
+            }
+        }
+
+        // Primary Display
+        composeTestRule.onNodeWithText("1450").assertIsDisplayed()
+        composeTestRule.onNodeWithText("RIMASTE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("71.5 KG").assertIsDisplayed()
+
+        // 3 Macro Metrics in Bento Cells
+        composeTestRule.onNodeWithText("Proteine").assertIsDisplayed()
+        composeTestRule.onNodeWithText("60g / 150g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Carboidrati").assertIsDisplayed()
+        composeTestRule.onNodeWithText("90g / 220g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Grassi").assertIsDisplayed()
+        composeTestRule.onNodeWithText("25g / 70g").assertIsDisplayed()
+
+        // Steps Bento Cell
+        composeTestRule.onNodeWithText("PASSI GIORNALIERI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("8500 / 10000 passi").assertIsDisplayed()
+    }
 }
