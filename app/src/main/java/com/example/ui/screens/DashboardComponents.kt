@@ -1617,6 +1617,42 @@ private fun BentoMacroCell(
 }
 
 @Composable
+fun CompactStepChip(
+    steps: Int,
+    stepsTarget: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val chipShape = RoundedCornerShape(99.dp)
+    val chipBorder = BorderStroke(1.5.dp, BentoBorder)
+    val chipBg = BentoSurfaceContainerHigh
+
+    Row(
+        modifier = modifier
+            .heightIn(min = 44.dp)
+            .applePressEffect(pressedScale = 0.94f, onClick = onClick)
+            .clip(chipShape)
+            .background(chipBg)
+            .border(chipBorder.width, chipBorder.brush, chipShape)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.DirectionsWalk,
+            contentDescription = "Passi",
+            tint = BentoBerryPink,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = "$steps",
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            color = BentoCocoa
+        )
+    }
+}
+
+@Composable
 private fun BentoHeroHeader(
     remainingCalories: Int,
     targetCalories: Int,
@@ -1642,27 +1678,27 @@ private fun BentoHeroHeader(
             .semantics { testTag = "dashboard_hero_card" },
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Bento Cell 1: Daily Calorie Hero (Deep Cocoa Card with Cream text & Berry Pink badge)
+        // Unified Bento Calorie Hero Card (warm BentoSurface with BentoBorder)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
                     elevation = 6.dp,
-                    shape = RoundedCornerShape(22.dp),
-                    spotColor = BentoCocoa.copy(alpha = 0.20f),
-                    ambientColor = BentoCocoa.copy(alpha = 0.10f)
+                    shape = RoundedCornerShape(24.dp),
+                    spotColor = BentoCocoa.copy(alpha = 0.12f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.08f)
                 ),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = BentoCocoa),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = BentoSurface),
             border = BorderStroke(2.dp, BentoBorder)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Top status bar inside calorie card
+                // Top status bar inside hero card: Badge on left, Compact Steps & Weight Chips on right
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1672,7 +1708,7 @@ private fun BentoHeroHeader(
                         modifier = Modifier
                             .clip(RoundedCornerShape(99.dp))
                             .background(if (remainingCalories < 0) Color(0xFFEF4444) else BentoBerryPink)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
                             text = if (remainingCalories >= 0) "RIMASTE" else "IN ECCESSO",
@@ -1685,135 +1721,89 @@ private fun BentoHeroHeader(
                         )
                     }
 
-                    CompactWeightChip(
-                        weightText = weightText,
-                        onClick = onWeightClick
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CompactStepChip(
+                            steps = steps,
+                            stepsTarget = stepsTarget,
+                            onClick = onStepClick
+                        )
+                        CompactWeightChip(
+                            weightText = weightText,
+                            onClick = onWeightClick
+                        )
+                    }
                 }
 
-                // Big Calorie Number & KCAL label
+                // Middle Section: Calories & Breakdown on Left, Mascot organic on Right
                 Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (remainingCalories >= 0) "$remainingCalories" else "${-remainingCalories}",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 38.sp,
-                            letterSpacing = (-1.5).sp
-                        ),
-                        color = Color(0xFFFFFDF9)
-                    )
-                    Text(
-                        text = "KCAL",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        ),
-                        color = BentoBerryPink,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = if (remainingCalories >= 0) "$remainingCalories" else "${-remainingCalories}",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 40.sp,
+                                    letterSpacing = (-1.5).sp
+                                ),
+                                color = BentoCocoa
+                            )
+                            Text(
+                                text = "KCAL",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                ),
+                                color = BentoBerryPink,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                        }
 
-                Text(
-                    text = "Obiettivo $targetCalories kcal • Consumate $loggedCalories • Bruciate $burnedCalories",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                    color = Color(0xFFFFFDF9).copy(alpha = 0.75f)
-                )
-            }
-        }
+                        Text(
+                            text = "Obiettivo $targetCalories kcal • Consumate $loggedCalories • Bruciate $burnedCalories",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
+                            color = BentoCocoa.copy(alpha = 0.70f)
+                        )
 
-        // Bento Row 2: Mascot Box (Asymmetric Left) + Steps Box (Asymmetric Right)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Mascot Bento Box (38% width)
-            Card(
-                modifier = Modifier
-                    .weight(0.38f)
-                    .height(104.dp)
-                    .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp), spotColor = BentoCocoa.copy(alpha = 0.12f)),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = BentoSurface),
-                border = BorderStroke(1.8.dp, BentoBorder)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Compact macro distribution indicator
+                        MacroDistributionBar(
+                            carbs = carbsConsumed,
+                            protein = proteinConsumed,
+                            fat = fatConsumed,
+                            modifier = Modifier.fillMaxWidth().padding(end = 12.dp)
+                        )
+                    }
+
+                    // Mascot living organically on the surface (no ugly container box!)
                     AnimatedFoodLabMascot(
                         state = when {
                             remainingCalories < 0 -> MascotState.OverTarget
                             isMascotTyping -> MascotState.Typing
                             else -> MascotState.Idle
                         },
-                        modifier = Modifier.size(72.dp)
-                    )
-                }
-            }
-
-            // Steps Bento Box (62% width)
-            Card(
-                modifier = Modifier
-                    .weight(0.62f)
-                    .height(104.dp)
-                    .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp), spotColor = BentoCocoa.copy(alpha = 0.12f))
-                    .applePressEffect(pressedScale = 0.96f, onClick = onStepClick),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = BentoSurface),
-                border = BorderStroke(1.8.dp, BentoBorder)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "PASSI GIORNALIERI",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp,
-                                letterSpacing = 0.4.sp
-                            ),
-                            color = BentoCocoa
-                        )
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.DirectionsWalk,
-                            contentDescription = "Passi",
-                            tint = BentoBerryPink,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Text(
-                        text = "$steps / $stepsTarget passi",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp
-                        ),
-                        color = BentoCocoa.copy(alpha = 0.85f)
-                    )
-
-                    SmoothProgressRail(
-                        progress = (steps.toFloat() / stepsTarget.coerceAtLeast(1)).coerceIn(0f, 1f),
-                        color = BentoBerryPink,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
+                            .size(80.dp)
+                            .padding(start = 4.dp)
                     )
                 }
             }
         }
 
-        // Bento Row 3: 3 Separate Macro Bento Pillar Cards (Carbs, Protein, Fat)
+        // Bento Row 2: 3 Separate Macro Bento Pillar Cards (Carbs, Protein, Fat)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -3025,18 +3015,23 @@ fun NutrientPill(label: String, value: Float, color: Color, modifier: Modifier =
         modifier = modifier
             .background(pillBg, pillShape)
             .border(pillBorder.width, pillBorder.brush, pillShape)
-            .padding(horizontal = 8.dp, vertical = 7.dp),
+            .padding(horizontal = 4.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             String.format(java.util.Locale.getDefault(), "%.1fg", value),
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold),
-            color = if (isNeo) Color.Black else color
+            color = if (isNeo) Color.Black else color,
+            maxLines = 1,
+            softWrap = false
         )
         Text(
             label.uppercase(java.util.Locale.getDefault()),
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = if (isNeo) FontWeight.Bold else FontWeight.SemiBold),
-            color = if (isNeo) Color(0xFF333333) else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (isNeo) Color(0xFF333333) else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
     }
 }

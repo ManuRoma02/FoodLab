@@ -117,8 +117,8 @@ class DashboardHeroCalorieTest {
         composeTestRule.onNodeWithText("Grassi").assertIsDisplayed()
         composeTestRule.onNodeWithText("25g / 70g").assertIsDisplayed()
 
-        // Steps Bento Cell
-        composeTestRule.onNodeWithText("PASSI GIORNALIERI").assertIsDisplayed()
-        composeTestRule.onNodeWithText("8500 / 10000 passi").assertIsDisplayed()
+        // Steps Compact Chip in Bento Craft
+        composeTestRule.onNodeWithText("8500").assertIsDisplayed().performClick()
+        org.junit.Assert.assertTrue(stepClicked)
     }
 }

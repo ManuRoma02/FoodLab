@@ -416,7 +416,7 @@ private fun FoodsListContent(
                             if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, pillShape)
                             else Modifier
                         )
-                        .applePressEffect(pressedScale = 0.96f) {
+                        .clickable {
                             onFilterChange(key)
                         }
                         .padding(vertical = 7.dp),
@@ -453,10 +453,9 @@ private fun FoodsListContent(
                         Text("ALIMENTI E RICETTE", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp), color = MaterialTheme.colorScheme.onSurface)
                         Text("${displayedResults.size}", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                     }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         FoodLabActionButton("+ Alimento", Icons.Default.Restaurant, onNavigateToCreateFood, Modifier.weight(1f))
-                        FoodLabActionButton("+ Ricetta", Icons.Default.Add, onNavigateToCreateRecipe, Modifier.weight(1f))
-                        FoodLabActionButton("Le Ricette", Icons.AutoMirrored.Filled.MenuBook, onNavigateToRecipes, Modifier.weight(1f))
+                        FoodLabActionButton("Ricette", Icons.AutoMirrored.Filled.MenuBook, onNavigateToRecipes, Modifier.weight(1f))
                     }
                 }
             }

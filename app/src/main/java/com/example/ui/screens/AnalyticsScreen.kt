@@ -292,17 +292,22 @@ fun AnalyticsScreen(
         }
     }
 
-    // Aggregated Metrics
-    val totalIntake = dailyIntakes.sumOf { it.intake }
-    val totalTarget = dailyIntakes.sumOf { it.target }
-    val avgIntake = if (dailyIntakes.isNotEmpty()) totalIntake / dailyIntakes.size else 0
-    val avgTarget = if (dailyIntakes.isNotEmpty()) totalTarget / dailyIntakes.size else defaultTargetCalories
-    val netDifference = totalTarget - totalIntake // Positive = Deficit, Negative = Surplus
-    val avgDifference = if (dailyIntakes.isNotEmpty()) netDifference / dailyIntakes.size else 0
+    // Filter to only days where the user actually logged meals in this horizon
+    val loggedDaysIntakes = remember(dailyIntakes, allMeals) {
+        dailyIntakes.filter { day -> allMeals.any { it.dateString == day.date } }
+    }
 
-    val avgProtein = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.protein }.average().toFloat() else 0f
-    val avgCarbs = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.carbs }.average().toFloat() else 0f
-    val avgFat = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.fat }.average().toFloat() else 0f
+    // Aggregated Metrics (computed ONLY on days with logged meals so unlogged days don't distort averages or balance)
+    val totalIntake = loggedDaysIntakes.sumOf { it.intake }
+    val totalTarget = loggedDaysIntakes.sumOf { it.target }
+    val avgIntake = if (loggedDaysIntakes.isNotEmpty()) totalIntake / loggedDaysIntakes.size else 0
+    val avgTarget = if (loggedDaysIntakes.isNotEmpty()) totalTarget / loggedDaysIntakes.size else defaultTargetCalories
+    val netDifference = totalTarget - totalIntake // Positive = Deficit, Negative = Surplus
+    val avgDifference = if (loggedDaysIntakes.isNotEmpty()) netDifference / loggedDaysIntakes.size else 0
+
+    val avgProtein = if (loggedDaysIntakes.isNotEmpty()) loggedDaysIntakes.map { it.protein }.average().toFloat() else 0f
+    val avgCarbs = if (loggedDaysIntakes.isNotEmpty()) loggedDaysIntakes.map { it.carbs }.average().toFloat() else 0f
+    val avgFat = if (loggedDaysIntakes.isNotEmpty()) loggedDaysIntakes.map { it.fat }.average().toFloat() else 0f
 
     // Today's macros
     val todayMeals = remember(allMeals, todayStr) { allMeals.filter { it.dateString == todayStr } }
@@ -380,7 +385,6 @@ fun AnalyticsScreen(
                             .background(buttonBg)
                             .border(buttonBorder.width, buttonBorder.brush, buttonShape)
                             .applePressEffect(pressedScale = 0.94f) {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 soundManager.playSound("click")
                                 showLogWeightDialog = true
                             },
@@ -406,7 +410,6 @@ fun AnalyticsScreen(
                             .background(buttonBg)
                             .border(buttonBorder.width, buttonBorder.brush, buttonShape)
                             .applePressEffect(pressedScale = 0.94f) {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 soundManager.playSound("click")
                                 showCustomizationSheet = true
                             },
@@ -479,7 +482,7 @@ fun AnalyticsScreen(
                                 else Modifier
                             )
                             .clickable {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 soundManager.playSound("click")
                                 selectedHorizonDays = days
                             }
@@ -503,22 +506,31 @@ fun AnalyticsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val calorieDiffLabel = if (avgDifference != 0) {
+                    val calorieDiffLabel = if (loggedDaysIntakes.isEmpty()) {
+                        "Nessun dato"
+                    } else if (avgDifference != 0) {
                         if (avgDifference > 0) "-$avgDifference vs target" else "+${-avgDifference} vs target"
                     } else "A target"
                     AppleHighlightTile(
                         title = "Media Calorie",
-                        primaryValue = "$avgIntake kcal",
-                        subtitle = "Target: $avgTarget ($calorieDiffLabel)",
+                        primaryValue = if (loggedDaysIntakes.isNotEmpty()) "$avgIntake kcal" else "-- kcal",
+                        subtitle = if (loggedDaysIntakes.isNotEmpty()) "Target: $avgTarget ($calorieDiffLabel)" else "Nessun giorno registrato",
                         icon = Icons.Default.LocalFireDepartment,
                         iconBg = AppleOrange,
                         modifier = Modifier.weight(1f)
                     )
 
-                    val netLabel = if (netDifference >= 0) "-$netDifference kcal" else "+${-netDifference} kcal"
+                    val netLabel = if (loggedDaysIntakes.isEmpty()) {
+                        "-- kcal"
+                    } else if (netDifference >= 0) {
+                        "-$netDifference kcal"
+                    } else {
+                        "+${-netDifference} kcal"
+                    }
                     val estKg = kotlin.math.abs(netDifference) / 7700f
                     val estKgStr = String.format(Locale.US, "%.1f", estKg)
                     val netSubtitle = when {
+                        loggedDaysIntakes.isEmpty() -> "Nessun giorno registrato"
                         netDifference > 0 -> "Deficit (~$estKgStr kg)"
                         netDifference < 0 -> "Surplus (~$estKgStr kg)"
                         else -> "In pareggio"
@@ -528,7 +540,7 @@ fun AnalyticsScreen(
                         primaryValue = netLabel,
                         subtitle = netSubtitle,
                         icon = if (netDifference >= 0) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
-                        iconBg = if (netDifference >= 0) Color(0xFF22C55E) else AppleRed,
+                        iconBg = if (loggedDaysIntakes.isEmpty()) AppleOrange else (if (netDifference >= 0) Color(0xFF22C55E) else AppleRed),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -940,9 +952,10 @@ private fun MacroDistributionCard(
     val carbsPct = (carbsCals / totalCals * 100).toInt()
     val fatPct = (fatCals / totalCals * 100).toInt()
 
-    val avgProtein = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.protein }.average().toFloat() else 0f
-    val avgCarbs = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.carbs }.average().toFloat() else 0f
-    val avgFat = if (dailyIntakes.isNotEmpty()) dailyIntakes.map { it.fat }.average().toFloat() else 0f
+    val loggedDays = remember(dailyIntakes) { dailyIntakes.filter { it.intake > 0 } }
+    val avgProtein = if (loggedDays.isNotEmpty()) loggedDays.map { it.protein }.average().toFloat() else 0f
+    val avgCarbs = if (loggedDays.isNotEmpty()) loggedDays.map { it.carbs }.average().toFloat() else 0f
+    val avgFat = if (loggedDays.isNotEmpty()) loggedDays.map { it.fat }.average().toFloat() else 0f
 
     AnalyticsCard {
         Column(

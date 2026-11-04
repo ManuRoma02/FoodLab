@@ -132,9 +132,9 @@ fun BottomNavBar(
 
                 val animatedIndex by animateFloatAsState(
                     targetValue = selectedIndex.toFloat(),
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = 380f
+                    animationSpec = tween(
+                        durationMillis = 150,
+                        easing = FastOutSlowInEasing
                     ),
                     label = "nav_sliding_indicator_index"
                 )
@@ -365,31 +365,26 @@ fun NavBarItem(
 
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) primaryColor else unselectedColor,
-        animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
+        animationSpec = tween(120),
         label = "nav_item_color"
     )
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.16f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = 350f
-        ),
+        targetValue = if (isSelected) 1.06f else 1.0f,
+        animationSpec = tween(120),
         label = "nav_icon_scale"
     )
-    val iconBob by animateFloatAsState(
-        targetValue = if (isSelected) -3f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = 350f
-        ),
-        label = "nav_icon_bob"
-    )
+
+    val interactionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier = modifier
             .defaultMinSize(minWidth = 56.dp, minHeight = 44.dp)
             .clip(if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(20.dp))
-            .applePressEffect(pressedScale = 0.92f, onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
             .padding(horizontal = 6.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -406,7 +401,6 @@ fun NavBarItem(
                     .graphicsLayer {
                         scaleX = iconScale
                         scaleY = iconScale
-                        translationY = iconBob
                     }
             )
             Spacer(modifier = Modifier.height(2.dp))
@@ -433,58 +427,34 @@ fun Modifier.applePressEffect(
     val currentOnClick by rememberUpdatedState(onClick)
     var isPressed by remember { mutableStateOf(false) }
 
-    // Cartoon squash-and-stretch: down-press compresses along Y and expands along X;
-    // release springs back with juicy medium-bouncy overshoot.
-    // Animatable values run on the GPU RenderThread via graphicsLayer, completely skipping
-    // Recomposition and Layout passes for peak 120 FPS buttery-smooth performance.
-    val scaleY = remember { Animatable(1.0f) }
-    val scaleX = remember { Animatable(1.0f) }
+    // High performance GPU RenderThread press effect using graphicsLayer.
+    // Instant, snappy spring with zero bouncy oscillation avoids frame drops
+    // during simultaneous screen navigation or section filtering.
+    val scale = remember { Animatable(1.0f) }
 
     LaunchedEffect(isPressed) {
         if (isPressed) {
-            launch {
-                scaleY.animateTo(
-                    targetValue = pressedScale,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = 600f
-                    )
+            scale.animateTo(
+                targetValue = pressedScale,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = 800f
                 )
-            }
-            launch {
-                scaleX.animateTo(
-                    targetValue = 1.0f + (1.0f - pressedScale) * 0.40f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = 600f
-                    )
-                )
-            }
+            )
         } else {
-            launch {
-                scaleY.animateTo(
-                    targetValue = 1.0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = 380f
-                    )
+            scale.animateTo(
+                targetValue = 1.0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = 600f
                 )
-            }
-            launch {
-                scaleX.animateTo(
-                    targetValue = 1.0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = 380f
-                    )
-                )
-            }
+            )
         }
     }
 
     val scaleModifier = this.graphicsLayer {
-        this.scaleX = scaleX.value
-        this.scaleY = scaleY.value
+        this.scaleX = scale.value
+        this.scaleY = scale.value
     }
 
     if (onClick != null) {
@@ -499,7 +469,7 @@ fun Modifier.applePressEffect(
             interactionSource = interactionSource,
             indication = null,
             onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 currentOnClick?.invoke()
             }
         )

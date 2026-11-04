@@ -45,6 +45,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -137,6 +143,10 @@ private fun shouldShowBottomBar(route: String?): Boolean {
 }
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        var hasShownInitialLoading = false
+    }
     
     private val _intentFlow = kotlinx.coroutines.flow.MutableStateFlow<Intent?>(null)
 
@@ -280,7 +290,56 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    var isAppReady by rememberSaveable { mutableStateOf(false) }
+                    val haptic = LocalHapticFeedback.current
+                    val density = LocalDensity.current
+                    val topLevelRoutes = remember {
+                        listOf(
+                            Routes.Dashboard,
+                            Routes.FoodsDatabase,
+                            Routes.Stats,
+                            Routes.Settings
+                        )
+                    }
+                    val navigateToTopLevel: (String) -> Unit = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    val canSwipeScreens = currentRoute != null && currentRoute != Routes.Dashboard && isTopLevelRoute(currentRoute)
+                    val swipeModifier = if (canSwipeScreens) {
+                        Modifier.pointerInput(currentRoute) {
+                            var totalDragX = 0f
+                            val thresholdPx = with(density) { 48.dp.toPx() }
+                            detectHorizontalDragGestures(
+                                onDragStart = { totalDragX = 0f },
+                                onDragEnd = {
+                                    val currentIdx = getRouteIndex(currentRoute)
+                                    if (totalDragX > thresholdPx && currentIdx > 0) {
+                                        // Swiped right -> go to previous top-level screen
+                                        soundManager.playSound("click")
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        navigateToTopLevel(topLevelRoutes[currentIdx - 1])
+                                    } else if (totalDragX < -thresholdPx && currentIdx < topLevelRoutes.size - 1) {
+                                        // Swiped left -> go to next top-level screen
+                                        soundManager.playSound("click")
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        navigateToTopLevel(topLevelRoutes[currentIdx + 1])
+                                    }
+                                },
+                                onDragCancel = { totalDragX = 0f },
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    totalDragX += dragAmount
+                                }
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+
+                    var isAppReady by rememberSaveable { mutableStateOf(hasCompletedOnboarding || hasShownInitialLoading) }
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (isWideScreen && showBottomBar) {
@@ -295,6 +354,7 @@ class MainActivity : ComponentActivity() {
                                         .weight(1f)
                                         .fillMaxHeight()
                                         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical + WindowInsetsSides.End))
+                                        .then(swipeModifier)
                                 ) {
                                     FoodLabNavHost(
                                         navController = navController,
@@ -312,6 +372,7 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(MaterialTheme.colorScheme.background)
+                                    .then(swipeModifier)
                             ) {
                                 FoodLabNavHost(
                                     navController = navController,
@@ -328,13 +389,7 @@ class MainActivity : ComponentActivity() {
                                 if (showBottomBar && !isWideScreen) {
                                     BottomNavBar(
                                         currentRoute = currentRoute,
-                                        onNavigateToRoute = { route ->
-                                            navController.navigate(route) {
-                                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        },
+                                        onNavigateToRoute = navigateToTopLevel,
                                         modifier = Modifier.align(Alignment.BottomCenter)
                                     )
                                 }
@@ -344,6 +399,7 @@ class MainActivity : ComponentActivity() {
                         if (!isAppReady) {
                             AppLoadingScreen(
                                 onLoadingComplete = {
+                                    hasShownInitialLoading = true
                                     isAppReady = true
                                 }
                             )
@@ -375,19 +431,12 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                val initialIdx = getRouteIndex(initialRoute)
-                val targetIdx = getRouteIndex(targetRoute)
-                val direction = if (targetIdx >= initialIdx) 1 else -1
-                fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
-                    animationSpec = tween(260, easing = FastOutSlowInEasing)
-                )
+                fadeIn(animationSpec = tween(130, easing = FastOutSlowInEasing))
             } else {
-                fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) +
+                fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
                 slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    initialOffsetX = { fullWidth -> (fullWidth * 0.20f).toInt() },
+                    animationSpec = tween(220, easing = FastOutSlowInEasing)
                 )
             }
         },
@@ -396,19 +445,12 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                val initialIdx = getRouteIndex(initialRoute)
-                val targetIdx = getRouteIndex(targetRoute)
-                val direction = if (targetIdx >= initialIdx) -1 else 1
-                fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing)) +
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
-                    animationSpec = tween(220, easing = FastOutLinearInEasing)
-                )
+                fadeOut(animationSpec = tween(90, easing = FastOutLinearInEasing))
             } else {
-                fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing)) +
+                fadeOut(animationSpec = tween(140, easing = FastOutLinearInEasing)) +
                 slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> (-fullWidth * 0.25f).toInt() },
-                    animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    targetOffsetX = { fullWidth -> (-fullWidth * 0.15f).toInt() },
+                    animationSpec = tween(180, easing = FastOutLinearInEasing)
                 )
             }
         },
@@ -417,19 +459,12 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                val initialIdx = getRouteIndex(initialRoute)
-                val targetIdx = getRouteIndex(targetRoute)
-                val direction = if (targetIdx >= initialIdx) 1 else -1
-                fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) +
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
-                    animationSpec = tween(260, easing = FastOutSlowInEasing)
-                )
+                fadeIn(animationSpec = tween(130, easing = FastOutSlowInEasing))
             } else {
-                fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing)) +
+                fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
                 slideInHorizontally(
-                    initialOffsetX = { fullWidth -> (-fullWidth * 0.25f).toInt() },
-                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                    initialOffsetX = { fullWidth -> (-fullWidth * 0.15f).toInt() },
+                    animationSpec = tween(220, easing = FastOutSlowInEasing)
                 )
             }
         },
@@ -438,19 +473,12 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                val initialIdx = getRouteIndex(initialRoute)
-                val targetIdx = getRouteIndex(targetRoute)
-                val direction = if (targetIdx >= initialIdx) -1 else 1
-                fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing)) +
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> (fullWidth * 0.25f * direction).toInt() },
-                    animationSpec = tween(220, easing = FastOutLinearInEasing)
-                )
+                fadeOut(animationSpec = tween(90, easing = FastOutLinearInEasing))
             } else {
-                fadeOut(animationSpec = tween(160, easing = FastOutLinearInEasing)) +
+                fadeOut(animationSpec = tween(140, easing = FastOutLinearInEasing)) +
                 slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(200, easing = FastOutLinearInEasing)
+                    targetOffsetX = { fullWidth -> (fullWidth * 0.20f).toInt() },
+                    animationSpec = tween(180, easing = FastOutLinearInEasing)
                 )
             }
         }

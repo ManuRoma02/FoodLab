@@ -1,9 +1,9 @@
 {
-  "versionCode": 42,
-  "versionName": "1.0.42",
+  "versionCode": 43,
+  "versionName": "1.0.43",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Bento Craft & Stickers**: aggiunti **micro-sticker artigianali** e pattern **Bakery Stripes** sui pasti\n• **Analytics Bento**: card statistiche, highlight tiles 2×2 e selettore temporale ridisegnati in stile **bento capsule**\n• **Database Alimenti**: ricerca spotlight e filtri categoria ottimizzati in stile **capsule pill**",
+  "changelog": "• **Fluidità & Performance**: eliminate latenze nelle transizioni e ottimizzate le animazioni GPU **graphicsLayer**\n• **Navigazione Swipe**: supporto **swipe orizzontale** per scorrere tra le schermate principali fuori dal diario\n• **Bento Craft Diario**: riorganizzata la hero con **mascot organica** e **chip passi compatto**\n• **Statistiche Accurate**: esclusi i giorni senza pasti dal **bilancio calorico** per evitare falsi deficit\n• **Modern Android**: avvio istantaneo dell'app all'uscita/rientro senza schermata di caricamento bloccante",
   "releaseDate": "2026-11-04",
   "forceUpdate": false,
-  "sha256": "b3f7d143f4aef1b32fe208c847fac9658a0e1e74f51abc686b8c6c0b49912cd4"
+  "sha256": "bc8d5e661bdd26105435796bcec78310c1307a82d62110d89559a1c6058629c3"
 }
