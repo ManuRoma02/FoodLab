@@ -674,23 +674,43 @@ fun SearchResultCard(
     modifier: Modifier = Modifier
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(18.dp)
-    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(
-        1.dp,
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
-    )
+    val isBento = MaterialTheme.isBentoCraft
+    val cardShape = when {
+        isNeo -> RoundedCornerShape(12.dp)
+        isBento -> RoundedCornerShape(20.dp)
+        else -> RoundedCornerShape(18.dp)
+    }
+    val cardBorder = when {
+        isNeo -> BorderStroke(2.dp, Color.Black)
+        isBento -> BorderStroke(1.8.dp, BentoBorder)
+        else -> BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+        )
+    }
+    val cardBg = when {
+        isNeo -> Color.White
+        isBento -> BentoSurface
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else if (isBento) Modifier.shadow(
+                    elevation = 4.dp,
+                    shape = cardShape,
+                    spotColor = BentoCocoa.copy(alpha = 0.12f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                )
                 else Modifier
             )
             .applePressEffect(pressedScale = 0.97f, onClick = onClick),
         shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+            containerColor = cardBg
         ),
         border = cardBorder
     ) {
@@ -705,10 +725,10 @@ fun SearchResultCard(
                 Text(
                     text = food.name,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = if (isBento) FontWeight.Bold else FontWeight.SemiBold,
                         letterSpacing = (-0.2).sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -716,28 +736,49 @@ fun SearchResultCard(
                     Text(
                         text = food.brand,
                         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.2.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     // Line 1: Calories
+                    val calShape = when {
+                        isNeo -> RoundedCornerShape(6.dp)
+                        isBento -> RoundedCornerShape(99.dp)
+                        else -> RoundedCornerShape(8.dp)
+                    }
+                    val calColor = when {
+                        isNeo -> NeoBrutalAmber
+                        isBento -> BentoBerryPink.copy(alpha = 0.15f)
+                        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    }
+                    val calBorder = when {
+                        isNeo -> BorderStroke(1.5.dp, Color.Black)
+                        isBento -> BorderStroke(1.2.dp, BentoBerryPink.copy(alpha = 0.45f))
+                        else -> BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                    }
+                    val calTextColor = when {
+                        isNeo -> Color.Black
+                        isBento -> BentoBerryPink
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            shape = if (isNeo) RoundedCornerShape(6.dp) else RoundedCornerShape(8.dp),
-                            color = if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            border = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                            shape = calShape,
+                            color = calColor,
+                            border = calBorder
                         ) {
                             Text(
                                 text = "${food.caloriesPer100g} kcal/100g",
                                 style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = if (isNeo) FontWeight.Black else FontWeight.ExtraBold,
+                                    fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.ExtraBold,
                                     letterSpacing = (-0.1).sp
                                 ),
-                                color = if (isNeo) Color.Black else MaterialTheme.colorScheme.primary,
+                                color = calTextColor,
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                             )
                         }
@@ -772,7 +813,7 @@ fun SearchResultCard(
                         Icon(
                             imageVector = if (food.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
-                            tint = if (food.isFavorite) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (food.isFavorite) (if (isBento) BentoBerryPink else Color(0xFFEF4444)) else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.graphicsLayer {
                                 scaleX = heartScale
                                 scaleY = heartScale
@@ -788,7 +829,7 @@ fun SearchResultCard(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary
                         )
                     }
                 }

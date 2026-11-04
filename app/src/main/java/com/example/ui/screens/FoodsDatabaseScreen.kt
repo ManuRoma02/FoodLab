@@ -101,6 +101,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.ui.theme.isNeoBrutalist
+import com.example.ui.theme.isBentoCraft
+import com.example.ui.theme.BentoCocoa
+import com.example.ui.theme.BentoBerryPink
+import com.example.ui.theme.BentoSurface
+import com.example.ui.theme.BentoSurfaceContainerHigh
+import com.example.ui.theme.BentoBorder
 import com.example.ui.theme.NeoBrutalAmber
 import androidx.compose.foundation.BorderStroke
 
@@ -298,13 +304,23 @@ private fun FoodsListContent(
     modifier: Modifier = Modifier
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
+    val isBento = MaterialTheme.isBentoCraft
     Column(modifier = modifier) {
+        val searchShape = when {
+            isNeo -> RoundedCornerShape(10.dp)
+            isBento -> RoundedCornerShape(99.dp)
+            else -> RoundedCornerShape(18.dp)
+        }
+        val searchBorderColor = if (isBento) BentoBorder else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        val searchFocusedBorder = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary
+        val searchBg = if (isBento) BentoSurfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
+
         // Search Input - Apple Spotlight Style
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = MaterialTheme.colorScheme.primary) },
+            placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.bodyMedium, color = if (isBento) BentoCocoa.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary) },
             trailingIcon = if (searchQuery.isNotBlank()) {
                 {
                     IconButton(
@@ -314,7 +330,7 @@ private fun FoodsListContent(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Cancella ricerca",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -322,14 +338,14 @@ private fun FoodsListContent(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                focusedBorderColor = searchFocusedBorder,
+                unfocusedBorderColor = searchBorderColor,
+                focusedContainerColor = searchBg,
+                unfocusedContainerColor = searchBg,
+                focusedTextColor = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
             ),
-            shape = RoundedCornerShape(18.dp)
+            shape = searchShape
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -341,13 +357,29 @@ private fun FoodsListContent(
             "RICETTE" to "Ricette",
             "PREFERITI" to "Preferiti"
         )
+        val containerShape = when {
+            isNeo -> RoundedCornerShape(10.dp)
+            isBento -> RoundedCornerShape(99.dp)
+            else -> RoundedCornerShape(12.dp)
+        }
+        val containerBg = when {
+            isNeo -> Color.White
+            isBento -> BentoSurfaceContainerHigh
+            else -> MaterialTheme.colorScheme.surfaceContainerHigh
+        }
+        val containerBorder = when {
+            isNeo -> BorderStroke(2.dp, Color.Black)
+            isBento -> BorderStroke(1.2.dp, BentoBorder)
+            else -> null
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(12.dp))
-                .background(if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clip(containerShape)
+                .background(containerBg)
                 .then(
-                    if (isNeo) Modifier.border(2.dp, Color.Black, RoundedCornerShape(10.dp))
+                    if (containerBorder != null) Modifier.border(containerBorder.width, containerBorder.brush, containerShape)
                     else Modifier
                 )
                 .padding(3.dp),
@@ -355,20 +387,33 @@ private fun FoodsListContent(
         ) {
             filterOptions.forEach { (key, label) ->
                 val isSelected = selectedFilter == key
+                val pillShape = when {
+                    isNeo -> RoundedCornerShape(8.dp)
+                    isBento -> RoundedCornerShape(99.dp)
+                    else -> RoundedCornerShape(10.dp)
+                }
                 val bg = if (isSelected) {
-                    if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
+                    when {
+                        isNeo -> NeoBrutalAmber
+                        isBento -> BentoBerryPink
+                        else -> MaterialTheme.colorScheme.primary
+                    }
                 } else Color.Transparent
                 val fg = if (isSelected) {
-                    if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
-                } else MaterialTheme.colorScheme.onSurfaceVariant
+                    when {
+                        isNeo -> Color.Black
+                        isBento -> Color.White
+                        else -> MaterialTheme.colorScheme.onPrimary
+                    }
+                } else if (isBento) BentoCocoa.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
 
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(10.dp))
+                        .clip(pillShape)
                         .background(bg)
                         .then(
-                            if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
+                            if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, pillShape)
                             else Modifier
                         )
                         .applePressEffect(pressedScale = 0.96f) {

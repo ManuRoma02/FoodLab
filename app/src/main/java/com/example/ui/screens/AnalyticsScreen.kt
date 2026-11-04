@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -84,15 +85,34 @@ private fun AnalyticsCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(18.dp)
-    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-    val cardBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+    val isBento = MaterialTheme.isBentoCraft
+    val cardShape = when {
+        isNeo -> RoundedCornerShape(12.dp)
+        isBento -> RoundedCornerShape(22.dp)
+        else -> RoundedCornerShape(18.dp)
+    }
+    val cardBorder = when {
+        isNeo -> BorderStroke(2.dp, Color.Black)
+        isBento -> BorderStroke(1.8.dp, BentoBorder)
+        else -> BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    }
+    val cardBg = when {
+        isNeo -> Color.White
+        isBento -> BentoSurface
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
+                else if (isBento) Modifier.shadow(
+                    elevation = 4.dp,
+                    shape = cardShape,
+                    spotColor = BentoCocoa.copy(alpha = 0.12f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                )
                 else Modifier
             ),
         shape = cardShape,
@@ -112,14 +132,28 @@ private fun AppleHighlightTile(
     modifier: Modifier = Modifier
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val shape = if (isNeo) RoundedCornerShape(10.dp) else RoundedCornerShape(14.dp)
-    val border = if (isNeo) BorderStroke(1.5.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-    val bg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh
+    val isBento = MaterialTheme.isBentoCraft
+    val shape = when {
+        isNeo -> RoundedCornerShape(10.dp)
+        isBento -> RoundedCornerShape(18.dp)
+        else -> RoundedCornerShape(14.dp)
+    }
+    val border = when {
+        isNeo -> BorderStroke(1.5.dp, Color.Black)
+        isBento -> BorderStroke(1.5.dp, BentoBorder)
+        else -> BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+    }
+    val bg = when {
+        isNeo -> Color.White
+        isBento -> BentoSurface
+        else -> MaterialTheme.colorScheme.surfaceContainerHigh
+    }
 
     Box(
         modifier = modifier
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 10.dp)
+                else if (isBento) Modifier.shadow(elevation = 3.dp, shape = shape, spotColor = BentoCocoa.copy(alpha = 0.12f))
                 else Modifier
             )
             .clip(shape)
@@ -136,23 +170,24 @@ private fun AppleHighlightTile(
                 Text(
                     text = title.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold,
+                        fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.Bold,
                         letterSpacing = 0.5.sp,
                         fontSize = 10.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Box(
                     modifier = Modifier
                         .size(24.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(iconBg.copy(alpha = 0.18f)),
+                        .clip(if (isBento) RoundedCornerShape(99.dp) else RoundedCornerShape(6.dp))
+                        .background(if (isBento) BentoSurfaceContainerHigh else iconBg.copy(alpha = 0.18f))
+                        .then(if (isBento) Modifier.border(1.dp, BentoBorder, RoundedCornerShape(99.dp)) else Modifier),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = iconBg,
+                        tint = if (isBento) BentoBerryPink else iconBg,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -164,7 +199,7 @@ private fun AppleHighlightTile(
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
@@ -175,7 +210,7 @@ private fun AppleHighlightTile(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isBento) BentoCocoa.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
@@ -312,9 +347,22 @@ fun AnalyticsScreen(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
             onBack = null,
             trailing = {
-                val buttonShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(12.dp)
-                val buttonBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
-                val buttonBg = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainerHigh
+                val isBento = MaterialTheme.isBentoCraft
+                val buttonShape = when {
+                    isNeo -> RoundedCornerShape(8.dp)
+                    isBento -> RoundedCornerShape(99.dp)
+                    else -> RoundedCornerShape(12.dp)
+                }
+                val buttonBorder = when {
+                    isNeo -> BorderStroke(2.dp, Color.Black)
+                    isBento -> BorderStroke(1.5.dp, BentoBorder)
+                    else -> BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                }
+                val buttonBg = when {
+                    isNeo -> Color.White
+                    isBento -> BentoSurfaceContainerHigh
+                    else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -325,6 +373,7 @@ fun AnalyticsScreen(
                             .size(44.dp)
                             .then(
                                 if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                else if (isBento) Modifier.shadow(elevation = 2.dp, shape = buttonShape, spotColor = BentoCocoa.copy(alpha = 0.12f))
                                 else Modifier
                             )
                             .clip(buttonShape)
@@ -340,7 +389,7 @@ fun AnalyticsScreen(
                         Icon(
                             imageVector = Icons.Default.MonitorWeight,
                             contentDescription = "Registra Peso",
-                            tint = AppleBlue,
+                            tint = if (isBento) BentoBerryPink else AppleBlue,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -350,6 +399,7 @@ fun AnalyticsScreen(
                             .size(44.dp)
                             .then(
                                 if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                else if (isBento) Modifier.shadow(elevation = 2.dp, shape = buttonShape, spotColor = BentoCocoa.copy(alpha = 0.12f))
                                 else Modifier
                             )
                             .clip(buttonShape)
@@ -365,7 +415,7 @@ fun AnalyticsScreen(
                         Icon(
                             imageVector = Icons.Default.Tune,
                             contentDescription = "Personalizza",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = if (isBento) BentoCocoa else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -382,31 +432,50 @@ fun AnalyticsScreen(
                 .padding(horizontal = 14.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            val isBento = MaterialTheme.isBentoCraft
+            val pickerShape = when {
+                isNeo -> RoundedCornerShape(10.dp)
+                isBento -> RoundedCornerShape(99.dp)
+                else -> RoundedCornerShape(10.dp)
+            }
+            val pickerBg = if (isBento) BentoSurfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerHigh
+            val pickerBorder = if (isBento) BorderStroke(1.2.dp, BentoBorder) else null
+
             // Timeframe Segmented Picker (7G | 14G | 30G)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .clip(pickerShape)
+                    .background(pickerBg)
+                    .then(if (pickerBorder != null) Modifier.border(pickerBorder.width, pickerBorder.brush, pickerShape) else Modifier)
                     .padding(3.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 listOf(7 to "7 Giorni", 14 to "14 Giorni", 30 to "30 Giorni").forEach { (days, label) ->
                     val isSelected = selectedHorizonDays == days
+                    val pillShape = if (isBento) RoundedCornerShape(99.dp) else RoundedCornerShape(8.dp)
                     val pillBg = if (isSelected) {
-                        if (isNeo) NeoBrutalAmber else MaterialTheme.colorScheme.primary
+                        when {
+                            isNeo -> NeoBrutalAmber
+                            isBento -> BentoBerryPink
+                            else -> MaterialTheme.colorScheme.primary
+                        }
                     } else Color.Transparent
                     val pillFg = if (isSelected) {
-                        if (isNeo) Color.Black else MaterialTheme.colorScheme.onPrimary
-                    } else MaterialTheme.colorScheme.onSurfaceVariant
+                        when {
+                            isNeo -> Color.Black
+                            isBento -> Color.White
+                            else -> MaterialTheme.colorScheme.onPrimary
+                        }
+                    } else if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(pillShape)
                             .background(pillBg)
                             .then(
-                                if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
+                                if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, pillShape)
                                 else Modifier
                             )
                             .clickable {

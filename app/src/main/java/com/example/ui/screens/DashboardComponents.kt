@@ -302,22 +302,121 @@ fun FoodLabScreenHeader(
 }
 
 @Composable
+fun BentoStickerBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    rotation: Float = -2.5f,
+    backgroundColor: Color = BentoBerryPink,
+    textColor: Color = Color.White
+) {
+    Surface(
+        modifier = modifier
+            .graphicsLayer {
+                rotationZ = rotation
+            }
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(99.dp),
+                spotColor = BentoCocoa.copy(alpha = 0.15f)
+            ),
+        shape = RoundedCornerShape(99.dp),
+        color = backgroundColor,
+        border = BorderStroke(1.2.dp, BentoBorder)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            if (icon != null) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = textColor,
+                    modifier = Modifier.size(10.dp)
+                )
+            }
+            Text(
+                text = text.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.4.sp,
+                    fontSize = 8.5.sp
+                ),
+                color = textColor
+            )
+        }
+    }
+}
+
+@Composable
+fun BakeryAwningStripes(
+    modifier: Modifier = Modifier,
+    stripeColor: Color = BentoBerryPink.copy(alpha = 0.65f),
+    bgColor: Color = BentoSurfaceContainerHigh,
+    stripeWidthDp: Float = 10f
+) {
+    Canvas(modifier = modifier) {
+        val stripeWidthPx = stripeWidthDp.dp.toPx()
+        val totalWidth = size.width
+        val height = size.height
+
+        drawRect(color = bgColor)
+
+        var x = 0f
+        var drawStripe = true
+        while (x < totalWidth) {
+            if (drawStripe) {
+                drawRect(
+                    color = stripeColor,
+                    topLeft = Offset(x, 0f),
+                    size = androidx.compose.ui.geometry.Size(stripeWidthPx.coerceAtMost(totalWidth - x), height)
+                )
+            }
+            x += stripeWidthPx
+            drawStripe = !drawStripe
+        }
+    }
+}
+
+@Composable
 fun FoodLabSectionCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val cardShape = if (isNeo) RoundedCornerShape(12.dp) else RoundedCornerShape(22.dp)
-    val cardBorder = if (isNeo) BorderStroke(2.dp, Color.Black) else BorderStroke(
-        1.dp,
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-    )
+    val isBento = MaterialTheme.isBentoCraft
+    val cardShape = when {
+        isNeo -> RoundedCornerShape(12.dp)
+        isBento -> RoundedCornerShape(22.dp)
+        else -> RoundedCornerShape(22.dp)
+    }
+    val cardBorder = when {
+        isNeo -> BorderStroke(2.dp, Color.Black)
+        isBento -> BorderStroke(1.8.dp, BentoBorder)
+        else -> BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        )
+    }
+    val cardBg = when {
+        isNeo -> Color.White
+        isBento -> BentoSurface
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                else if (isBento) Modifier.shadow(
+                    elevation = 4.dp,
+                    shape = cardShape,
+                    spotColor = BentoCocoa.copy(alpha = 0.12f),
+                    ambientColor = BentoCocoa.copy(alpha = 0.08f)
+                )
                 else Modifier.shadow(
                     elevation = 4.dp,
                     shape = cardShape,
@@ -327,7 +426,7 @@ fun FoodLabSectionCard(
             ),
         shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (isNeo) Color.White else MaterialTheme.colorScheme.surfaceContainer
+            containerColor = cardBg
         ),
         border = cardBorder
     ) {
@@ -350,15 +449,32 @@ fun FoodLabActionButton(
     danger: Boolean = false
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    val buttonShape = if (isNeo) RoundedCornerShape(8.dp) else RoundedCornerShape(14.dp)
-    val borderColor = if (isNeo) Color.Black else (if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
-    val borderWidth = if (isNeo) 2.dp else 1.dp
-    val containerColor = if (isNeo) {
-        if (danger) Color(0xFFFF8A80) else NeoBrutalAmber
-    } else {
-        if (danger) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+    val isBento = MaterialTheme.isBentoCraft
+    val buttonShape = when {
+        isNeo -> RoundedCornerShape(8.dp)
+        isBento -> RoundedCornerShape(99.dp)
+        else -> RoundedCornerShape(14.dp)
     }
-    val contentColor = if (isNeo) Color.Black else (if (danger) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary)
+    val borderColor = when {
+        isNeo -> Color.Black
+        isBento -> BentoBorder
+        else -> if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    }
+    val borderWidth = when {
+        isNeo -> 2.dp
+        isBento -> 1.5.dp
+        else -> 1.dp
+    }
+    val containerColor = when {
+        isNeo -> if (danger) Color(0xFFFF8A80) else NeoBrutalAmber
+        isBento -> if (danger) Color(0xFFFF8A80) else BentoBerryPink
+        else -> if (danger) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val contentColor = when {
+        isNeo -> Color.Black
+        isBento -> Color.White
+        else -> if (danger) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.primary
+    }
 
     Button(
         onClick = onClick,
@@ -367,6 +483,7 @@ fun FoodLabActionButton(
             .height(44.dp)
             .then(
                 if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 8.dp)
+                else if (isBento) Modifier.shadow(elevation = 3.dp, shape = buttonShape, spotColor = BentoCocoa.copy(alpha = 0.15f))
                 else Modifier
             )
             .applePressEffect(pressedScale = 0.92f, onClick = onClick)
@@ -381,7 +498,7 @@ fun FoodLabActionButton(
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.Bold),
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
         )
@@ -754,6 +871,7 @@ fun QuickFavoritesRow(
 
     val haptic = LocalHapticFeedback.current
     val isNeo = MaterialTheme.isNeoBrutalist
+    val isBento = MaterialTheme.isBentoCraft
     val soundManager = LocalSoundManager.current
 
     Column(
@@ -768,14 +886,22 @@ fun QuickFavoritesRow(
             Icon(
                 Icons.Default.Favorite,
                 contentDescription = null,
-                tint = Color(0xFFEF4444),
+                tint = if (isBento) BentoBerryPink else Color(0xFFEF4444),
                 modifier = Modifier.size(16.dp)
             )
             Text(
                 "QUICK FAVORITES",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (isBento) {
+                BentoStickerBadge(
+                    text = "Favorites",
+                    icon = Icons.Default.Cookie,
+                    backgroundColor = BentoSurfaceContainerHigh,
+                    textColor = BentoCocoa
+                )
+            }
         }
 
         LazyRow(
@@ -785,20 +911,28 @@ fun QuickFavoritesRow(
             items(favoriteFoods, key = { it.id }) { food ->
                 val servingGrams = if (food.defaultServingSize > 0) food.defaultServingSize else 100
                 val cals = food.caloriesPer100g * servingGrams / 100
+                val favShape = if (isBento) RoundedCornerShape(99.dp) else RoundedCornerShape(22.dp)
+                val favBorder = if (isBento) BorderStroke(1.2.dp, BentoBorder) else BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                )
+                val favBg = if (isBento) BentoSurface else MaterialTheme.colorScheme.surfaceContainerHigh
+
                 Surface(
                     modifier = Modifier
                         .height(44.dp)
+                        .then(
+                            if (isBento) Modifier.shadow(elevation = 2.dp, shape = favShape, spotColor = BentoCocoa.copy(alpha = 0.12f))
+                            else Modifier
+                        )
                         .applePressEffect(pressedScale = 0.94f) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             soundManager.playSound("power_up")
                             onQuickLog(food)
                         },
-                    shape = RoundedCornerShape(22.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
+                    shape = favShape,
+                    color = favBg,
+                    border = favBorder
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
@@ -808,18 +942,18 @@ fun QuickFavoritesRow(
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Quick add ${food.name}",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
                             food.name,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isBento) FontWeight.Bold else FontWeight.SemiBold),
+                            color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             "${cals} kcal",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isBento) FontWeight.Medium else FontWeight.Normal),
+                            color = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -2087,6 +2221,14 @@ fun UnifiedMealsCard(
                                 color = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        if (isBento) {
+                            when (typeKey) {
+                                MealTypes.BREAKFAST -> BentoStickerBadge("Small Batch", icon = Icons.Default.Cookie, backgroundColor = BentoSurfaceContainerHigh, textColor = BentoCocoa)
+                                MealTypes.LUNCH -> BentoStickerBadge("100% Real", icon = Icons.Default.EggAlt, backgroundColor = BentoBerryPink, textColor = Color.White)
+                                MealTypes.DINNER -> BentoStickerBadge("Heart-Made", icon = Icons.Default.Favorite, backgroundColor = BentoCocoa, textColor = Color.White)
+                                else -> BentoStickerBadge("Handcrafted", icon = Icons.Default.Icecream, backgroundColor = BentoBerryPink, textColor = Color.White)
+                            }
+                        }
                     }
 
                     Row(
@@ -2257,15 +2399,23 @@ fun UnifiedMealsCard(
                             Icon(
                                 Icons.Default.AddCircle,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                                tint = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
                                 "Nessun alimento registrato • Tocca per aggiungere",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isBento) FontWeight.Medium else FontWeight.Normal),
+                                color = if (isBento) BentoCocoa.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
+                    }
+                    if (isBento && typeKey == MealTypes.SNACK) {
+                        BakeryAwningStripes(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(10.dp)
+                                .clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))
+                        )
                     }
                 }
             }
