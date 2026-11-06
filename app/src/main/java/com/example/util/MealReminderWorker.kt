@@ -34,10 +34,10 @@ class MealReminderWorker(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "FoodLab Reminders",
+                "Promemoria pasti",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Daily meal logging reminders and streak preservation alerts"
+                description = "Promemoria per registrare i pasti del giorno"
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -54,13 +54,13 @@ class MealReminderWorker(
         )
 
         val title = when (mealType.uppercase()) {
-            "BREAKFAST" -> "Breakfast Time! 🍳"
-            "LUNCH" -> "Lunch Reminder 🥗"
-            "DINNER" -> "Dinner Time! 🍽️"
-            else -> "FoodLab Reminder 🍏"
+            "BREAKFAST" -> "Colazione"
+            "LUNCH" -> "Pranzo"
+            "DINNER" -> "Cena"
+            else -> "Promemoria pasto"
         }
 
-        val text = "Don't forget to track your meal in FoodLab to keep your macros on target!"
+        val text = "Registra il tuo pasto su FoodLab per aggiornare calorie e macro."
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)

@@ -226,12 +226,59 @@ val BentoCraftColorScheme = lightColorScheme(
     outlineVariant = BentoBorder.copy(alpha = 0.25f)
 )
 
+// 5. NOTHING_OS: Industrial, monochromatic, typographically driven design system
+val NothingBlack = Color(0xFF000000)             // Pure OLED True Black canvas
+val NothingSurface = Color(0xFF111111)           // Low elevation card surface
+val NothingSurfaceRaised = Color(0xFF1A1A1A)     // Secondary elevation for chips and interactive elements
+val NothingBorder = Color(0xFF222222)            // Subtle dividers
+val NothingBorderVisible = Color(0xFF333333)     // Crisp 1px wireframe outline
+val NothingTextDisabled = Color(0xFF666666)      // Disabled / timestamps / hints
+val NothingTextSecondary = Color(0xFF999999)     // Labels, captions, metadata
+val NothingTextPrimary = Color(0xFFE8E8E8)       // Body text (90% contrast)
+val NothingTextDisplay = Color(0xFFFFFFFF)       // Hero numbers, display headlines
+val NothingRed = Color(0xFFD71921)               // Iconic Nothing Red signal dot & alert
+val NothingSuccess = Color(0xFF4A9E5C)           // Status confirmed
+val NothingWarning = Color(0xFFD4A843)           // Status pending/warning
+val NothingInteractive = Color(0xFF5B9BF6)       // Tappable metadata
+
+val NothingColorScheme = darkColorScheme(
+    primary = NothingTextDisplay,
+    onPrimary = NothingBlack,
+    primaryContainer = NothingSurfaceRaised,
+    onPrimaryContainer = NothingTextPrimary,
+    secondary = NothingRed,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0x33D71921),
+    onSecondaryContainer = NothingRed,
+    tertiary = NothingTextSecondary,
+    onTertiary = NothingBlack,
+    tertiaryContainer = NothingSurface,
+    onTertiaryContainer = NothingTextPrimary,
+    error = NothingRed,
+    onError = Color.White,
+    errorContainer = Color(0x33D71921),
+    onErrorContainer = Color.White,
+    background = NothingBlack,
+    onBackground = NothingTextPrimary,
+    surface = NothingSurface,
+    onSurface = NothingTextPrimary,
+    surfaceVariant = NothingSurfaceRaised,
+    onSurfaceVariant = NothingTextSecondary,
+    surfaceContainerLow = NothingBlack,
+    surfaceContainer = NothingSurface,
+    surfaceContainerHigh = NothingSurfaceRaised,
+    surfaceContainerHighest = Color(0xFF222222),
+    outline = NothingBorderVisible,
+    outlineVariant = NothingBorder
+)
+
 fun themePreviewColor(skin: ThemeSkin): Color {
     return when (skin) {
         ThemeSkin.ORIGINAL -> Color(0xFFFF9500)
         ThemeSkin.RETRO_DARK -> AppleBlue
         ThemeSkin.NEO_BRUTALISM -> NeoBrutalAmber
         ThemeSkin.BENTO_CRAFT -> BentoBerryPink
+        ThemeSkin.NOTHING_OS -> NothingRed
     }
 }
 
@@ -241,6 +288,7 @@ fun colorSchemeForSkin(skin: ThemeSkin): ColorScheme {
         ThemeSkin.RETRO_DARK -> RetroDarkColorScheme
         ThemeSkin.NEO_BRUTALISM -> NeoBrutalismColorScheme
         ThemeSkin.BENTO_CRAFT -> BentoCraftColorScheme
+        ThemeSkin.NOTHING_OS -> NothingColorScheme
     }
 }
 
@@ -276,6 +324,12 @@ fun macroColorsForSkin(skin: ThemeSkin): MacroColors {
             carbs = Color(0xFFD97706),    // Golden honey biscuit
             protein = Color(0xFF16A34A),  // Matcha green
             fat = Color(0xFF0284C7)       // Blueberry sky
+        )
+        ThemeSkin.NOTHING_OS -> MacroColors(
+            calories = NothingTextDisplay,
+            carbs = Color(0xFFE8E8E8),
+            protein = NothingRed,         // Iconic Nothing Red signal accent for protein
+            fat = Color(0xFF999999)
         )
     }
 }

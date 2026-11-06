@@ -1,9 +1,9 @@
 {
-  "versionCode": 43,
-  "versionName": "1.0.43",
+  "versionCode": 44,
+  "versionName": "1.0.44",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Fluidità & Performance**: eliminate latenze nelle transizioni e ottimizzate le animazioni GPU **graphicsLayer**\n• **Navigazione Swipe**: supporto **swipe orizzontale** per scorrere tra le schermate principali fuori dal diario\n• **Bento Craft Diario**: riorganizzata la hero con **mascot organica** e **chip passi compatto**\n• **Statistiche Accurate**: esclusi i giorni senza pasti dal **bilancio calorico** per evitare falsi deficit\n• **Modern Android**: avvio istantaneo dell'app all'uscita/rientro senza schermata di caricamento bloccante",
-  "releaseDate": "2026-11-04",
+  "changelog": "• **Barra di Stato & Contrasto**: icone di sistema (Wi-Fi, segnale, batteria, notifiche) sempre ad alto **contrasto dinamico** su tutti i temi\n• **Transizioni a Scorrimento**: animazioni fluide con **slide direzionale** tra le sezioni principali dell'app\n• **Swipe Gesture Interattivo**: scorrimento in tempo reale con **feedback fisico** tra i giorni nel diario e tra le schermate\n• **Dashboard Neo-Brutalism**: architettura completamente riprogettata con **billboard asimmetrico**, **macro punch-cards** e badge adesivi pop\n• **Fluidità 120 FPS**: pre-caching **beyondViewportPageCount** ed effetti **graphicsLayer** per zero ritardi",
+  "releaseDate": "2026-11-06",
   "forceUpdate": false,
-  "sha256": "bc8d5e661bdd26105435796bcec78310c1307a82d62110d89559a1c6058629c3"
+  "sha256": "3b8303d28211d2072d5f9e58310bce77c4b99b4080bc22a76f68de2af8b7aa5f"
 }

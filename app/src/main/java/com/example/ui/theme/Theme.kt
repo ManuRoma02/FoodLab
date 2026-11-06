@@ -1,5 +1,6 @@
 package com.example.ui.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -8,8 +9,12 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.example.util.ThemeSkin
 
 private val DarkColorScheme = darkColorScheme(
@@ -49,6 +54,10 @@ val MaterialTheme.isBentoCraft: Boolean
     @Composable
     get() = LocalThemeSkin.current == ThemeSkin.BENTO_CRAFT
 
+val MaterialTheme.isNothingOs: Boolean
+    @Composable
+    get() = LocalThemeSkin.current == ThemeSkin.NOTHING_OS
+
 val MaterialTheme.themeSkin: ThemeSkin
     @Composable
     get() = LocalThemeSkin.current
@@ -65,12 +74,27 @@ fun MyApplicationTheme(
     val shapes = when (themeSkin) {
         ThemeSkin.NEO_BRUTALISM -> NeoBrutalShapes
         ThemeSkin.BENTO_CRAFT -> BentoCraftShapes
+        ThemeSkin.NOTHING_OS -> NothingShapes
         else -> Shapes
     }
     val typography = when (themeSkin) {
         ThemeSkin.NEO_BRUTALISM -> NeoBrutalTypography
         ThemeSkin.BENTO_CRAFT -> BentoCraftTypography
+        ThemeSkin.NOTHING_OS -> NothingTypography
         else -> Typography
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        val isLight = colorScheme.background.luminance() > 0.5f
+        SideEffect {
+            val window = (view.context as? Activity)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = isLight
+                insetsController.isAppearanceLightNavigationBars = isLight
+            }
+        }
     }
 
     androidx.compose.runtime.CompositionLocalProvider(

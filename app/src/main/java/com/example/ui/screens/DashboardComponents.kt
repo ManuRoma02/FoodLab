@@ -22,15 +22,36 @@ import com.example.ui.theme.AppleRed
 import com.example.ui.theme.ApplePurple
 import com.example.ui.theme.AppleCornerRadiusCard
 import com.example.ui.theme.AppleCardShape
+import androidx.compose.foundation.shape.CircleShape
 import com.example.ui.theme.macroColors
 import com.example.ui.theme.isNeoBrutalist
 import com.example.ui.theme.isBentoCraft
+import com.example.ui.theme.isNothingOs
+import com.example.ui.theme.NothingBlack
+import com.example.ui.theme.NothingSurface
+import com.example.ui.theme.NothingSurfaceRaised
+import com.example.ui.theme.NothingBorder
+import com.example.ui.theme.NothingBorderVisible
+import com.example.ui.theme.NothingTextDisabled
+import com.example.ui.theme.NothingTextSecondary
+import com.example.ui.theme.NothingTextPrimary
+import com.example.ui.theme.NothingTextDisplay
+import com.example.ui.theme.NothingRed
+import com.example.ui.theme.NothingDotMatrixText
+import com.example.ui.theme.NothingSegmentedProgressBar
+import com.example.ui.theme.NothingTechnicalChip
+import com.example.ui.theme.nothingDotGridBackground
 import com.example.ui.theme.BentoCocoa
 import com.example.ui.theme.BentoBerryPink
 import com.example.ui.theme.BentoSurface
 import com.example.ui.theme.BentoSurfaceContainerHigh
 import com.example.ui.theme.BentoBorder
 import com.example.ui.theme.NeoBrutalAmber
+import com.example.ui.theme.NeoBrutalCoral
+import com.example.ui.theme.NeoBrutalMint
+import com.example.ui.theme.NeoBrutalCyan
+import com.example.ui.theme.NeoBrutalSurfaceContainerHigh
+import com.example.ui.theme.NeoBrutalSurfaceVariant
 import com.example.ui.theme.neoHardShadow
 import com.example.ui.theme.neoBorder
 import com.example.ui.theme.foodLabCardModifier
@@ -168,22 +189,27 @@ fun CompactWeightChip(
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     val chipShape = when {
+        isNothing -> RoundedCornerShape(99.dp)
         isNeo -> RoundedCornerShape(8.dp)
         isBento -> RoundedCornerShape(99.dp)
         else -> RoundedCornerShape(22.dp)
     }
     val chipBorder = when {
+        isNothing -> BorderStroke(1.dp, NothingBorderVisible)
         isNeo -> BorderStroke(1.5.dp, Color.Black)
         isBento -> BorderStroke(1.5.dp, BentoBorder)
         else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     }
     val chipBg = when {
+        isNothing -> NothingSurfaceRaised
         isNeo -> Color.White
         isBento -> BentoSurfaceContainerHigh
         else -> MaterialTheme.colorScheme.surfaceContainer
     }
     val chipContentColor = when {
+        isNothing -> NothingTextDisplay
         isNeo -> Color.Black
         isBento -> BentoCocoa
         else -> MaterialTheme.colorScheme.primary
@@ -205,16 +231,17 @@ fun CompactWeightChip(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            weightText,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = if (isNeo) FontWeight.Black else FontWeight.Bold
+            text = weightText,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = if (isNothing) FontWeight.Bold else if (isNeo || isBento) FontWeight.ExtraBold else FontWeight.SemiBold,
+                fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
             ),
-            color = chipContentColor
+            color = if (isNothing) NothingTextDisplay else if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
         )
         Icon(
             Icons.Default.Edit,
             contentDescription = "Edit weight",
-            tint = chipContentColor,
+            tint = if (isNothing) NothingRed else chipContentColor,
             modifier = Modifier.size(16.dp)
         )
     }
@@ -674,10 +701,20 @@ fun MealItemRow(
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    dragDropState: MealDragDropState? = null
+    dragDropState: MealDragDropState? = null,
+    textColor: Color? = null,
+    secondaryTextColor: Color? = null,
+    rowBackgroundColor: Color? = null,
+    macroContentColor: Color? = null,
+    macroContainerColor: Color? = null,
+    macroBorderColor: Color? = null
 ) {
     val haptic = LocalHapticFeedback.current
     val isNeo = MaterialTheme.isNeoBrutalist
+    val isBento = MaterialTheme.isBentoCraft
+    val effectiveTextColor = textColor ?: if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
+    val effectiveSecondaryColor = secondaryTextColor ?: if (isBento) BentoCocoa.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val effectiveRowBg = rowBackgroundColor ?: if (isBento) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
     var itemCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val isBeingDragged = dragDropState?.isDragging == true && dragDropState?.draggedMeal?.id == meal.id
 
@@ -734,7 +771,7 @@ fun MealItemRow(
                     .graphicsLayer {
                         alpha = if (isBeingDragged) 0.30f else 1.0f
                     }
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .background(effectiveRowBg)
                     .onGloballyPositioned { coords ->
                         itemCoordinates = coords
                     }
@@ -811,12 +848,12 @@ fun MealItemRow(
                             Text(
                                 meal.foodName,
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = effectiveTextColor
                             )
                             Text(
                                 " (${meal.quantityGrams}g)",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = effectiveSecondaryColor
                             )
                         }
                         Row(
@@ -826,17 +863,26 @@ fun MealItemRow(
                             MacroBadge(
                                 label = "C",
                                 value = "${meal.carbs.roundToInt()}g",
-                                color = MaterialTheme.macroColors.carbs
+                                color = MaterialTheme.macroColors.carbs,
+                                contentColor = macroContentColor,
+                                containerColor = macroContainerColor,
+                                borderColor = macroBorderColor
                             )
                             MacroBadge(
                                 label = "P",
                                 value = "${meal.protein.roundToInt()}g",
-                                color = MaterialTheme.macroColors.protein
+                                color = MaterialTheme.macroColors.protein,
+                                contentColor = macroContentColor,
+                                containerColor = macroContainerColor,
+                                borderColor = macroBorderColor
                             )
                             MacroBadge(
                                 label = "F",
                                 value = "${meal.fat.roundToInt()}g",
-                                color = MaterialTheme.macroColors.fat
+                                color = MaterialTheme.macroColors.fat,
+                                contentColor = macroContentColor,
+                                containerColor = macroContainerColor,
+                                borderColor = macroBorderColor
                             )
                         }
                     }
@@ -848,12 +894,12 @@ fun MealItemRow(
                     Text(
                         "${meal.calories}",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = effectiveTextColor
                     )
                     Text(
                         "KCAL",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
-                        color = accentColor
+                        color = if (isBento && textColor != null) secondaryTextColor ?: textColor else accentColor
                     )
                 }
             }
@@ -872,6 +918,7 @@ fun QuickFavoritesRow(
     val haptic = LocalHapticFeedback.current
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     val soundManager = LocalSoundManager.current
 
     Column(
@@ -886,13 +933,17 @@ fun QuickFavoritesRow(
             Icon(
                 Icons.Default.Favorite,
                 contentDescription = null,
-                tint = if (isBento) BentoBerryPink else Color(0xFFEF4444),
+                tint = if (isNothing) NothingRed else if (isBento) BentoBerryPink else Color(0xFFEF4444),
                 modifier = Modifier.size(16.dp)
             )
             Text(
-                "QUICK FAVORITES",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurfaceVariant
+                if (isNothing) "// QUICK FAVORITES" else "QUICK FAVORITES",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null,
+                    letterSpacing = if (isNothing) 1.0.sp else 0.sp
+                ),
+                color = if (isNothing) NothingTextDisplay else if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (isBento) {
                 BentoStickerBadge(
@@ -911,18 +962,28 @@ fun QuickFavoritesRow(
             items(favoriteFoods, key = { it.id }) { food ->
                 val servingGrams = if (food.defaultServingSize > 0) food.defaultServingSize else 100
                 val cals = food.caloriesPer100g * servingGrams / 100
-                val favShape = if (isBento) RoundedCornerShape(99.dp) else RoundedCornerShape(22.dp)
-                val favBorder = if (isBento) BorderStroke(1.2.dp, BentoBorder) else BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                )
-                val favBg = if (isBento) BentoSurface else MaterialTheme.colorScheme.surfaceContainerHigh
+                val favShape = when {
+                    isNothing -> RoundedCornerShape(999.dp)
+                    isBento -> RoundedCornerShape(99.dp)
+                    else -> RoundedCornerShape(22.dp)
+                }
+                val favBorder = when {
+                    isNothing -> BorderStroke(1.dp, NothingBorderVisible)
+                    isBento -> BorderStroke(1.2.dp, BentoBorder)
+                    else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                }
+                val favBg = when {
+                    isNothing -> NothingSurfaceRaised
+                    isBento -> BentoSurface
+                    else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                }
 
                 Surface(
                     modifier = Modifier
                         .height(44.dp)
                         .then(
-                            if (isBento) Modifier.shadow(elevation = 2.dp, shape = favShape, spotColor = BentoCocoa.copy(alpha = 0.12f))
+                            if (isNothing) Modifier
+                            else if (isBento) Modifier.shadow(elevation = 2.dp, shape = favShape, spotColor = BentoCocoa.copy(alpha = 0.12f))
                             else Modifier
                         )
                         .applePressEffect(pressedScale = 0.94f) {
@@ -942,18 +1003,24 @@ fun QuickFavoritesRow(
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Quick add ${food.name}",
-                            tint = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary,
+                            tint = if (isNothing) NothingRed else if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
                             food.name,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = if (isBento) FontWeight.Bold else FontWeight.SemiBold),
-                            color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = if (isNothing || isBento) FontWeight.Bold else FontWeight.SemiBold,
+                                fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
+                            ),
+                            color = if (isNothing) NothingTextPrimary else if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            "${cals} kcal",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isBento) FontWeight.Medium else FontWeight.Normal),
-                            color = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.onSurfaceVariant
+                            if (isNothing) "[ ${cals} KCAL ]" else "${cals} kcal",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (isNothing || isBento) FontWeight.Medium else FontWeight.Normal,
+                                fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
+                            ),
+                            color = if (isNothing) NothingTextSecondary else if (isBento) BentoBerryPink else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -1187,17 +1254,21 @@ fun HorizontalDatePicker(
 
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     val containerShape = when {
+        isNothing -> RoundedCornerShape(14.dp)
         isNeo -> RoundedCornerShape(12.dp)
         isBento -> RoundedCornerShape(22.dp)
         else -> RoundedCornerShape(20.dp)
     }
     val containerBorder = when {
+        isNothing -> BorderStroke(1.dp, NothingBorderVisible)
         isNeo -> BorderStroke(2.dp, Color.Black)
         isBento -> BorderStroke(1.8.dp, BentoBorder)
         else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     }
     val containerBg = when {
+        isNothing -> NothingSurface
         isNeo -> Color.White
         isBento -> BentoSurface
         else -> MaterialTheme.colorScheme.surfaceContainer
@@ -1207,7 +1278,8 @@ fun HorizontalDatePicker(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 12.dp)
+                if (isNothing) Modifier
+                else if (isNeo) Modifier.neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 12.dp)
                 else if (isBento) Modifier.shadow(
                     elevation = 4.dp,
                     shape = containerShape,
@@ -1233,21 +1305,25 @@ fun HorizontalDatePicker(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val streakBg = when {
+                    isNothing -> NothingSurfaceRaised
                     isNeo -> NeoBrutalAmber
                     isBento -> BentoBerryPink
                     else -> AppleOrange.copy(alpha = 0.18f)
                 }
                 val streakBorder = when {
+                    isNothing -> BorderStroke(1.dp, NothingRed)
                     isNeo -> BorderStroke(1.5.dp, Color.Black)
                     isBento -> BorderStroke(1.5.dp, BentoBorder)
                     else -> BorderStroke(1.dp, AppleOrange.copy(alpha = 0.4f))
                 }
                 val streakFg = when {
+                    isNothing -> NothingRed
                     isNeo -> Color.Black
                     isBento -> Color.White
                     else -> AppleOrange
                 }
                 val streakShape = when {
+                    isNothing -> RoundedCornerShape(999.dp)
                     isNeo -> RoundedCornerShape(8.dp)
                     isBento -> RoundedCornerShape(99.dp)
                     else -> RoundedCornerShape(16.dp)
@@ -1275,7 +1351,10 @@ fun HorizontalDatePicker(
                         )
                         Text(
                             "${streakCount}D STREAK",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
+                            ),
                             color = streakFg
                         )
                     }
@@ -1296,6 +1375,7 @@ fun HorizontalDatePicker(
                     imageVector = Icons.Default.DateRange,
                     contentDescription = "Streak Calendar",
                     tint = when {
+                        isNothing -> NothingTextDisplay
                         isNeo -> Color.Black
                         isBento -> BentoBerryPink
                         else -> MaterialTheme.colorScheme.primary
@@ -1318,27 +1398,32 @@ fun HorizontalDatePicker(
             val dayNumber = remember(parsedDate) { java.text.SimpleDateFormat("dd", Locale.US).format(parsedDate) }
 
             val targetBg = when {
+                isNothing -> if (isSelected) NothingTextDisplay else if (isToday) NothingSurfaceRaised else Color.Transparent
                 isNeo -> if (isSelected) NeoBrutalAmber else if (isToday) Color(0xFFF3EFE6) else Color.White
                 isBento -> if (isSelected) BentoBerryPink else if (isToday) BentoSurfaceContainerHigh else BentoSurface
                 else -> if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
             }
             val targetBorder = when {
+                isNothing -> if (isSelected) NothingTextDisplay else if (isToday) NothingRed else Color.Transparent
                 isNeo -> if (isSelected || isToday) Color.Black else Color.Black.copy(alpha = 0.25f)
                 isBento -> if (isSelected || isToday) BentoBorder else BentoBorder.copy(alpha = 0.20f)
                 else -> if (isSelected) MaterialTheme.colorScheme.primary else if (isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Transparent
             }
             val targetBorderWidth = when {
+                isNothing -> 1.dp
                 isNeo -> if (isSelected || isToday) 1.5.dp else 1.dp
                 isBento -> if (isSelected || isToday) 1.5.dp else 1.dp
                 else -> 1.dp
             }
 
             val targetDayTextColor = when {
+                isNothing -> if (isSelected) NothingBlack else if (isToday) NothingRed else NothingTextSecondary
                 isNeo -> if (isSelected) Color.Black else if (isToday) Color.Black else Color(0xFF555555)
                 isBento -> if (isSelected) Color.White else if (isToday) BentoCocoa else BentoCocoa.copy(alpha = 0.7f)
                 else -> if (isSelected) MaterialTheme.colorScheme.onPrimary else if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             }
             val targetNumTextColor = when {
+                isNothing -> if (isSelected) NothingBlack else NothingTextPrimary
                 isNeo -> Color.Black
                 isBento -> if (isSelected) Color.White else BentoCocoa
                 else -> if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
@@ -1623,9 +1708,12 @@ fun CompactStepChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNothing = MaterialTheme.isNothingOs
     val chipShape = RoundedCornerShape(99.dp)
-    val chipBorder = BorderStroke(1.5.dp, BentoBorder)
-    val chipBg = BentoSurfaceContainerHigh
+    val chipBorder = if (isNothing) BorderStroke(1.dp, NothingBorderVisible) else BorderStroke(1.5.dp, BentoBorder)
+    val chipBg = if (isNothing) NothingSurfaceRaised else BentoSurfaceContainerHigh
+    val iconTint = if (isNothing) NothingRed else BentoBerryPink
+    val textColor = if (isNothing) NothingTextDisplay else BentoCocoa
 
     Row(
         modifier = modifier
@@ -1641,13 +1729,16 @@ fun CompactStepChip(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.DirectionsWalk,
             contentDescription = "Passi",
-            tint = BentoBerryPink,
+            tint = iconTint,
             modifier = Modifier.size(16.dp)
         )
         Text(
             text = "$steps",
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-            color = BentoCocoa
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
+            ),
+            color = textColor
         )
     }
 }
@@ -1839,6 +1930,649 @@ private fun BentoHeroHeader(
 }
 
 @Composable
+private fun NothingMacroPillar(
+    label: String,
+    code: String,
+    consumed: Int,
+    target: Int,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val progress = if (target > 0) consumed.toFloat() / target.toFloat() else 0f
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(NothingSurface)
+            .border(1.dp, NothingBorderVisible, RoundedCornerShape(12.dp))
+            .padding(12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        letterSpacing = 0.8.sp
+                    ),
+                    color = NothingTextSecondary
+                )
+                Text(
+                    text = code,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 9.sp
+                    ),
+                    color = NothingTextDisabled
+                )
+            }
+            Text(
+                text = "${consumed}g / ${target}g",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    letterSpacing = 0.2.sp
+                ),
+                color = accentColor
+            )
+            // 8-segment mini bar
+            NothingSegmentedProgressBar(
+                progress = progress,
+                segments = 8,
+                segmentHeight = 4.dp,
+                segmentGap = 1.5.dp,
+                activeColor = accentColor,
+                emptyColor = NothingBorder,
+                overflowColor = NothingRed
+            )
+        }
+    }
+}
+
+@Composable
+private fun NothingHeroHeader(
+    remainingCalories: Int,
+    targetCalories: Int,
+    loggedCalories: Int,
+    burnedCalories: Int,
+    proteinConsumed: Float,
+    proteinTarget: Float,
+    carbsConsumed: Float,
+    carbsTarget: Float,
+    fatConsumed: Float,
+    fatTarget: Float,
+    steps: Int,
+    stepsTarget: Int,
+    isMascotTyping: Boolean,
+    weightText: String,
+    onWeightClick: () -> Unit,
+    onStepClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val isOverLimit = remainingCalories < 0
+    val displayRemaining = if (remainingCalories >= 0) remainingCalories else -remainingCalories
+    val progress = if (targetCalories > 0) loggedCalories.toFloat() / targetCalories.toFloat() else 0f
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { testTag = "dashboard_hero_card" },
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // Main Nothing Industrial Instrument Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, NothingBorderVisible, RoundedCornerShape(14.dp)),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = NothingSurface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .nothingDotGridBackground(dotColor = NothingBorderVisible.copy(alpha = 0.25f))
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Top Instrument Bar: Status / System telemetry + Step & Weight Chips
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .clip(CircleShape)
+                                .background(if (isOverLimit) NothingRed else NothingTextDisplay)
+                        )
+                        Text(
+                            text = "SYS // CALORIE.MATRIX",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                letterSpacing = 1.0.sp
+                            ),
+                            color = NothingTextSecondary
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        NothingTechnicalChip(
+                            label = "PASSI",
+                            value = "$steps",
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                onStepClick()
+                            }
+                        )
+                        NothingTechnicalChip(
+                            label = "PESO",
+                            value = weightText,
+                            onClick = {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                onWeightClick()
+                            }
+                        )
+                    }
+                }
+
+                // Primary Display: Dot-matrix LED numbers + KCAL + RIMASTE / IN ECCESSO
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "$displayRemaining",
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 44.sp,
+                                    lineHeight = 44.sp,
+                                    letterSpacing = (-1.5).sp
+                                ),
+                                color = if (isOverLimit) NothingRed else NothingTextDisplay
+                            )
+                            Column(modifier = Modifier.padding(bottom = 4.dp)) {
+                                Text(
+                                    text = "KCAL",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        letterSpacing = 1.0.sp
+                                    ),
+                                    color = if (isOverLimit) NothingRed else NothingTextDisplay
+                                )
+                                Text(
+                                    text = if (isOverLimit) "IN ECCESSO" else "RIMASTE",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp,
+                                        letterSpacing = 1.2.sp
+                                    ),
+                                    color = if (isOverLimit) NothingRed else NothingTextSecondary
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "GOAL $targetCalories // LOGGED $loggedCalories // BURNED -$burnedCalories",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontSize = 10.sp,
+                                letterSpacing = 0.8.sp
+                            ),
+                            color = NothingTextSecondary
+                        )
+                    }
+
+                    // Mechanical Mascot status indicator
+                    AnimatedFoodLabMascot(
+                        state = when {
+                            isOverLimit -> MascotState.OverTarget
+                            isMascotTyping -> MascotState.Typing
+                            else -> MascotState.Idle
+                        },
+                        modifier = Modifier
+                            .size(70.dp)
+                            .padding(start = 4.dp)
+                    )
+                }
+
+                // Nothing Signature Segmented Progress Bar (discrete LED segments with 2px gaps)
+                NothingSegmentedProgressBar(
+                    progress = progress,
+                    segments = 24,
+                    segmentHeight = 8.dp,
+                    segmentGap = 2.dp,
+                    activeColor = NothingTextDisplay,
+                    emptyColor = NothingBorder,
+                    overflowColor = NothingRed
+                )
+            }
+        }
+
+        // Row of 3 Macro Pillar Cards (Space Mono uppercase, segmented indicators)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            NothingMacroPillar(
+                label = "Proteine",
+                code = "P // 01",
+                consumed = proteinConsumed.roundToInt(),
+                target = proteinTarget.roundToInt(),
+                accentColor = NothingRed,
+                modifier = Modifier.weight(1f)
+            )
+            NothingMacroPillar(
+                label = "Carboidrati",
+                code = "C // 02",
+                consumed = carbsConsumed.roundToInt(),
+                target = carbsTarget.roundToInt(),
+                accentColor = NothingTextDisplay,
+                modifier = Modifier.weight(1f)
+            )
+            NothingMacroPillar(
+                label = "Grassi",
+                code = "F // 03",
+                consumed = fatConsumed.roundToInt(),
+                target = fatTarget.roundToInt(),
+                accentColor = NothingTextSecondary,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun NeoBrutalMacroCard(
+    label: String,
+    tag: String,
+    consumed: Float,
+    target: Float,
+    bannerColor: Color,
+    bannerTextColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val progress = (consumed / target.coerceAtLeast(1f)).coerceIn(0f, 1f)
+    val cardShape = RoundedCornerShape(10.dp)
+    
+    Column(
+        modifier = modifier
+            .neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 10.dp)
+            .clip(cardShape)
+            .background(Color.White)
+            .border(2.5.dp, Color.Black, cardShape)
+    ) {
+        // Top solid banner with tag
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(bannerColor)
+                .padding(vertical = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = tag,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Black,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.5.sp
+                ),
+                color = bannerTextColor
+            )
+        }
+        
+        // Divider line under banner
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(Color.Black)
+        )
+        
+        // Body with numbers & chunky stepped meter
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "${consumed.roundToInt()}g",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp
+                ),
+                color = Color.Black
+            )
+            Text(
+                text = "/ ${target.roundToInt()}g",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp
+                ),
+                color = Color(0xFF555555)
+            )
+            
+            // 4 Chunky Stepped Blocks Meter
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                for (i in 0 until 4) {
+                    val isFilled = progress >= (i * 0.25f + 0.05f)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .background(if (isFilled) bannerColor else Color(0xFFE5DEC9))
+                            .border(1.dp, Color.Black)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NeoBrutalStatChip(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    val chipShape = RoundedCornerShape(6.dp)
+    Column(
+        modifier = modifier
+            .clip(chipShape)
+            .background(NeoBrutalSurfaceVariant)
+            .border(1.5.dp, Color.Black, chipShape)
+            .padding(vertical = 4.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 8.sp,
+                letterSpacing = 0.3.sp
+            ),
+            color = Color(0xFF444444)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Black,
+                fontSize = 11.sp
+            ),
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
+private fun NeoBrutalHeroHeader(
+    remainingCalories: Int,
+    targetCalories: Int,
+    loggedCalories: Int,
+    burnedCalories: Int,
+    proteinConsumed: Float,
+    proteinTarget: Float,
+    carbsConsumed: Float,
+    carbsTarget: Float,
+    fatConsumed: Float,
+    fatTarget: Float,
+    steps: Int,
+    stepsTarget: Int,
+    isMascotTyping: Boolean,
+    weightText: String,
+    onWeightClick: () -> Unit,
+    onStepClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { testTag = "dashboard_hero_card" },
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 1. Top Ribbon: Angled Sticker Tag on Left, Steps & Weight on Right
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .graphicsLayer { rotationZ = -1.5f }
+                    .neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 6.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(NeoBrutalAmber)
+                    .border(2.dp, Color.Black, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = "⚡ TARGET DEL GIORNO",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp,
+                        letterSpacing = 0.5.sp
+                    ),
+                    color = Color.Black
+                )
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CompactStepChip(
+                    steps = steps,
+                    stepsTarget = stepsTarget,
+                    onClick = onStepClick
+                )
+                CompactWeightChip(
+                    weightText = weightText,
+                    onClick = onWeightClick
+                )
+            }
+        }
+
+        // 2. High-Impact Asymmetric Calorie Billboard
+        val billboardShape = RoundedCornerShape(14.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .neoHardShadow(offset = 6.dp, color = Color.Black, cornerRadius = 14.dp)
+                .clip(billboardShape)
+                .background(Color.White)
+                .border(3.dp, Color.Black, billboardShape)
+                .padding(18.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = if (remainingCalories >= 0) "$remainingCalories" else "${-remainingCalories}",
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 44.sp,
+                                    letterSpacing = (-1.5).sp
+                                ),
+                                color = Color.Black
+                            )
+                            Text(
+                                text = "KCAL",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 18.sp
+                                ),
+                                color = if (remainingCalories < 0) NeoBrutalCoral else Color.Black,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                        }
+
+                        // Raw Brutalist Stamp Badge
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(if (remainingCalories >= 0) NeoBrutalCoral else Color.Black)
+                                .border(1.5.dp, Color.Black, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = if (remainingCalories >= 0) "KCAL RIMASTE" else "IN ECCESSO",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    // Mascot framed inside a playful brutalist polaroid/stamp
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .neoHardShadow(offset = 3.dp, color = Color.Black, cornerRadius = 10.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(NeoBrutalAmber.copy(alpha = 0.35f))
+                            .border(2.5.dp, Color.Black, RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedFoodLabMascot(
+                            state = when {
+                                remainingCalories < 0 -> MascotState.OverTarget
+                                isMascotTyping -> MascotState.Typing
+                                else -> MascotState.Idle
+                            },
+                            modifier = Modifier.size(68.dp)
+                        )
+                    }
+                }
+
+                // Chunky Segmented Brutalist Progress Bar
+                val progressFraction = (loggedCalories.toFloat() / targetCalories.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
+                val barShape = RoundedCornerShape(6.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp)
+                            .clip(barShape)
+                            .background(NeoBrutalSurfaceContainerHigh)
+                            .border(2.dp, Color.Black, barShape)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progressFraction)
+                                .fillMaxHeight()
+                                .background(if (remainingCalories < 0) NeoBrutalCoral else NeoBrutalAmber)
+                        )
+                    }
+
+                    // Bottom Telemetry Chips in a Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        NeoBrutalStatChip("OBIETTIVO", "$targetCalories", Modifier.weight(1f))
+                        NeoBrutalStatChip("ASSUNTE", "$loggedCalories", Modifier.weight(1f))
+                        NeoBrutalStatChip("BRUCIATE", "+$burnedCalories", Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+        // 3. Row of 3 Standalone Brutalist Macro Punch-Cards
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            NeoBrutalMacroCard(
+                label = "Proteine",
+                tag = "PROTEINE",
+                consumed = proteinConsumed,
+                target = proteinTarget,
+                bannerColor = NeoBrutalCoral,
+                bannerTextColor = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+            NeoBrutalMacroCard(
+                label = "Carboidrati",
+                tag = "CARBOIDRATI",
+                consumed = carbsConsumed,
+                target = carbsTarget,
+                bannerColor = NeoBrutalAmber,
+                bannerTextColor = Color.Black,
+                modifier = Modifier.weight(1f)
+            )
+            NeoBrutalMacroCard(
+                label = "Grassi",
+                tag = "GRASSI",
+                consumed = fatConsumed,
+                target = fatTarget,
+                bannerColor = NeoBrutalCyan,
+                bannerTextColor = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
 fun UnifiedHeroHeader(
     remainingCalories: Int,
     targetCalories: Int,
@@ -1858,6 +2592,30 @@ fun UnifiedHeroHeader(
     onStepClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNothing = MaterialTheme.isNothingOs
+    if (isNothing) {
+        NothingHeroHeader(
+            remainingCalories = remainingCalories,
+            targetCalories = targetCalories,
+            loggedCalories = loggedCalories,
+            burnedCalories = burnedCalories,
+            proteinConsumed = proteinConsumed,
+            proteinTarget = proteinTarget,
+            carbsConsumed = carbsConsumed,
+            carbsTarget = carbsTarget,
+            fatConsumed = fatConsumed,
+            fatTarget = fatTarget,
+            steps = steps,
+            stepsTarget = stepsTarget,
+            isMascotTyping = isMascotTyping,
+            weightText = weightText,
+            onWeightClick = onWeightClick,
+            onStepClick = onStepClick,
+            modifier = modifier
+        )
+        return
+    }
+
     val isBento = MaterialTheme.isBentoCraft
     if (isBento) {
         BentoHeroHeader(
@@ -1883,6 +2641,28 @@ fun UnifiedHeroHeader(
     }
 
     val isNeo = MaterialTheme.isNeoBrutalist
+    if (isNeo) {
+        NeoBrutalHeroHeader(
+            remainingCalories = remainingCalories,
+            targetCalories = targetCalories,
+            loggedCalories = loggedCalories,
+            burnedCalories = burnedCalories,
+            proteinConsumed = proteinConsumed,
+            proteinTarget = proteinTarget,
+            carbsConsumed = carbsConsumed,
+            carbsTarget = carbsTarget,
+            fatConsumed = fatConsumed,
+            fatTarget = fatTarget,
+            steps = steps,
+            stepsTarget = stepsTarget,
+            isMascotTyping = isMascotTyping,
+            weightText = weightText,
+            onWeightClick = onWeightClick,
+            onStepClick = onStepClick,
+            modifier = modifier
+        )
+        return
+    }
     val cardShape = if (isNeo) RoundedCornerShape(14.dp) else RoundedCornerShape(24.dp)
     val cardBorder = if (isNeo) BorderStroke(2.5.dp, Color.Black) else BorderStroke(
         1.dp,
@@ -2108,6 +2888,23 @@ private val DEFAULT_MEAL_CATEGORIES = listOf(
     MealCategoryInfo(MealTypes.SNACK, "Snack", Icons.Default.Icecream, Color(0xFFF59E0B))
 )
 
+private data class BentoMealTheme(
+    val mealBg: Color,
+    val itemTextColor: Color,
+    val itemSecondaryColor: Color,
+    val dividerColor: Color,
+    val macroContentColor: Color,
+    val macroContainerColor: Color?,
+    val macroBorderColor: Color?,
+    val emptyTextColor: Color,
+    val emptyIconColor: Color,
+    val addBtnBg: Color,
+    val addBtnTint: Color,
+    val headerIconBg: Color,
+    val headerIconTint: Color,
+    val badge: @Composable () -> Unit
+)
+
 @Composable
 fun UnifiedMealsCard(
     mealsByType: Map<String, List<MealEntry>>,
@@ -2122,6 +2919,7 @@ fun UnifiedMealsCard(
     val haptic = LocalHapticFeedback.current
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -2134,14 +2932,28 @@ fun UnifiedMealsCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                "PASTI DI OGGI",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.3.sp
-                ),
-                color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (isNothing) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(NothingRed)
+                    )
+                }
+                Text(
+                    "PASTI DI OGGI",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = if (isNothing) 1.2.sp else 0.3.sp,
+                        fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
+                    ),
+                    color = if (isNothing) NothingTextDisplay else if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
 
         if (favoriteFoods.isNotEmpty() && onQuickLog != null) {
@@ -2155,6 +2967,73 @@ fun UnifiedMealsCard(
             val meals = mealsByType[typeKey] ?: emptyList()
             val totalCals = meals.sumOf { it.calories }
             val isHoveredTarget = dragDropState?.hoveredMealType == typeKey && dragDropState?.sourceMealType != typeKey
+
+            val bentoStyle = when (typeKey) {
+                MealTypes.BREAKFAST -> BentoMealTheme(
+                    mealBg = BentoSurface,
+                    itemTextColor = BentoCocoa,
+                    itemSecondaryColor = BentoCocoa.copy(alpha = 0.70f),
+                    dividerColor = BentoBorder.copy(alpha = 0.12f),
+                    macroContentColor = BentoCocoa,
+                    macroContainerColor = null,
+                    macroBorderColor = null,
+                    emptyTextColor = BentoCocoa.copy(alpha = 0.75f),
+                    emptyIconColor = BentoBerryPink,
+                    addBtnBg = BentoBerryPink,
+                    addBtnTint = Color.White,
+                    headerIconBg = BentoSurfaceContainerHigh,
+                    headerIconTint = BentoCocoa,
+                    badge = { BentoStickerBadge("Small Batch", icon = Icons.Default.Cookie, backgroundColor = BentoSurfaceContainerHigh, textColor = BentoCocoa) }
+                )
+                MealTypes.LUNCH -> BentoMealTheme(
+                    mealBg = BentoCocoa,
+                    itemTextColor = Color.White,
+                    itemSecondaryColor = Color(0xFFF6EDE2).copy(alpha = 0.85f),
+                    dividerColor = Color.White.copy(alpha = 0.15f),
+                    macroContentColor = Color.White,
+                    macroContainerColor = Color.White.copy(alpha = 0.16f),
+                    macroBorderColor = Color.White.copy(alpha = 0.25f),
+                    emptyTextColor = Color.White.copy(alpha = 0.85f),
+                    emptyIconColor = BentoBerryPink,
+                    addBtnBg = BentoBerryPink,
+                    addBtnTint = Color.White,
+                    headerIconBg = BentoCocoa,
+                    headerIconTint = Color.White,
+                    badge = { BentoStickerBadge("100% Real", icon = Icons.Default.EggAlt, backgroundColor = BentoBerryPink, textColor = Color.White) }
+                )
+                MealTypes.DINNER -> BentoMealTheme(
+                    mealBg = BentoBerryPink,
+                    itemTextColor = Color.White,
+                    itemSecondaryColor = Color(0xFFFFE4EC).copy(alpha = 0.88f),
+                    dividerColor = Color.White.copy(alpha = 0.20f),
+                    macroContentColor = Color.White,
+                    macroContainerColor = Color.White.copy(alpha = 0.18f),
+                    macroBorderColor = Color.White.copy(alpha = 0.30f),
+                    emptyTextColor = Color.White.copy(alpha = 0.90f),
+                    emptyIconColor = Color.White,
+                    addBtnBg = BentoCocoa,
+                    addBtnTint = Color.White,
+                    headerIconBg = BentoBerryPink,
+                    headerIconTint = Color.White,
+                    badge = { BentoStickerBadge("Heart-Made", icon = Icons.Default.Favorite, backgroundColor = BentoCocoa, textColor = Color.White) }
+                )
+                else -> BentoMealTheme(
+                    mealBg = BentoCocoa,
+                    itemTextColor = Color.White,
+                    itemSecondaryColor = Color(0xFFF6EDE2).copy(alpha = 0.85f),
+                    dividerColor = Color.White.copy(alpha = 0.15f),
+                    macroContentColor = Color.White,
+                    macroContainerColor = Color.White.copy(alpha = 0.16f),
+                    macroBorderColor = Color.White.copy(alpha = 0.25f),
+                    emptyTextColor = Color.White.copy(alpha = 0.85f),
+                    emptyIconColor = BentoBerryPink,
+                    addBtnBg = BentoBerryPink,
+                    addBtnTint = Color.White,
+                    headerIconBg = BentoCocoa,
+                    headerIconTint = Color.White,
+                    badge = { BentoStickerBadge("Handcrafted", icon = Icons.Default.Icecream, backgroundColor = BentoBerryPink, textColor = Color.White) }
+                )
+            }
 
             val cardBorderColor by animateColorAsState(
                 targetValue = if (isHoveredTarget) accentColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
@@ -2189,35 +3068,57 @@ fun UnifiedMealsCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        if (isNothing) {
+                            val mealIndexCode = when (typeKey) {
+                                MealTypes.BREAKFAST -> "01 // "
+                                MealTypes.LUNCH -> "02 // "
+                                MealTypes.DINNER -> "03 // "
+                                else -> "04 // "
+                            }
+                            Text(
+                                mealIndexCode,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    color = NothingTextDisabled
+                                )
+                            )
+                        }
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
-                                .clip(if (isBento) RoundedCornerShape(99.dp) else RoundedCornerShape(8.dp))
-                                .background(if (isBento) BentoSurfaceContainerHigh else accentColor.copy(alpha = 0.16f))
-                                .then(if (isBento) Modifier.border(1.2.dp, BentoBorder, RoundedCornerShape(99.dp)) else Modifier),
+                                .clip(if (isBento || isNothing) RoundedCornerShape(99.dp) else RoundedCornerShape(8.dp))
+                                .background(if (isNothing) NothingSurfaceRaised else if (isBento) bentoStyle.headerIconBg else accentColor.copy(alpha = 0.16f))
+                                .then(if (isNothing) Modifier.border(1.dp, NothingBorderVisible, RoundedCornerShape(99.dp)) else if (isBento) Modifier.border(1.2.dp, BentoBorder, RoundedCornerShape(99.dp)) else Modifier),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(icon, contentDescription = title, tint = if (isBento) BentoCocoa else accentColor, modifier = Modifier.size(16.dp))
+                            Icon(icon, contentDescription = title, tint = if (isNothing) (if (meals.isNotEmpty()) NothingRed else NothingTextDisplay) else if (isBento) bentoStyle.headerIconTint else accentColor, modifier = Modifier.size(16.dp))
                         }
                         Text(
                             title,
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
+                            ),
+                            color = if (isNothing) NothingTextDisplay else if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
                         )
                         if (meals.isNotEmpty()) {
+                            if (isNothing) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(NothingRed)
+                                )
+                            }
                             Text(
                                 "(${meals.size})",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isNothing) NothingTextSecondary else if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         if (isBento) {
-                            when (typeKey) {
-                                MealTypes.BREAKFAST -> BentoStickerBadge("Small Batch", icon = Icons.Default.Cookie, backgroundColor = BentoSurfaceContainerHigh, textColor = BentoCocoa)
-                                MealTypes.LUNCH -> BentoStickerBadge("100% Real", icon = Icons.Default.EggAlt, backgroundColor = BentoBerryPink, textColor = Color.White)
-                                MealTypes.DINNER -> BentoStickerBadge("Heart-Made", icon = Icons.Default.Favorite, backgroundColor = BentoCocoa, textColor = Color.White)
-                                else -> BentoStickerBadge("Handcrafted", icon = Icons.Default.Icecream, backgroundColor = BentoBerryPink, textColor = Color.White)
-                            }
+                            bentoStyle.badge()
                         }
                     }
 
@@ -2227,27 +3128,34 @@ fun UnifiedMealsCard(
                     ) {
                         Text(
                             if (meals.isNotEmpty()) "$totalCals KCAL" else "0 KCAL",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = if (isBento) (if (meals.isNotEmpty()) BentoBerryPink else BentoCocoa.copy(alpha = 0.6f)) else (if (meals.isNotEmpty()) accentColor else MaterialTheme.colorScheme.onSurfaceVariant)
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
+                            ),
+                            color = if (isNothing) (if (meals.isNotEmpty()) NothingTextDisplay else NothingTextDisabled) else if (isBento) (if (meals.isNotEmpty()) BentoBerryPink else BentoCocoa.copy(alpha = 0.6f)) else (if (meals.isNotEmpty()) accentColor else MaterialTheme.colorScheme.onSurfaceVariant)
                         )
                         val addBtnShape = when {
+                            isNothing -> RoundedCornerShape(999.dp)
                             isNeo -> RoundedCornerShape(8.dp)
                             isBento -> RoundedCornerShape(99.dp)
                             else -> RoundedCornerShape(20.dp)
                         }
                         val addBtnBg = when {
+                            isNothing -> NothingTextDisplay
                             isNeo -> NeoBrutalAmber
-                            isBento -> BentoBerryPink
+                            isBento -> bentoStyle.addBtnBg
                             else -> accentColor.copy(alpha = 0.15f)
                         }
                         val addBtnBorder = when {
+                            isNothing -> BorderStroke(1.dp, NothingBorderVisible)
                             isNeo -> BorderStroke(1.5.dp, Color.Black)
                             isBento -> BorderStroke(1.5.dp, BentoBorder)
                             else -> BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
                         }
                         val addBtnTint = when {
+                            isNothing -> NothingBlack
                             isNeo -> Color.Black
-                            isBento -> Color.White
+                            isBento -> bentoStyle.addBtnTint
                             else -> accentColor
                         }
 
@@ -2255,7 +3163,8 @@ fun UnifiedMealsCard(
                             modifier = Modifier
                                 .heightIn(min = 44.dp)
                                 .then(
-                                    if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
+                                    if (isNothing) Modifier
+                                    else if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 8.dp)
                                     else if (isBento) Modifier.shadow(elevation = 3.dp, shape = addBtnShape, spotColor = BentoCocoa.copy(alpha = 0.15f))
                                     else Modifier
                                 )
@@ -2274,7 +3183,7 @@ fun UnifiedMealsCard(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, tint = addBtnTint, modifier = Modifier.size(14.dp))
-                                Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.Bold), color = addBtnTint)
+                                Text("Aggiungi", style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNothing || isNeo || isBento) FontWeight.Black else FontWeight.Bold, fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null), color = addBtnTint)
                             }
                         }
                     }
@@ -2282,23 +3191,27 @@ fun UnifiedMealsCard(
 
                 // Inset Grouped Container
                 val mealCardShape = when {
+                    isNothing -> RoundedCornerShape(14.dp)
                     isNeo -> RoundedCornerShape(12.dp)
                     isBento -> RoundedCornerShape(22.dp)
                     else -> RoundedCornerShape(24.dp)
                 }
                 val mealBorderWidth = when {
+                    isNothing -> 1.dp
                     isNeo -> 2.dp
                     isBento -> 1.8.dp
                     else -> cardBorderWidth
                 }
                 val mealBorderColor = when {
+                    isNothing -> if (isHoveredTarget) NothingRed else NothingBorderVisible
                     isNeo -> Color.Black
-                    isBento -> if (isHoveredTarget) accentColor else BentoBorder
+                    isBento -> if (isHoveredTarget) accentColor else if (bentoStyle.mealBg == BentoCocoa) Color(0xFF5A3D31) else BentoBorder
                     else -> cardBorderColor
                 }
                 val mealContainer = when {
+                    isNothing -> NothingSurface
                     isNeo -> Color.White
-                    isBento -> BentoSurface
+                    isBento -> bentoStyle.mealBg
                     else -> MaterialTheme.colorScheme.surfaceContainer
                 }
 
@@ -2309,7 +3222,8 @@ fun UnifiedMealsCard(
                             dragDropState?.registerMealBounds(typeKey, coordinates.boundsInRoot())
                         }
                         .then(
-                            if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
+                            if (isNothing) Modifier
+                            else if (isNeo) Modifier.neoHardShadow(offset = 4.dp, color = Color.Black, cornerRadius = 12.dp)
                             else if (isBento) Modifier.shadow(
                                 elevation = if (isHoveredTarget) 10.dp else 4.dp,
                                 shape = mealCardShape,
@@ -2359,11 +3273,17 @@ fun UnifiedMealsCard(
                                                     isDeleted = true
                                                     onDeleteMeal?.invoke(meal)
                                                 },
-                                                dragDropState = dragDropState
+                                                dragDropState = dragDropState,
+                                                textColor = if (isNothing) NothingTextPrimary else if (isBento) bentoStyle.itemTextColor else null,
+                                                secondaryTextColor = if (isNothing) NothingTextSecondary else if (isBento) bentoStyle.itemSecondaryColor else null,
+                                                rowBackgroundColor = if (isNothing || isBento) Color.Transparent else null,
+                                                macroContentColor = if (isNothing) NothingTextDisplay else if (isBento) bentoStyle.macroContentColor else null,
+                                                macroContainerColor = if (isNothing) NothingSurfaceRaised else if (isBento) bentoStyle.macroContainerColor else null,
+                                                macroBorderColor = if (isNothing) NothingBorderVisible else if (isBento) bentoStyle.macroBorderColor else null
                                             )
                                             if (index < meals.lastIndex) {
                                                 HorizontalDivider(
-                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                                                    color = if (isNothing) NothingBorder else if (isBento) bentoStyle.dividerColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
                                                     thickness = 0.5.dp,
                                                     modifier = Modifier.padding(start = 28.dp, end = 14.dp)
                                                 )
@@ -2389,13 +3309,13 @@ fun UnifiedMealsCard(
                             Icon(
                                 Icons.Default.AddCircle,
                                 contentDescription = null,
-                                tint = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                                tint = if (isNothing) NothingRed else if (isBento) bentoStyle.emptyIconColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
                                 "Nessun alimento registrato • Tocca per aggiungere",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isBento) FontWeight.Medium else FontWeight.Normal),
-                                color = if (isBento) BentoCocoa.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (isNothing || isBento) FontWeight.Medium else FontWeight.Normal, fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null),
+                                color = if (isNothing) NothingTextDisabled else if (isBento) bentoStyle.emptyTextColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
                     }

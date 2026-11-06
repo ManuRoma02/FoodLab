@@ -74,14 +74,17 @@ private fun IosSectionHeader(
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     Text(
-        text = title.uppercase(),
+        text = if (isNothing) "// ${title.uppercase()}" else title.uppercase(),
         style = MaterialTheme.typography.labelSmall.copy(
-            fontWeight = if (isNeo || isBento) FontWeight.Black else FontWeight.SemiBold,
-            letterSpacing = 0.8.sp,
-            fontSize = 11.sp
+            fontWeight = if (isNothing || isNeo || isBento) FontWeight.Black else FontWeight.SemiBold,
+            letterSpacing = if (isNothing) 1.2.sp else 0.8.sp,
+            fontSize = 11.sp,
+            fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
         ),
         color = when {
+            isNothing -> NothingTextSecondary
             isNeo -> Color.Black
             isBento -> BentoCocoa
             else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -97,17 +100,21 @@ private fun IosGroupCard(
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     val shape = when {
+        isNothing -> RoundedCornerShape(14.dp)
         isNeo -> RoundedCornerShape(12.dp)
         isBento -> RoundedCornerShape(22.dp)
         else -> RoundedCornerShape(18.dp)
     }
     val border = when {
+        isNothing -> BorderStroke(1.dp, NothingBorderVisible)
         isNeo -> BorderStroke(2.dp, Color.Black)
         isBento -> BorderStroke(1.8.dp, BentoBorder)
         else -> BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     }
     val bg = when {
+        isNothing -> NothingSurface
         isNeo -> Color.White
         isBento -> BentoSurface
         else -> MaterialTheme.colorScheme.surfaceContainer
@@ -117,7 +124,8 @@ private fun IosGroupCard(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
+                if (isNothing) Modifier
+                else if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
                 else if (isBento) Modifier.shadow(
                     elevation = 4.dp,
                     shape = shape,
@@ -1025,7 +1033,8 @@ fun SettingsScreen(
                                     ) {
                                         val allThemes = listOf(
                                             listOf(ThemeSkin.ORIGINAL, ThemeSkin.RETRO_DARK),
-                                            listOf(ThemeSkin.NEO_BRUTALISM, ThemeSkin.BENTO_CRAFT)
+                                            listOf(ThemeSkin.NEO_BRUTALISM, ThemeSkin.BENTO_CRAFT),
+                                            listOf(ThemeSkin.NOTHING_OS)
                                         )
                                         Column(
                                             modifier = Modifier
@@ -1044,13 +1053,18 @@ fun SettingsScreen(
                                                         val isSelected = theme == activeTheme
                                                         val pillBg = if (isSelected) {
                                                             when {
+                                                                theme == ThemeSkin.NOTHING_OS -> Color.White
                                                                 isNeo -> NeoBrutalAmber
                                                                 theme == ThemeSkin.BENTO_CRAFT -> BentoBerryPink
                                                                 else -> MaterialTheme.colorScheme.primary
                                                             }
                                                         } else Color.Transparent
                                                         val pillFg = if (isSelected) {
-                                                            if (isNeo) Color.Black else Color.White
+                                                            when {
+                                                                theme == ThemeSkin.NOTHING_OS -> Color.Black
+                                                                isNeo -> Color.Black
+                                                                else -> Color.White
+                                                            }
                                                         } else MaterialTheme.colorScheme.onSurfaceVariant
 
                                                         Box(
@@ -1059,7 +1073,8 @@ fun SettingsScreen(
                                                                 .clip(RoundedCornerShape(8.dp))
                                                                 .background(pillBg)
                                                                 .then(
-                                                                    if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
+                                                                    if (isSelected && theme == ThemeSkin.NOTHING_OS) Modifier.border(1.5.dp, NothingBorderVisible, RoundedCornerShape(8.dp))
+                                                                    else if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, RoundedCornerShape(8.dp))
                                                                     else if (isSelected && theme == ThemeSkin.BENTO_CRAFT) Modifier.border(1.5.dp, BentoBorder, RoundedCornerShape(8.dp))
                                                                     else Modifier
                                                                 )

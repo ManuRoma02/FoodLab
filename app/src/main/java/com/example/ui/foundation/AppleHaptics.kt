@@ -8,8 +8,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 
 /**
  * Apple Tactile Haptic Feedback Helpers.
- * Provides crisp, immediate haptic feedback (HapticFeedbackType.LongPress / tactile click)
- * aligned with Apple multimodal harmony principles.
+ * Provides haptic feedback helpers for clicks, selections, and impacts.
  */
 class AppleHaptics(private val haptic: HapticFeedback) {
     /**

@@ -108,15 +108,7 @@ private val ProgressBarColors = listOf(
 private val ProgressBarBrush = Brush.horizontalGradient(ProgressBarColors)
 
 /**
- * High-Precision Quantum Nutrient Orbit Startup Cinematic for FoodLab.
- *
- * Implements Apple Design foundations and Emil Kowalski animation physics:
- * 1. Deep OLED container (#0C0E12) running scale and alpha strictly on GPU RenderThread.
- * 2. FoodLab launcher symbol core with harmonic floating breathing.
- * 3. Volumetric radial glow breathing at the core.
- * 4. Three 3D inclined elliptical orbits (Protein +35°, Carb -40°, Fat 0°) with comet tails and rotating photons.
- * 5. Quantum lock convergence collapsing orbital radii to center accompanied by soft bloom flash and LongPress haptics.
- * 6. Smooth optical exit curve seamlessly transitioning into the app dashboard.
+ * Startup loading animation displaying nutrient orbits and progress indicator.
  */
 @Composable
 fun AppLoadingScreen(
@@ -149,7 +141,7 @@ fun AppLoadingScreen(
         }
     }
 
-    // Continuous 60/120 FPS Celestial Motion Engine
+    // Continuous rotation animation
     val infiniteTransition = rememberInfiniteTransition(label = "quantum_engine")
 
     val t by infiniteTransition.animateFloat(
@@ -499,7 +491,7 @@ fun AppLoadingScreen(
                 // Central Core Floating Symbol
                 Image(
                     painter = painterResource(id = R.drawable.foodlab_launcher_symbol),
-                    contentDescription = "FoodLab Quantum Core",
+                    contentDescription = "FoodLab logo",
                     modifier = Modifier
                         .size(72.dp)
                         .graphicsLayer {
@@ -523,7 +515,7 @@ fun AppLoadingScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "QUANTUM SYNC",
+                text = "CARICAMENTO",
                 fontWeight = FontWeight.Medium,
                 fontSize = 11.sp,
                 letterSpacing = 3.sp,

@@ -256,7 +256,7 @@ fun SearchScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "Scansiona piatto con Gemini IA",
+                                contentDescription = "Scansiona piatto",
                                 tint = Color(0xFF818CF8)
                             )
                         }
@@ -1136,13 +1136,13 @@ fun SearchScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Scansiona piatto con IA",
+                    text = "Scansiona piatto",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Scatta una foto del tuo piatto o sceglila dalla galleria per stimare calorie e macronutrienti con Gemini.",
+                    text = "Scatta una foto o sceglila dalla galleria per stimare calorie e macronutrienti.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

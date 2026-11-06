@@ -397,7 +397,7 @@ fun CreateRecipeScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Nessun ingrediente ancora aggiunto. Cerca e aggiungi ingredienti sotto.",
+                        text = "Nessun ingrediente aggiunto. Seleziona gli ingredienti in basso.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

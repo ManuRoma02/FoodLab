@@ -99,7 +99,7 @@ fun CreateFoodScreen(
                         barcodeStatusMessage = "✅ Prodotto trovato: ${food.name} (${food.brand})"
                     }
                     BarcodeLookupResult.NotFound -> {
-                        barcodeStatusMessage = "⚠️ Nessun cibo trovato per barcode $cleanCode. Inserisci i valori manualmente."
+                        barcodeStatusMessage = "⚠️ Nessun alimento trovato per $cleanCode. Inserisci i valori manualmente."
                     }
                     is BarcodeLookupResult.NetworkError -> {
                         barcodeStatusMessage = "❌ Errore di rete. Compila manualmente i valori nutrizionali."

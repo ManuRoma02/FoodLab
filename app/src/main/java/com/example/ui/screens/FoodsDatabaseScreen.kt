@@ -102,6 +102,17 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.ui.theme.isNeoBrutalist
 import com.example.ui.theme.isBentoCraft
+import com.example.ui.theme.isNothingOs
+import com.example.ui.theme.NothingBlack
+import com.example.ui.theme.NothingSurface
+import com.example.ui.theme.NothingSurfaceRaised
+import com.example.ui.theme.NothingBorder
+import com.example.ui.theme.NothingBorderVisible
+import com.example.ui.theme.NothingTextDisabled
+import com.example.ui.theme.NothingTextSecondary
+import com.example.ui.theme.NothingTextPrimary
+import com.example.ui.theme.NothingTextDisplay
+import com.example.ui.theme.NothingRed
 import com.example.ui.theme.BentoCocoa
 import com.example.ui.theme.BentoBerryPink
 import com.example.ui.theme.BentoSurface
@@ -305,22 +316,36 @@ private fun FoodsListContent(
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     Column(modifier = modifier) {
         val searchShape = when {
+            isNothing -> RoundedCornerShape(12.dp)
             isNeo -> RoundedCornerShape(10.dp)
             isBento -> RoundedCornerShape(99.dp)
             else -> RoundedCornerShape(18.dp)
         }
-        val searchBorderColor = if (isBento) BentoBorder else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-        val searchFocusedBorder = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary
-        val searchBg = if (isBento) BentoSurfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
+        val searchBorderColor = when {
+            isNothing -> NothingBorderVisible
+            isBento -> BentoBorder
+            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+        }
+        val searchFocusedBorder = when {
+            isNothing -> NothingTextDisplay
+            isBento -> BentoBerryPink
+            else -> MaterialTheme.colorScheme.primary
+        }
+        val searchBg = when {
+            isNothing -> NothingSurface
+            isBento -> BentoSurfaceContainerHigh
+            else -> MaterialTheme.colorScheme.surfaceContainer
+        }
 
         // Search Input - Apple Spotlight Style
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.bodyMedium, color = if (isBento) BentoCocoa.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary) },
+            placeholder = { Text("Cerca alimento, marca, codice a barre...", style = MaterialTheme.typography.bodyMedium.copy(fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null), color = if (isNothing) NothingTextDisabled else if (isBento) BentoCocoa.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Cerca", tint = if (isNothing) NothingRed else if (isBento) BentoBerryPink else MaterialTheme.colorScheme.primary) },
             trailingIcon = if (searchQuery.isNotBlank()) {
                 {
                     IconButton(
@@ -330,7 +355,7 @@ private fun FoodsListContent(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Cancella ricerca",
-                            tint = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (isNothing) NothingTextSecondary else if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -342,8 +367,8 @@ private fun FoodsListContent(
                 unfocusedBorderColor = searchBorderColor,
                 focusedContainerColor = searchBg,
                 unfocusedContainerColor = searchBg,
-                focusedTextColor = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
+                focusedTextColor = if (isNothing) NothingTextDisplay else if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = if (isNothing) NothingTextPrimary else if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface
             ),
             shape = searchShape
         )
@@ -358,16 +383,19 @@ private fun FoodsListContent(
             "PREFERITI" to "Preferiti"
         )
         val containerShape = when {
+            isNothing -> RoundedCornerShape(12.dp)
             isNeo -> RoundedCornerShape(10.dp)
             isBento -> RoundedCornerShape(99.dp)
             else -> RoundedCornerShape(12.dp)
         }
         val containerBg = when {
+            isNothing -> NothingSurface
             isNeo -> Color.White
             isBento -> BentoSurfaceContainerHigh
             else -> MaterialTheme.colorScheme.surfaceContainerHigh
         }
         val containerBorder = when {
+            isNothing -> BorderStroke(1.dp, NothingBorderVisible)
             isNeo -> BorderStroke(2.dp, Color.Black)
             isBento -> BorderStroke(1.2.dp, BentoBorder)
             else -> null
@@ -388,12 +416,14 @@ private fun FoodsListContent(
             filterOptions.forEach { (key, label) ->
                 val isSelected = selectedFilter == key
                 val pillShape = when {
+                    isNothing -> RoundedCornerShape(8.dp)
                     isNeo -> RoundedCornerShape(8.dp)
                     isBento -> RoundedCornerShape(99.dp)
                     else -> RoundedCornerShape(10.dp)
                 }
                 val bg = if (isSelected) {
                     when {
+                        isNothing -> NothingTextDisplay
                         isNeo -> NeoBrutalAmber
                         isBento -> BentoBerryPink
                         else -> MaterialTheme.colorScheme.primary
@@ -401,11 +431,12 @@ private fun FoodsListContent(
                 } else Color.Transparent
                 val fg = if (isSelected) {
                     when {
+                        isNothing -> NothingBlack
                         isNeo -> Color.Black
                         isBento -> Color.White
                         else -> MaterialTheme.colorScheme.onPrimary
                     }
-                } else if (isBento) BentoCocoa.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
+                } else if (isNothing) NothingTextSecondary else if (isBento) BentoCocoa.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
 
                 Box(
                     modifier = Modifier
@@ -413,7 +444,8 @@ private fun FoodsListContent(
                         .clip(pillShape)
                         .background(bg)
                         .then(
-                            if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, pillShape)
+                            if (isSelected && isNothing) Modifier.border(1.dp, NothingBorderVisible, pillShape)
+                            else if (isSelected && isNeo) Modifier.border(1.5.dp, Color.Black, pillShape)
                             else Modifier
                         )
                         .clickable {
@@ -426,7 +458,8 @@ private fun FoodsListContent(
                         text = label,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            fontFamily = if (isNothing) androidx.compose.ui.text.font.FontFamily.Monospace else null
                         ),
                         color = fg,
                         maxLines = 1

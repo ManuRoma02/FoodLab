@@ -334,3 +334,114 @@ val BentoCraftTypography = Typography(
         letterSpacing = 0.3.sp
     )
 )
+
+// Nothing OS Typography: technical monospace, ALL CAPS instrument labels, high contrast
+val NothingFontFamily: FontFamily = FontFamily.Monospace
+
+val NothingTypography = Typography(
+    displayLarge = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 36.sp,
+        lineHeight = 42.sp,
+        letterSpacing = (-1.0).sp
+    ),
+    displayMedium = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 34.sp,
+        letterSpacing = (-0.5).sp
+    ),
+    displaySmall = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 30.sp,
+        letterSpacing = (-0.3).sp
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.2).sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 25.sp,
+        letterSpacing = 0.sp
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.5.sp
+    ),
+    titleMedium = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.5.sp
+    ),
+    titleSmall = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.5.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.sp
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    ),
+    bodySmall = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    ),
+    labelLarge = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 1.0.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 1.0.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = NothingFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 10.sp,
+        lineHeight = 14.sp,
+        letterSpacing = 1.2.sp
+    )
+)

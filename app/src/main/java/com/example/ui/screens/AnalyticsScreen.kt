@@ -86,17 +86,21 @@ private fun AnalyticsCard(
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     val cardShape = when {
+        isNothing -> RoundedCornerShape(14.dp)
         isNeo -> RoundedCornerShape(12.dp)
         isBento -> RoundedCornerShape(22.dp)
         else -> RoundedCornerShape(18.dp)
     }
     val cardBorder = when {
+        isNothing -> BorderStroke(1.dp, NothingBorderVisible)
         isNeo -> BorderStroke(2.dp, Color.Black)
         isBento -> BorderStroke(1.8.dp, BentoBorder)
         else -> BorderStroke(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     }
     val cardBg = when {
+        isNothing -> NothingSurface
         isNeo -> Color.White
         isBento -> BentoSurface
         else -> MaterialTheme.colorScheme.surfaceContainer
@@ -106,7 +110,8 @@ private fun AnalyticsCard(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
+                if (isNothing) Modifier
+                else if (isNeo) Modifier.neoHardShadow(offset = 3.5.dp, color = Color.Black, cornerRadius = 12.dp)
                 else if (isBento) Modifier.shadow(
                     elevation = 4.dp,
                     shape = cardShape,
@@ -129,30 +134,40 @@ private fun AppleHighlightTile(
     subtitle: String,
     icon: ImageVector,
     iconBg: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bentoBg: Color? = null,
+    bentoTextColor: Color? = null,
+    bentoSubtitleColor: Color? = null,
+    bentoIconTint: Color? = null,
+    bentoIconBoxBg: Color? = null
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     val shape = when {
+        isNothing -> RoundedCornerShape(12.dp)
         isNeo -> RoundedCornerShape(10.dp)
         isBento -> RoundedCornerShape(18.dp)
         else -> RoundedCornerShape(14.dp)
     }
     val border = when {
+        isNothing -> BorderStroke(1.dp, NothingBorderVisible)
         isNeo -> BorderStroke(1.5.dp, Color.Black)
         isBento -> BorderStroke(1.5.dp, BentoBorder)
         else -> BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
     }
     val bg = when {
+        isNothing -> NothingSurfaceRaised
         isNeo -> Color.White
-        isBento -> BentoSurface
+        isBento -> bentoBg ?: BentoSurface
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     Box(
         modifier = modifier
             .then(
-                if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 10.dp)
+                if (isNothing) Modifier
+                else if (isNeo) Modifier.neoHardShadow(offset = 2.5.dp, color = Color.Black, cornerRadius = 10.dp)
                 else if (isBento) Modifier.shadow(elevation = 3.dp, shape = shape, spotColor = BentoCocoa.copy(alpha = 0.12f))
                 else Modifier
             )
@@ -174,20 +189,20 @@ private fun AppleHighlightTile(
                         letterSpacing = 0.5.sp,
                         fontSize = 10.sp
                     ),
-                    color = if (isBento) BentoCocoa.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isBento) (bentoSubtitleColor ?: BentoCocoa.copy(alpha = 0.7f)) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Box(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(if (isBento) RoundedCornerShape(99.dp) else RoundedCornerShape(6.dp))
-                        .background(if (isBento) BentoSurfaceContainerHigh else iconBg.copy(alpha = 0.18f))
+                        .background(if (isBento) (bentoIconBoxBg ?: BentoSurfaceContainerHigh) else iconBg.copy(alpha = 0.18f))
                         .then(if (isBento) Modifier.border(1.dp, BentoBorder, RoundedCornerShape(99.dp)) else Modifier),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (isBento) BentoBerryPink else iconBg,
+                        tint = if (isBento) (bentoIconTint ?: BentoBerryPink) else iconBg,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -199,7 +214,7 @@ private fun AppleHighlightTile(
                     fontWeight = FontWeight.Bold,
                     fontSize = 17.sp
                 ),
-                color = if (isBento) BentoCocoa else MaterialTheme.colorScheme.onSurface,
+                color = if (isBento) (bentoTextColor ?: BentoCocoa) else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
@@ -210,7 +225,7 @@ private fun AppleHighlightTile(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 ),
-                color = if (isBento) BentoCocoa.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isBento) (bentoSubtitleColor ?: BentoCocoa.copy(alpha = 0.75f)) else MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
@@ -517,7 +532,12 @@ fun AnalyticsScreen(
                         subtitle = if (loggedDaysIntakes.isNotEmpty()) "Target: $avgTarget ($calorieDiffLabel)" else "Nessun giorno registrato",
                         icon = Icons.Default.LocalFireDepartment,
                         iconBg = AppleOrange,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        bentoBg = BentoSurface,
+                        bentoTextColor = BentoCocoa,
+                        bentoSubtitleColor = BentoCocoa.copy(alpha = 0.70f),
+                        bentoIconTint = BentoBerryPink,
+                        bentoIconBoxBg = BentoSurfaceContainerHigh
                     )
 
                     val netLabel = if (loggedDaysIntakes.isEmpty()) {
@@ -541,7 +561,12 @@ fun AnalyticsScreen(
                         subtitle = netSubtitle,
                         icon = if (netDifference >= 0) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
                         iconBg = if (loggedDaysIntakes.isEmpty()) AppleOrange else (if (netDifference >= 0) Color(0xFF22C55E) else AppleRed),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        bentoBg = BentoCocoa,
+                        bentoTextColor = Color.White,
+                        bentoSubtitleColor = Color(0xFFF6EDE2).copy(alpha = 0.85f),
+                        bentoIconTint = Color.White,
+                        bentoIconBoxBg = BentoBerryPink
                     )
                 }
 
@@ -556,7 +581,12 @@ fun AnalyticsScreen(
                         subtitle = "$stepPct% dell'obiettivo ($stepGoal)",
                         icon = Icons.AutoMirrored.Filled.DirectionsWalk,
                         iconBg = ApplePurple,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        bentoBg = BentoBerryPink,
+                        bentoTextColor = Color.White,
+                        bentoSubtitleColor = Color(0xFFFFE4EC).copy(alpha = 0.90f),
+                        bentoIconTint = Color.White,
+                        bentoIconBoxBg = BentoCocoa
                     )
 
                     val weightSubtitle = if (latestWeight > 0f) {
@@ -568,7 +598,12 @@ fun AnalyticsScreen(
                         subtitle = weightSubtitle,
                         icon = Icons.Default.MonitorWeight,
                         iconBg = AppleBlue,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        bentoBg = BentoSurface,
+                        bentoTextColor = BentoCocoa,
+                        bentoSubtitleColor = BentoCocoa.copy(alpha = 0.70f),
+                        bentoIconTint = BentoBerryPink,
+                        bentoIconBoxBg = BentoSurfaceContainerHigh
                     )
                 }
             }

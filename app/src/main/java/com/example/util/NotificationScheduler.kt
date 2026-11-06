@@ -29,10 +29,10 @@ object NotificationScheduler {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager ?: return
             val reminderChannel = android.app.NotificationChannel(
                 MealReminderWorker.CHANNEL_ID,
-                "FoodLab Reminders",
+                "Promemoria pasti",
                 android.app.NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Daily meal logging reminders and streak preservation alerts"
+                description = "Promemoria per la registrazione dei pasti"
             }
             notificationManager.createNotificationChannel(reminderChannel)
         }

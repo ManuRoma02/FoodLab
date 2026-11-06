@@ -25,8 +25,11 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -39,10 +42,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -50,6 +55,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -307,34 +313,72 @@ class MainActivity : ComponentActivity() {
                             restoreState = true
                         }
                     }
+                    val coroutineScope = rememberCoroutineScope()
+                    val dragAnimatable = remember { Animatable(0f) }
+
+                    LaunchedEffect(currentRoute) {
+                        dragAnimatable.snapTo(0f)
+                    }
+
                     val canSwipeScreens = currentRoute != null && currentRoute != Routes.Dashboard && isTopLevelRoute(currentRoute)
                     val swipeModifier = if (canSwipeScreens) {
-                        Modifier.pointerInput(currentRoute) {
-                            var totalDragX = 0f
-                            val thresholdPx = with(density) { 48.dp.toPx() }
-                            detectHorizontalDragGestures(
-                                onDragStart = { totalDragX = 0f },
-                                onDragEnd = {
-                                    val currentIdx = getRouteIndex(currentRoute)
-                                    if (totalDragX > thresholdPx && currentIdx > 0) {
-                                        // Swiped right -> go to previous top-level screen
-                                        soundManager.playSound("click")
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        navigateToTopLevel(topLevelRoutes[currentIdx - 1])
-                                    } else if (totalDragX < -thresholdPx && currentIdx < topLevelRoutes.size - 1) {
-                                        // Swiped left -> go to next top-level screen
-                                        soundManager.playSound("click")
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        navigateToTopLevel(topLevelRoutes[currentIdx + 1])
+                        Modifier
+                            .graphicsLayer {
+                                translationX = dragAnimatable.value
+                            }
+                            .pointerInput(currentRoute) {
+                                val thresholdPx = with(density) { 56.dp.toPx() }
+                                val screenWidthPx = size.width.toFloat()
+                                detectHorizontalDragGestures(
+                                    onDragStart = { },
+                                    onDragEnd = {
+                                        val currentIdx = getRouteIndex(currentRoute)
+                                        val offset = dragAnimatable.value
+                                        if (offset > thresholdPx && currentIdx > 0) {
+                                            // Swiped right -> go to previous top-level screen
+                                            soundManager.playSound("click")
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            coroutineScope.launch {
+                                                dragAnimatable.animateTo(screenWidthPx, tween(140, easing = FastOutLinearInEasing))
+                                                dragAnimatable.snapTo(0f)
+                                            }
+                                            navigateToTopLevel(topLevelRoutes[currentIdx - 1])
+                                        } else if (offset < -thresholdPx && currentIdx < topLevelRoutes.size - 1) {
+                                            // Swiped left -> go to next top-level screen
+                                            soundManager.playSound("click")
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            coroutineScope.launch {
+                                                dragAnimatable.animateTo(-screenWidthPx, tween(140, easing = FastOutLinearInEasing))
+                                                dragAnimatable.snapTo(0f)
+                                            }
+                                            navigateToTopLevel(topLevelRoutes[currentIdx + 1])
+                                        } else {
+                                            coroutineScope.launch {
+                                                dragAnimatable.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
+                                            }
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        coroutineScope.launch {
+                                            dragAnimatable.animateTo(0f, spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium))
+                                        }
+                                    },
+                                    onHorizontalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        coroutineScope.launch {
+                                            val currentIdx = getRouteIndex(currentRoute)
+                                            val newOffset = dragAnimatable.value + dragAmount
+                                            // Soft resistance at boundaries
+                                            val resistedOffset = when {
+                                                currentIdx == 0 && newOffset > 0 -> newOffset * 0.35f
+                                                currentIdx == topLevelRoutes.size - 1 && newOffset < 0 -> newOffset * 0.35f
+                                                else -> newOffset
+                                            }
+                                            dragAnimatable.snapTo(resistedOffset)
+                                        }
                                     }
-                                },
-                                onDragCancel = { totalDragX = 0f },
-                                onHorizontalDrag = { change, dragAmount ->
-                                    change.consume()
-                                    totalDragX += dragAmount
-                                }
-                            )
-                        }
+                                )
+                            }
                     } else {
                         Modifier
                     }
@@ -431,7 +475,19 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                fadeIn(animationSpec = tween(130, easing = FastOutSlowInEasing))
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                if (targetIdx >= initialIdx) {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing))
+                } else {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing))
+                }
             } else {
                 fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
                 slideInHorizontally(
@@ -445,7 +501,19 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                fadeOut(animationSpec = tween(90, easing = FastOutLinearInEasing))
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                if (targetIdx >= initialIdx) {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(280, easing = FastOutLinearInEasing)
+                    ) + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
+                } else {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(280, easing = FastOutLinearInEasing)
+                    ) + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
+                }
             } else {
                 fadeOut(animationSpec = tween(140, easing = FastOutLinearInEasing)) +
                 slideOutHorizontally(
@@ -459,7 +527,19 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                fadeIn(animationSpec = tween(130, easing = FastOutSlowInEasing))
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                if (targetIdx >= initialIdx) {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing))
+                } else {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(280, easing = FastOutSlowInEasing)
+                    ) + fadeIn(animationSpec = tween(200, easing = FastOutSlowInEasing))
+                }
             } else {
                 fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
                 slideInHorizontally(
@@ -473,7 +553,19 @@ private fun FoodLabNavHost(
             val targetRoute = targetState.destination.route
             val bothTopLevel = isTopLevelRoute(initialRoute) && isTopLevelRoute(targetRoute)
             if (bothTopLevel) {
-                fadeOut(animationSpec = tween(90, easing = FastOutLinearInEasing))
+                val initialIdx = getRouteIndex(initialRoute)
+                val targetIdx = getRouteIndex(targetRoute)
+                if (targetIdx >= initialIdx) {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> -fullWidth },
+                        animationSpec = tween(280, easing = FastOutLinearInEasing)
+                    ) + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
+                } else {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(280, easing = FastOutLinearInEasing)
+                    ) + fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
+                }
             } else {
                 fadeOut(animationSpec = tween(140, easing = FastOutLinearInEasing)) +
                 slideOutHorizontally(

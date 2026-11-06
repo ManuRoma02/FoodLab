@@ -62,11 +62,7 @@ sealed interface MascotState {
 }
 
 /**
- * True 3D Interactive Mascot Studio in Pure Jetpack Compose.
- *
- * Runs a 60/120 FPS native GPU animation pipeline with 3D perspective depth,
- * organic jelly breathing & squash-stretch, floating vertical bob, interactive
- * 3D touch drag & orbit, and dynamic reactive contact shadows.
+ * Interactive mascot composable with drag rotation, spring bounce, and state-based animations.
  */
 @Composable
 fun AnimatedFoodLabMascot(
@@ -123,7 +119,7 @@ fun AnimatedFoodLabMascot(
         }
     }
 
-    // Continuous 120 FPS Organic 3D Breathing & Floating Motion
+    // Breathing and floating animation
     val motion = rememberInfiniteTransition(label = "MascotAliveMotion")
     val idlePhase by motion.animateFloat(
         initialValue = 0f,
@@ -224,7 +220,7 @@ fun AnimatedFoodLabMascot(
                 tapSequence += 1
             }
             .semantics {
-                contentDescription = "Interactive 3D FoodLab Slime & Ghost Mascot"
+                contentDescription = "Mascot FoodLab"
             },
         contentAlignment = Alignment.Center
     ) {
@@ -276,7 +272,7 @@ fun AnimatedFoodLabMascot(
                 }
         )
 
-        // 3. 3D Model Rendering with Continuous Floating Motion, Jelly Breathing, & Gyro Tilt
+        // 3. Mascot rendering with motion and tilt
         Image(
             painter = painterResource(R.drawable.foodlab_mascot_duo),
             contentDescription = null,

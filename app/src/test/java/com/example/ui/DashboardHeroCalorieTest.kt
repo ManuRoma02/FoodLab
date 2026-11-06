@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.screens.UnifiedHeroHeader
+import com.example.ui.screens.UnifiedMealsCard
 import com.example.ui.theme.CupertinoDarkColorScheme
 import com.example.util.LocalSoundManager
 import com.example.util.SoundManager
@@ -120,5 +121,203 @@ class DashboardHeroCalorieTest {
         // Steps Compact Chip in Bento Craft
         composeTestRule.onNodeWithText("8500").assertIsDisplayed().performClick()
         org.junit.Assert.assertTrue(stepClicked)
+    }
+
+    @Test
+    fun testUnifiedMealsCard_bentoCraftAlternatingCards() {
+        val sampleMeals = mapOf(
+            com.example.util.MealTypes.BREAKFAST to listOf(
+                com.example.data.MealEntry(
+                    id = 1,
+                    foodId = 1,
+                    foodName = "Avena & Frutti di Bosco",
+                    quantityGrams = 80,
+                    calories = 290,
+                    protein = 10f,
+                    carbs = 48f,
+                    fat = 5f,
+                    mealType = com.example.util.MealTypes.BREAKFAST,
+                    dateString = "2026-11-04"
+                )
+            ),
+            com.example.util.MealTypes.LUNCH to listOf(
+                com.example.data.MealEntry(
+                    id = 2,
+                    foodId = 2,
+                    foodName = "Pasta Integrale al Tonno",
+                    quantityGrams = 120,
+                    calories = 450,
+                    protein = 32f,
+                    carbs = 62f,
+                    fat = 7f,
+                    mealType = com.example.util.MealTypes.LUNCH,
+                    dateString = "2026-11-04"
+                )
+            )
+        )
+
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                com.example.ui.theme.MyApplicationTheme(themeSkin = com.example.util.ThemeSkin.BENTO_CRAFT) {
+                    UnifiedMealsCard(
+                        mealsByType = sampleMeals,
+                        favoriteFoods = emptyList(),
+                        onAddMealClick = {},
+                        onMealClick = {}
+                    )
+                }
+            }
+        }
+
+        // Section Titles and Bento Badges
+        composeTestRule.onNodeWithText("PASTI DI OGGI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Colazione").assertIsDisplayed()
+        composeTestRule.onNodeWithText("SMALL BATCH").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Pranzo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("100% REAL").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Cena").assertIsDisplayed()
+        composeTestRule.onNodeWithText("HEART-MADE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Snack").assertExists()
+        composeTestRule.onNodeWithText("HANDCRAFTED").assertExists()
+
+        // Meal Item Names and Grams inside cards
+        composeTestRule.onNodeWithText("Avena & Frutti di Bosco").assertExists()
+        composeTestRule.onNodeWithText("Pasta Integrale al Tonno").assertExists()
+    }
+
+    @Test
+    fun testUnifiedHeroHeader_nothingOsTheme() {
+        var weightClicked = false
+        var stepClicked = false
+
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                com.example.ui.theme.MyApplicationTheme(themeSkin = com.example.util.ThemeSkin.NOTHING_OS) {
+                    UnifiedHeroHeader(
+                        remainingCalories = 1750,
+                        targetCalories = 2400,
+                        loggedCalories = 650,
+                        burnedCalories = 200,
+                        proteinConsumed = 75f,
+                        proteinTarget = 160f,
+                        carbsConsumed = 110f,
+                        carbsTarget = 240f,
+                        fatConsumed = 30f,
+                        fatTarget = 70f,
+                        steps = 9200,
+                        stepsTarget = 10000,
+                        weightText = "72.0 KG",
+                        onWeightClick = { weightClicked = true },
+                        onStepClick = { stepClicked = true }
+                    )
+                }
+            }
+        }
+
+        // Primary Display
+        composeTestRule.onNodeWithText("1750").assertIsDisplayed()
+        composeTestRule.onNodeWithText("RIMASTE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("72.0 KG").assertIsDisplayed()
+
+        // 3 Macro Metrics in Nothing Pillars
+        composeTestRule.onNodeWithText("Proteine").assertIsDisplayed()
+        composeTestRule.onNodeWithText("75g / 160g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Carboidrati").assertIsDisplayed()
+        composeTestRule.onNodeWithText("110g / 240g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Grassi").assertIsDisplayed()
+        composeTestRule.onNodeWithText("30g / 70g").assertIsDisplayed()
+
+        // Telemetry
+        composeTestRule.onNodeWithText("SYS // CALORIE.MATRIX").assertIsDisplayed()
+        composeTestRule.onNodeWithText("9200").assertIsDisplayed().performClick()
+        org.junit.Assert.assertTrue(stepClicked)
+    }
+
+    @Test
+    fun testUnifiedMealsCard_nothingOsTheme() {
+        val sampleMeals = mapOf(
+            com.example.util.MealTypes.BREAKFAST to listOf(
+                com.example.data.MealEntry(
+                    id = 1,
+                    foodId = 1,
+                    foodName = "Avena & Frutti di Bosco",
+                    quantityGrams = 80,
+                    calories = 290,
+                    protein = 10f,
+                    carbs = 48f,
+                    fat = 5f,
+                    mealType = com.example.util.MealTypes.BREAKFAST,
+                    dateString = "2026-11-04"
+                )
+            )
+        )
+
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                com.example.ui.theme.MyApplicationTheme(themeSkin = com.example.util.ThemeSkin.NOTHING_OS) {
+                    UnifiedMealsCard(
+                        mealsByType = sampleMeals,
+                        favoriteFoods = emptyList(),
+                        onAddMealClick = {},
+                        onMealClick = {}
+                    )
+                }
+            }
+        }
+
+        // Section Title & Categories
+        composeTestRule.onNodeWithText("PASTI DI OGGI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Colazione").assertIsDisplayed()
+        composeTestRule.onNodeWithText("01 // ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Pranzo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("02 // ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Cena").assertIsDisplayed()
+        composeTestRule.onNodeWithText("03 // ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Snack").assertExists()
+        composeTestRule.onNodeWithText("04 // ").assertExists()
+
+        // Meal Item Names and Grams inside cards
+        composeTestRule.onNodeWithText("Avena & Frutti di Bosco").assertExists()
+    }
+
+    @Test
+    fun testUnifiedHeroHeader_neoBrutalistTheme() {
+        var weightClicked = false
+        var stepClicked = false
+
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalSoundManager provides soundManager) {
+                com.example.ui.theme.MyApplicationTheme(themeSkin = com.example.util.ThemeSkin.NEO_BRUTALISM) {
+                    UnifiedHeroHeader(
+                        remainingCalories = 1850,
+                        targetCalories = 2300,
+                        loggedCalories = 450,
+                        burnedCalories = 200,
+                        proteinConsumed = 75f,
+                        proteinTarget = 160f,
+                        carbsConsumed = 110f,
+                        carbsTarget = 250f,
+                        fatConsumed = 30f,
+                        fatTarget = 75f,
+                        steps = 7400,
+                        stepsTarget = 10000,
+                        weightText = "72.0 KG",
+                        onWeightClick = { weightClicked = true },
+                        onStepClick = { stepClicked = true }
+                    )
+                }
+            }
+        }
+
+        // Neo-Brutalist elements
+        composeTestRule.onNodeWithText("⚡ TARGET DEL GIORNO").assertIsDisplayed()
+        composeTestRule.onNodeWithText("1850").assertIsDisplayed()
+        composeTestRule.onNodeWithText("KCAL RIMASTE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("PROTEINE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("75g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("CARBOIDRATI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("110g").assertIsDisplayed()
+        composeTestRule.onNodeWithText("GRASSI").assertIsDisplayed()
+        composeTestRule.onNodeWithText("30g").assertIsDisplayed()
     }
 }

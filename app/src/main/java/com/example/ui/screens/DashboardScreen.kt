@@ -52,6 +52,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import java.util.Calendar
@@ -185,12 +186,12 @@ fun DashboardScreen(
 
     val currentSelectedDate by rememberUpdatedState(currentDate)
 
-    // Synchronize currentDate when pager settles on a new page
+    // Synchronize currentDate when pager page advances
     LaunchedEffect(pagerState, today) {
-        snapshotFlow { pagerState.settledPage }.collect { settledPage ->
-            val pageDate = dateForPageIndex(settledPage, today)
+        snapshotFlow { pagerState.currentPage }.collect { currPage ->
+            val pageDate = dateForPageIndex(currPage, today)
             if (pageDate != currentSelectedDate) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 soundManager.playSound("click")
                 onDateChange(pageDate)
             }
@@ -279,7 +280,7 @@ fun DashboardScreen(
                     .fillMaxWidth()
                     .weight(1f),
                 userScrollEnabled = !dragDropState.isDragging,
-                beyondViewportPageCount = 0
+                beyondViewportPageCount = 1
             ) { page ->
                 val pageListState = rememberSaveable(page, saver = LazyListState.Saver) {
                     LazyListState()
@@ -322,9 +323,20 @@ fun DashboardScreen(
                     pageTarget.targetCalories - pageSummary.calories + pageBurnedCalories
                 }
 
+                val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                val absOffset = kotlin.math.abs(pageOffset)
+                val pageScale = 1f - (absOffset * 0.03f)
+                val pageAlpha = 1f - (absOffset * 0.15f)
+
                 LazyColumn(
                     state = pageListState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = pageScale
+                            scaleY = pageScale
+                            alpha = pageAlpha
+                        },
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 140.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {

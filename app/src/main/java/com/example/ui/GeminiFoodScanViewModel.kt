@@ -32,7 +32,7 @@ sealed interface GeminiScanUiState {
     data object Idle : GeminiScanUiState
 
     data class Analyzing(
-        val progressHint: String = "Analisi del piatto con Gemini AI in corso..."
+        val progressHint: String = "Analisi del piatto in corso..."
     ) : GeminiScanUiState
 
     data class Success(
@@ -142,7 +142,7 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
         }
 
         lastAnalyzedBytes = jpegBytes
-        _uiState.value = GeminiScanUiState.Analyzing("Analisi del piatto con Gemini AI in corso...")
+        _uiState.value = GeminiScanUiState.Analyzing("Analisi del piatto in corso...")
 
         val outcome = scannerService.analyzeFoodImage(jpegBytes)
         outcome.fold(
@@ -155,7 +155,7 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
             },
             onFailure = { error ->
                 val message = error.message?.takeIf { it.isNotBlank() }
-                    ?: "Errore durante l'analisi del piatto con Gemini"
+                    ?: "Errore durante l'analisi del piatto"
                 _uiState.value = GeminiScanUiState.Error(
                     message = message,
                     canRetry = true

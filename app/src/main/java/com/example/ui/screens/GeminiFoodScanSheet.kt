@@ -44,9 +44,8 @@ import com.example.ui.theme.macroColors
 import com.example.util.MealTypes
 
 /**
- * Apple Design Modal Bottom Sheet for Gemini Visual Food Scanning.
- * Displays real-time states: Analyzing (pulsing AI orb), Success (dish card, macro breakdown,
- * portion adjustment, meal selector, and instant confirm CTA), and Error with retry.
+ * Modal bottom sheet for photo food scanning.
+ * Displays analyzing, success, and error states with portion adjustment and meal logging.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,7 +134,7 @@ fun GeminiFoodScanSheetContent(
                 ) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "Gemini AI",
+                        contentDescription = "Scansione alimenti",
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )

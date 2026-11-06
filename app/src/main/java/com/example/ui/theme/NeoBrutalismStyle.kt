@@ -49,8 +49,7 @@ fun Modifier.neoBorder(
 ): Modifier = this.border(width, color, RoundedCornerShape(cornerRadius))
 
 /**
- * Adaptive container modifier switching seamlessly between Apple Elevation/Border
- * and Neo-Brutalist Hard Shadow/Thick Ink Border.
+ * Adaptive container modifier supporting Apple elevation and Neo-Brutalist shadow styles.
  */
 @Composable
 fun Modifier.foodLabCardModifier(
@@ -63,7 +62,11 @@ fun Modifier.foodLabCardModifier(
 ): Modifier {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
     return when {
+        isNothing -> {
+            this.border(1.dp, NothingBorderVisible, shape)
+        }
         isNeo -> {
             this
                 .neoHardShadow(offset = neoOffset, color = Color.Black, cornerRadius = neoCornerRadius)
@@ -104,6 +107,10 @@ fun Modifier.foodLabPressEffect(
 ): Modifier {
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
+    val isNothing = MaterialTheme.isNothingOs
+    if (isNothing) {
+        return this.applePressEffect(pressedScale = 0.97f, onClick = onClick)
+    }
     if (isBento) {
         return this.applePressEffect(pressedScale = 0.93f, onClick = onClick)
     }
@@ -134,6 +141,7 @@ fun foodLabCardShape(
     neoCornerRadius: Dp = 12.dp
 ): Shape {
     return when {
+        MaterialTheme.isNothingOs -> RoundedCornerShape(14.dp)
         MaterialTheme.isNeoBrutalist -> RoundedCornerShape(neoCornerRadius)
         MaterialTheme.isBentoCraft -> RoundedCornerShape(22.dp)
         else -> defaultShape
@@ -147,6 +155,7 @@ fun foodLabCardBorder(
     neoColor: Color = Color.Black
 ): BorderStroke {
     return when {
+        MaterialTheme.isNothingOs -> BorderStroke(1.dp, NothingBorderVisible)
         MaterialTheme.isNeoBrutalist -> BorderStroke(neoWidth, neoColor)
         MaterialTheme.isBentoCraft -> BorderStroke(2.dp, BentoBorder)
         else -> defaultBorder

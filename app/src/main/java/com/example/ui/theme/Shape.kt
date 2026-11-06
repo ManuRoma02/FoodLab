@@ -61,3 +61,22 @@ val BentoCraftShapes = Shapes(
     large = RoundedCornerShape(BentoCraftCornerRadiusCard),
     extraLarge = RoundedCornerShape(BentoCraftCornerRadiusModal)
 )
+
+// Nothing OS Shapes (Industrial, flat surfaces, 12-16px cards & 999px pills)
+val NothingCornerRadiusSmall = 6.dp
+val NothingCornerRadiusMedium = 10.dp
+val NothingCornerRadiusCard = 14.dp
+val NothingCornerRadiusModal = 16.dp
+val NothingCornerRadiusPill = 999.dp
+
+val NothingCardShape = RoundedCornerShape(NothingCornerRadiusCard)
+val NothingModalShape = RoundedCornerShape(NothingCornerRadiusModal)
+val NothingPillShape = RoundedCornerShape(NothingCornerRadiusPill)
+
+val NothingShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(NothingCornerRadiusSmall),
+    medium = RoundedCornerShape(NothingCornerRadiusMedium),
+    large = RoundedCornerShape(NothingCornerRadiusCard),
+    extraLarge = RoundedCornerShape(NothingCornerRadiusModal)
+)

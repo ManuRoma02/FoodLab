@@ -53,7 +53,7 @@ class StreakGuardWorker(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 MealReminderWorker.CHANNEL_ID,
-                "FoodLab Reminders",
+                "Promemoria pasti",
                 NotificationManager.IMPORTANCE_DEFAULT
             )
             notificationManager.createNotificationChannel(channel)
@@ -72,8 +72,8 @@ class StreakGuardWorker(
 
         val notification = NotificationCompat.Builder(context, MealReminderWorker.CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Protect Your Streak! 🔥")
-            .setContentText("You've logged $consumed / $target kcal today. Log your remaining meals before midnight!")
+            .setContentTitle("Aggiorna il diario di oggi")
+            .setContentText("Hai registrato $consumed / $target kcal. Completa i pasti prima di mezzanotte.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
