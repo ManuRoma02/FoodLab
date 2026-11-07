@@ -1,9 +1,9 @@
 {
-  "versionCode": 44,
-  "versionName": "1.0.44",
+  "versionCode": 45,
+  "versionName": "1.0.45",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-debug.apk",
-  "changelog": "• **Barra di Stato & Contrasto**: icone di sistema (Wi-Fi, segnale, batteria, notifiche) sempre ad alto **contrasto dinamico** su tutti i temi\n• **Transizioni a Scorrimento**: animazioni fluide con **slide direzionale** tra le sezioni principali dell'app\n• **Swipe Gesture Interattivo**: scorrimento in tempo reale con **feedback fisico** tra i giorni nel diario e tra le schermate\n• **Dashboard Neo-Brutalism**: architettura completamente riprogettata con **billboard asimmetrico**, **macro punch-cards** e badge adesivi pop\n• **Fluidità 120 FPS**: pre-caching **beyondViewportPageCount** ed effetti **graphicsLayer** per zero ritardi",
-  "releaseDate": "2026-11-06",
+  "changelog": "• **Nothing OS & Teenage Engineering Refresh**: interfaccia hardware autentica con **Glyph Dial** a 32 segmenti LED circolari\n• **Pocket Operator LCD Pet**: mascotte sintetizzatore retro **1-bit pixel art** animata e interattiva con VU-meter sonori\n• **Canali Audio Mixer per i Pasti**: 4 channel strip modulari (`01 // COLAZIONE`, `02 // PRANZO`, ecc.) con **VU-meter LED** e pill button tattili\n• **Tipografia & Griglia Hardware**: layout OLED True Black con sfondi a **matrice di punti**, micro-metriche Space Mono e accenti **Nothing Red**",
+  "releaseDate": "2026-11-07",
   "forceUpdate": false,
-  "sha256": "3b8303d28211d2072d5f9e58310bce77c4b99b4080bc22a76f68de2af8b7aa5f"
+  "sha256": "478a8dc4b1214300d3512838056f5216fc0c04bd6df9a2f88c8b3b46b5920174"
 }

@@ -1,8 +1,15 @@
 package com.example.ui.theme
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,20 +31,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /**
  * Nothing OS 1px wireframe outline border.
@@ -135,7 +151,6 @@ fun NothingDotMatrixText(
                     }
                 }
             } else {
-                // Monospace fallback for letters not in NDOT digit map
                 Text(
                     text = char.toString(),
                     style = MaterialTheme.typography.displayMedium.copy(
@@ -237,7 +252,7 @@ fun NothingPillButton(
                 indication = null,
                 onClick = onClick
             )
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -245,6 +260,7 @@ fun NothingPillButton(
             style = MaterialTheme.typography.labelMedium.copy(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
                 letterSpacing = 1.0.sp
             ),
             color = contentColor
@@ -308,6 +324,340 @@ fun NothingTechnicalChip(
                     letterSpacing = 0.5.sp
                 ),
                 color = NothingTextDisplay
+            )
+        }
+    }
+}
+
+/**
+ * Iconic Nothing OS Glyph Progress Dial.
+ * Inspired by Nothing Phone's circular Glyph Interface and Nothing OS 3.0 circular widgets.
+ * Renders 32 discrete LED radial segments in a precise circular array on GPU Canvas.
+ */
+@Composable
+fun NothingGlyphDial(
+    remainingCalories: Int,
+    targetCalories: Int,
+    loggedCalories: Int,
+    isOverLimit: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val progress = if (targetCalories > 0) loggedCalories.toFloat() / targetCalories.toFloat() else 0f
+    val displayRemaining = if (remainingCalories >= 0) remainingCalories else -remainingCalories
+    val totalTicks = 32
+    val litTicks = (progress.coerceIn(0f, 1f) * totalTicks).roundToInt()
+    val overflowTicks = if (isOverLimit) {
+        (((progress - 1f).coerceIn(0f, 0.5f) / 0.5f) * totalTicks).roundToInt().coerceAtLeast(1)
+    } else 0
+
+    val infiniteTransition = rememberInfiniteTransition(label = "GlyphPulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "PulseAlpha"
+    )
+
+    Box(
+        modifier = modifier.size(126.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val outerRadius = size.width / 2f - 6.dp.toPx()
+            val tickLength = 8.dp.toPx()
+            val innerRadius = outerRadius - tickLength
+
+            for (i in 0 until totalTicks) {
+                val angleDeg = -90f + (i * 360f / totalTicks)
+                val angleRad = Math.toRadians(angleDeg.toDouble())
+                val cosA = cos(angleRad).toFloat()
+                val sinA = sin(angleRad).toFloat()
+
+                val start = Offset(center.x + innerRadius * cosA, center.y + innerRadius * sinA)
+                val end = Offset(center.x + outerRadius * cosA, center.y + outerRadius * sinA)
+
+                val tickColor = when {
+                    isOverLimit -> {
+                        if (i < overflowTicks) NothingRed.copy(alpha = pulseAlpha)
+                        else if (i < litTicks) NothingTextDisplay
+                        else NothingBorderVisible
+                    }
+                    i < litTicks -> NothingTextDisplay
+                    else -> NothingBorderVisible
+                }
+
+                drawLine(
+                    color = tickColor,
+                    start = start,
+                    end = end,
+                    strokeWidth = 2.5.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+            }
+
+            // 12 o'clock Nothing Red reference beacon
+            val dotCenter = Offset(center.x, center.y - outerRadius - 3.dp.toPx())
+            drawCircle(
+                color = if (isOverLimit) NothingRed else NothingRed.copy(alpha = 0.85f),
+                radius = 2.5.dp.toPx(),
+                center = dotCenter
+            )
+        }
+
+        // Center Hardware Readout
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "$displayRemaining",
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp,
+                    lineHeight = 24.sp,
+                    letterSpacing = (-1.0).sp
+                ),
+                color = if (isOverLimit) NothingRed else NothingTextDisplay
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "KCAL",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 9.sp,
+                    letterSpacing = 1.2.sp
+                ),
+                color = if (isOverLimit) NothingRed else NothingTextDisplay
+            )
+            Text(
+                text = if (isOverLimit) "IN ECCESSO" else "RIMASTE",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 8.sp,
+                    letterSpacing = 1.0.sp
+                ),
+                color = if (isOverLimit) NothingRed else NothingTextSecondary
+            )
+        }
+    }
+}
+
+// 12x12 discrete 1-bit pixel patterns for Teenage Engineering Pocket Operator LCD
+private val PO_PET_IDLE_A = intArrayOf(
+    0b000000000000,
+    0b001000001000, // antennae
+    0b001111111100, // head
+    0b011111111110,
+    0b011011110110, // eyes
+    0b011111111110,
+    0b011100001110, // mouth
+    0b001111111100, // chin
+    0b000111111000, // neck
+    0b001111111100, // body
+    0b010111111010, // arms
+    0b000100001000  // feet
+)
+
+private val PO_PET_IDLE_B = intArrayOf(
+    0b000000000000,
+    0b000100010000, // antennae sway
+    0b001111111100, // head
+    0b011111111110,
+    0b011111111110, // eyes blink
+    0b011111111110,
+    0b011011110110, // grin
+    0b001111111100,
+    0b000111111000,
+    0b001111111100,
+    0b011111111110, // arms raised
+    0b001000000100  // step
+)
+
+private val PO_PET_ALERT = intArrayOf(
+    0b000001100000, // ! top
+    0b000001100000,
+    0b000000000000, // ! dot
+    0b001111111100,
+    0b011011110110, // big eyes
+    0b011111111110,
+    0b011100001110, // open mouth
+    0b001111111100,
+    0b001111111100,
+    0b011111111110,
+    0b000111111000,
+    0b001000000100
+)
+
+/**
+ * Teenage Engineering Pocket Operator 1-bit LCD Mascot Screen.
+ * Replaces generic cartoons with an authentic hardware LCD synthesizer companion.
+ * Features animated 1-bit pixel pet, audio VU-meter bars, and interactive haptic taps.
+ */
+@Composable
+fun NothingPocketOperatorLcd(
+    isOverLimit: Boolean,
+    isTyping: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    var tapCounter by remember { mutableIntStateOf(0) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "PocketOperatorClock")
+    val frameSwitch by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1100, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "LcdFrame"
+    )
+    val vuMeterPulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(650, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "VuMeter"
+    )
+
+    val currentPattern = when {
+        isOverLimit -> PO_PET_ALERT
+        (tapCounter % 2 != 0) -> PO_PET_IDLE_B
+        frameSwitch > 1.0f -> PO_PET_IDLE_B
+        else -> PO_PET_IDLE_A
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF0C0C0C))
+            .border(1.dp, NothingBorderVisible, RoundedCornerShape(12.dp))
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                tapCounter++
+            }
+            .padding(10.dp)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // LCD Top Title Bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(if (isOverLimit) NothingRed else NothingTextDisplay)
+                    )
+                    Text(
+                        text = "PO-20",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 8.sp,
+                            letterSpacing = 0.5.sp
+                        ),
+                        color = NothingTextSecondary
+                    )
+                }
+                Text(
+                    text = if (isOverLimit) "ALRT" else if (isTyping) "SYNC" else "LIVE",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 8.sp,
+                        letterSpacing = 0.5.sp
+                    ),
+                    color = if (isOverLimit) NothingRed else NothingTextDisplay
+                )
+            }
+
+            // 1-Bit Pixel Canvas Grid
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Canvas(modifier = Modifier.size(54.dp)) {
+                    val gridSize = 12
+                    val pixelSizePx = size.width / gridSize
+                    val pixelColor = if (isOverLimit) NothingRed else NothingTextDisplay
+                    val lcdBgGrid = Color(0xFF141414)
+
+                    // Draw subtle backing grid
+                    for (r in 0 until gridSize) {
+                        for (c in 0 until gridSize) {
+                            drawRect(
+                                color = lcdBgGrid,
+                                topLeft = Offset(c * pixelSizePx + 0.5f, r * pixelSizePx + 0.5f),
+                                size = Size(pixelSizePx - 1f, pixelSizePx - 1f)
+                            )
+                        }
+                    }
+
+                    // Draw active 1-bit sprite pixels
+                    for (r in 0 until gridSize) {
+                        val rowBits = currentPattern[r]
+                        for (c in 0 until gridSize) {
+                            val isBitSet = (rowBits and (1 shl (gridSize - 1 - c))) != 0
+                            if (isBitSet) {
+                                drawRect(
+                                    color = pixelColor,
+                                    topLeft = Offset(c * pixelSizePx + 0.5f, r * pixelSizePx + 0.5f),
+                                    size = Size(pixelSizePx - 1f, pixelSizePx - 1f)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Mini Audio VU-Meter bars
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    val activeBars = vuMeterPulse.roundToInt()
+                    for (bar in 4 downTo 1) {
+                        Box(
+                            modifier = Modifier
+                                .width((bar * 5).dp)
+                                .height(3.dp)
+                                .background(
+                                    if (bar <= activeBars) (if (bar == 4) NothingRed else NothingTextDisplay)
+                                    else NothingBorderVisible
+                                )
+                        )
+                    }
+                }
+            }
+
+            // LCD Bottom Status Code
+            Text(
+                text = "LCD // MONO.DSP",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 7.sp,
+                    letterSpacing = 0.5.sp
+                ),
+                color = NothingTextDisabled
             )
         }
     }

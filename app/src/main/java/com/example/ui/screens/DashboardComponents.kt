@@ -40,6 +40,9 @@ import com.example.ui.theme.NothingRed
 import com.example.ui.theme.NothingDotMatrixText
 import com.example.ui.theme.NothingSegmentedProgressBar
 import com.example.ui.theme.NothingTechnicalChip
+import com.example.ui.theme.NothingGlyphDial
+import com.example.ui.theme.NothingPocketOperatorLcd
+import com.example.ui.theme.NothingPillButton
 import com.example.ui.theme.nothingDotGridBackground
 import com.example.ui.theme.BentoCocoa
 import com.example.ui.theme.BentoBerryPink
@@ -2093,80 +2096,35 @@ private fun NothingHeroHeader(
                     }
                 }
 
-                // Primary Display: Dot-matrix LED numbers + KCAL + RIMASTE / IN ECCESSO
+                // Primary Display: Circular Glyph Dial (Left) + Teenage Engineering Pocket Operator LCD (Right)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "$displayRemaining",
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 44.sp,
-                                    lineHeight = 44.sp,
-                                    letterSpacing = (-1.5).sp
-                                ),
-                                color = if (isOverLimit) NothingRed else NothingTextDisplay
-                            )
-                            Column(modifier = Modifier.padding(bottom = 4.dp)) {
-                                Text(
-                                    text = "KCAL",
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        letterSpacing = 1.0.sp
-                                    ),
-                                    color = if (isOverLimit) NothingRed else NothingTextDisplay
-                                )
-                                Text(
-                                    text = if (isOverLimit) "IN ECCESSO" else "RIMASTE",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 10.sp,
-                                        letterSpacing = 1.2.sp
-                                    ),
-                                    color = if (isOverLimit) NothingRed else NothingTextSecondary
-                                )
-                            }
-                        }
+                    NothingGlyphDial(
+                        remainingCalories = remainingCalories,
+                        targetCalories = targetCalories,
+                        loggedCalories = loggedCalories,
+                        isOverLimit = isOverLimit
+                    )
 
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "GOAL $targetCalories // LOGGED $loggedCalories // BURNED -$burnedCalories",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                fontSize = 10.sp,
-                                letterSpacing = 0.8.sp
-                            ),
-                            color = NothingTextSecondary
-                        )
-                    }
-
-                    // Mechanical Mascot status indicator
-                    AnimatedFoodLabMascot(
-                        state = when {
-                            isOverLimit -> MascotState.OverTarget
-                            isMascotTyping -> MascotState.Typing
-                            else -> MascotState.Idle
-                        },
-                        modifier = Modifier
-                            .size(70.dp)
-                            .padding(start = 4.dp)
+                    NothingPocketOperatorLcd(
+                        isOverLimit = isOverLimit,
+                        isTyping = isMascotTyping,
+                        modifier = Modifier.weight(1f, fill = false).padding(start = 12.dp)
                     )
                 }
+
+                Text(
+                    text = "GOAL $targetCalories // LOGGED $loggedCalories // BURNED -$burnedCalories",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        letterSpacing = 0.8.sp
+                    ),
+                    color = NothingTextSecondary
+                )
 
                 // Nothing Signature Segmented Progress Bar (discrete LED segments with 2px gaps)
                 NothingSegmentedProgressBar(
@@ -2906,6 +2864,357 @@ private data class BentoMealTheme(
 )
 
 @Composable
+private fun NothingMealsCard(
+    mealsByType: Map<String, List<MealEntry>>,
+    favoriteFoods: List<FoodItem> = emptyList(),
+    onAddMealClick: (String) -> Unit,
+    onMealClick: (MealEntry) -> Unit,
+    onQuickLog: ((FoodItem) -> Unit)? = null,
+    onDeleteMeal: ((MealEntry) -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    dragDropState: MealDragDropState? = null
+) {
+    val haptic = LocalHapticFeedback.current
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // Section Header: PASTI DI OGGI + Red signal LED
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(NothingRed)
+                )
+                Text(
+                    text = "PASTI DI OGGI",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                    ),
+                    color = NothingTextDisplay
+                )
+            }
+            Text(
+                text = "CHANNELS // 04",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.8.sp
+                ),
+                color = NothingTextDisabled
+            )
+        }
+
+        // Quick Favorites in Nothing OS pill style
+        if (favoriteFoods.isNotEmpty() && onQuickLog != null) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 2.dp)
+            ) {
+                items(favoriteFoods) { food ->
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(NothingSurfaceRaised)
+                            .border(1.dp, NothingBorderVisible, RoundedCornerShape(999.dp))
+                            .clickable {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onQuickLog(food)
+                            }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(5.dp)
+                                .clip(CircleShape)
+                                .background(NothingRed)
+                        )
+                        Text(
+                            text = food.name.uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            ),
+                            color = NothingTextDisplay
+                        )
+                        val cals = food.caloriesPer100g * (if (food.defaultServingSize > 0) food.defaultServingSize else 100) / 100
+                        Text(
+                            text = "${cals}K",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontSize = 10.sp
+                            ),
+                            color = NothingTextSecondary
+                        )
+                    }
+                }
+            }
+        }
+
+        // 4 Hardware Audio Channels
+        DEFAULT_MEAL_CATEGORIES.forEach { (typeKey, title, icon, _) ->
+            val meals = mealsByType[typeKey] ?: emptyList()
+            val totalCals = meals.sumOf { it.calories }
+            val mealIndexCode = when (typeKey) {
+                MealTypes.BREAKFAST -> "01 // "
+                MealTypes.LUNCH -> "02 // "
+                MealTypes.DINNER -> "03 // "
+                else -> "04 // "
+            }
+
+            DisposableEffect(typeKey) {
+                onDispose {
+                    dragDropState?.unregisterMealBounds(typeKey)
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(NothingSurface)
+                    .border(1.dp, NothingBorderVisible, RoundedCornerShape(14.dp))
+                    .nothingDotGridBackground(dotColor = NothingBorderVisible.copy(alpha = 0.18f))
+                    .onGloballyPositioned { coords ->
+                        dragDropState?.registerMealBounds(typeKey, coords.boundsInRoot())
+                    }
+                    .padding(14.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Channel Strip Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = mealIndexCode,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = if (meals.isNotEmpty()) NothingRed else NothingTextDisabled
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(RoundedCornerShape(99.dp))
+                                    .background(NothingSurfaceRaised)
+                                    .border(1.dp, NothingBorderVisible, RoundedCornerShape(99.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = title,
+                                    tint = if (meals.isNotEmpty()) NothingTextDisplay else NothingTextSecondary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    fontSize = 14.sp
+                                ),
+                                color = NothingTextDisplay
+                            )
+                            if (meals.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(5.dp)
+                                        .clip(CircleShape)
+                                        .background(NothingRed)
+                                )
+                                Text(
+                                    text = "(${meals.size})",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                        fontSize = 11.sp
+                                    ),
+                                    color = NothingTextSecondary
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = if (meals.isNotEmpty()) "$totalCals KCAL" else "0 KCAL",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    fontSize = 12.sp
+                                ),
+                                color = if (meals.isNotEmpty()) NothingTextDisplay else NothingTextDisabled
+                            )
+
+                            NothingPillButton(
+                                text = "+ AGGIUNGI",
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onAddMealClick(typeKey)
+                                },
+                                isPrimary = true
+                            )
+                        }
+                    }
+
+                    // Mini 14-Segment LED VU-Meter
+                    if (meals.isNotEmpty()) {
+                        NothingSegmentedProgressBar(
+                            progress = (totalCals / 700f).coerceIn(0f, 1f),
+                            segments = 14,
+                            segmentHeight = 4.dp,
+                            segmentGap = 2.dp,
+                            activeColor = NothingTextDisplay,
+                            emptyColor = NothingBorder,
+                            overflowColor = NothingRed
+                        )
+                    }
+
+                    // Content: Meal items or technical wireframe empty slot
+                    if (meals.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            meals.forEach { meal ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(NothingSurfaceRaised)
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            onMealClick(meal)
+                                        }
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(4.dp)
+                                                    .clip(CircleShape)
+                                                    .background(NothingRed)
+                                            )
+                                            Text(
+                                                text = meal.foodName,
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                ),
+                                                color = NothingTextDisplay,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                            )
+                                        }
+                                        Text(
+                                            text = "P: ${meal.protein.roundToInt()}g  C: ${meal.carbs.roundToInt()}g  F: ${meal.fat.roundToInt()}g",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                                fontSize = 10.sp
+                                            ),
+                                            color = NothingTextSecondary
+                                        )
+                                    }
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "${meal.quantityGrams}g · ${meal.calories} kcal",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 11.sp
+                                            ),
+                                            color = NothingTextDisplay
+                                        )
+                                        if (onDeleteMeal != null) {
+                                            IconButton(
+                                                onClick = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    onDeleteMeal(meal)
+                                                },
+                                                modifier = Modifier.size(24.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Close,
+                                                    contentDescription = "Rimuovi",
+                                                    tint = NothingTextDisabled,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Technical wireframe empty slot
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, NothingBorder, RoundedCornerShape(8.dp))
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "-- NESSUN ALIMENTO REGISTRATO --",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = NothingTextDisabled
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun UnifiedMealsCard(
     mealsByType: Map<String, List<MealEntry>>,
     favoriteFoods: List<FoodItem> = emptyList(),
@@ -2920,6 +3229,20 @@ fun UnifiedMealsCard(
     val isNeo = MaterialTheme.isNeoBrutalist
     val isBento = MaterialTheme.isBentoCraft
     val isNothing = MaterialTheme.isNothingOs
+
+    if (isNothing) {
+        NothingMealsCard(
+            mealsByType = mealsByType,
+            favoriteFoods = favoriteFoods,
+            onAddMealClick = onAddMealClick,
+            onMealClick = onMealClick,
+            onQuickLog = onQuickLog,
+            onDeleteMeal = onDeleteMeal,
+            modifier = modifier,
+            dragDropState = dragDropState
+        )
+        return
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
