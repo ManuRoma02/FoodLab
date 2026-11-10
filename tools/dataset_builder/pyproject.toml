@@ -1,0 +1,20 @@
+[project]
+name = "foodlab-dataset-builder"
+version = "0.1.0"
+description = "Italian food and nutrition dataset extraction and compilation pipeline for FoodLab"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+    "scrapling>=0.2.0",
+    "tqdm>=4.66.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
