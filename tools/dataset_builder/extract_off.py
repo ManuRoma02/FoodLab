@@ -199,6 +199,7 @@ def stream_off_italian_products(
     file_or_url: Union[str, Path],
     limit: Optional[int] = None,
     filter_italian: bool = True,
+    stats: Optional[Dict[str, int]] = None,
 ) -> Iterator[FoodRecord]:
     """Stream and yield validated FoodRecords for Italian products from Open Food Facts.
 
@@ -209,6 +210,7 @@ def stream_off_italian_products(
         file_or_url: Local file path or URL to OFF dump.
         limit: Maximum number of valid FoodRecord items to yield.
         filter_italian: Whether to filter strictly for Italian products.
+        stats: Optional dictionary to collect streaming ingestion metrics.
     """
     if limit is not None and limit <= 0:
         return
@@ -240,12 +242,27 @@ def stream_off_italian_products(
                     yielded = 0
                     for raw_item in data:
                         if isinstance(raw_item, dict):
+                            if stats is not None:
+                                stats["total_evaluated"] = stats.get("total_evaluated", 0) + 1
+                            is_it = is_italian_product(raw_item)
+                            if filter_italian and not is_it:
+                                if stats is not None:
+                                    stats["rejected_non_italian"] = stats.get("rejected_non_italian", 0) + 1
+                                continue
+                            if stats is not None:
+                                stats["italian_candidates"] = stats.get("italian_candidates", 0) + 1
+
                             record = parse_off_product_json(raw_item, filter_italian=filter_italian)
                             if record is not None:
+                                if stats is not None:
+                                    stats["valid_records"] = stats.get("valid_records", 0) + 1
                                 yield record
                                 yielded += 1
                                 if limit is not None and yielded >= limit:
                                     return
+                            else:
+                                if stats is not None:
+                                    stats["rejected_macros"] = stats.get("rejected_macros", 0) + 1
                     return
 
     # Streaming mode for line-delimited JSON (JSONL / JSONL.GZ / streams)
@@ -266,12 +283,28 @@ def stream_off_italian_products(
             if not isinstance(raw_item, dict):
                 continue
 
+            if stats is not None:
+                stats["total_evaluated"] = stats.get("total_evaluated", 0) + 1
+
+            is_it = is_italian_product(raw_item)
+            if filter_italian and not is_it:
+                if stats is not None:
+                    stats["rejected_non_italian"] = stats.get("rejected_non_italian", 0) + 1
+                continue
+            if stats is not None:
+                stats["italian_candidates"] = stats.get("italian_candidates", 0) + 1
+
             record = parse_off_product_json(raw_item, filter_italian=filter_italian)
             if record is not None:
+                if stats is not None:
+                    stats["valid_records"] = stats.get("valid_records", 0) + 1
                 yield record
                 yielded += 1
                 if limit is not None and yielded >= limit:
                     break
+            else:
+                if stats is not None:
+                    stats["rejected_macros"] = stats.get("rejected_macros", 0) + 1
     finally:
         if closer is not None and hasattr(closer, "close"):
             closer.close()

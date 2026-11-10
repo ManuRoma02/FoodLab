@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from tools.dataset_builder.models import FoodRecord, PortionRecord
 
@@ -273,6 +273,24 @@ class DatasetCompiler:
             if not record.name or not record.name.strip():
                 continue
 
+            # Defense-in-depth: ensure mandatory macronutrients are valid and physically consistent
+            if (
+                record.calories_100g is None
+                or record.calories_100g < 0
+                or record.calories_100g > 950
+                or record.protein_100g is None
+                or record.protein_100g < 0
+                or record.protein_100g > 100.5
+                or record.carbs_100g is None
+                or record.carbs_100g < 0
+                or record.carbs_100g > 100.5
+                or record.fat_100g is None
+                or record.fat_100g < 0
+                or record.fat_100g > 100.5
+                or (record.protein_100g + record.carbs_100g + record.fat_100g > 102.0)
+            ):
+                continue
+
             cleaned_bc = "".join(c for c in record.barcode if c.isdigit()) if record.barcode else ""
             if len(cleaned_bc) >= 4:
                 dedup_key = ("barcode", cleaned_bc)
@@ -353,8 +371,10 @@ class DatasetCompiler:
                     barcode_to_id: Dict[str, int] = {}
                     name_to_id: Dict[str, int] = {}
                     norm_name_to_id: Dict[str, int] = {}
+                    all_food_ids: Set[int] = set()
 
                     for fid, bc, fname in all_foods:
+                        all_food_ids.add(fid)
                         if bc:
                             barcode_to_id[bc] = fid
                         if fname:
@@ -380,7 +400,7 @@ class DatasetCompiler:
                             food_id = name_to_id[key]
                         elif _normalize_key_text(key) in norm_name_to_id:
                             food_id = norm_name_to_id[_normalize_key_text(key)]
-                        elif key.isdigit() and int(key) in barcode_to_id.values():
+                        elif key.isdigit() and int(key) in all_food_ids:
                             food_id = int(key)
 
                         if food_id is not None:
