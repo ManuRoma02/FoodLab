@@ -139,6 +139,26 @@ def test_parse_off_product_energy_kj_conversion():
     assert record.calories_100g == 539
 
 
+def test_parse_off_product_zero_energy_kcal_not_falsy():
+    # Water or zero calorie drink with energy_100g = 0
+    raw = {
+        "code": "8000000000005",
+        "product_name": "Acqua Minerale Naturale",
+        "countries_tags": ["en:italy"],
+        "nutriments": {
+            "energy_100g": 0,
+            "energy_unit": "kcal",
+            "proteins_100g": 0.0,
+            "carbohydrates_100g": 0.0,
+            "fat_100g": 0.0,
+        },
+    }
+    record = parse_off_product_json(raw)
+    assert record is not None
+    assert record.calories_100g == 0
+
+
+
 def test_stream_off_italian_products_jsonl_gz():
     items = [
         # Valid Italian item 1

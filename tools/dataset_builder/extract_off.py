@@ -139,7 +139,9 @@ def parse_off_product_json(
             for k in ("energy-kcal_100g", "energy-kcal", "energy_kcal")
         )
         if not has_kcal:
-            energy_val = nutriments.get("energy_100g") or nutriments.get("energy")
+            energy_val = nutriments.get("energy_100g")
+            if energy_val is None:
+                energy_val = nutriments.get("energy")
             energy_unit = str(nutriments.get("energy_unit") or "").strip().lower()
             if energy_val is not None:
                 try:
@@ -172,7 +174,7 @@ def _open_stream(file_or_url: Union[str, Path]) -> tuple[Iterator[str], Any]:
             url_str,
             headers={"User-Agent": "FoodLab-DatasetBuilder/1.0"},
         )
-        resp = urllib.request.urlopen(req)
+        resp = urllib.request.urlopen(req, timeout=30)
         is_gzip = url_str.endswith(".gz") or resp.headers.get("Content-Encoding") == "gzip"
         if is_gzip:
             gz_stream = gzip.GzipFile(fileobj=resp)

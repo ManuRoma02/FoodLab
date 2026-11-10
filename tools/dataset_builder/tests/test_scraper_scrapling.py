@@ -234,6 +234,24 @@ def test_supermarket_spider_crawl_with_mock_fetcher():
     assert records[1].name == "Fusilli N.34"
 
 
+def test_supermarket_spider_extract_links_domain_restriction():
+    spider = SupermarketSpider(base_url="https://spesa.mock")
+    html_with_mixed_links = """
+    <html><body>
+        <a href="/prodotti/pasta-1">Internal Product</a>
+        <a href="https://spesa.mock/prodotti/pasta-2">Absolute Internal</a>
+        <a href="https://external.com/cookie-policy">External Policy</a>
+        <a href="https://facebook.com/share">Social</a>
+    </body></html>
+    """
+    links = spider.extract_links(html_with_mixed_links, current_url="https://spesa.mock/catalog")
+    assert links == [
+        "https://spesa.mock/prodotti/pasta-1",
+        "https://spesa.mock/prodotti/pasta-2",
+    ]
+
+
+
 def test_scrape_supermarket_catalog_from_local_files(tmp_path: Path):
     item1 = {
         "title": "Riso Carnaroli 1kg",

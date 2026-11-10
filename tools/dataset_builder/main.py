@@ -220,7 +220,7 @@ def run_pipeline(
             try:
                 scrapling_foods = scrape_supermarket_catalog(
                     scrapling_target,
-                    limit=limit or 50,
+                    limit=limit or 500,
                 )
                 stats["scrapling"]["extracted_foods"] = len(scrapling_foods)
                 all_foods.extend(scrapling_foods)

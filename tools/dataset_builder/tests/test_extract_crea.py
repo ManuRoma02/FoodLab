@@ -126,3 +126,26 @@ def test_extract_crea_foods_real_assets_file():
         assert len(foods) >= 800
         assert len(portions) >= 800
         assert all(f.source == "CREA" for f in foods)
+
+
+def test_extract_crea_portion_regex_gram_priority():
+    """Verify gram-unit regex extracts 80g instead of leading '1' in '1 porzione (80g)'."""
+    sample_data = [
+        {"n": "Pasta", "k": 350, "p": 12.0, "cb": 72.0, "f": 1.5, "pt": "1 porzione (80g)"},
+        {"n": "Riso", "k": 350, "p": 7.0, "cb": 78.0, "f": 0.5, "pt": "1 porzione (80 grammi)"},
+        {"n": "Pane", "k": 260, "p": 8.0, "cb": 50.0, "f": 1.0, "pt": "50"},
+    ]
+    with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".json", encoding="utf-8") as f:
+        json.dump(sample_data, f)
+        path = f.name
+
+    try:
+        foods, portions = extract_crea_foods(path)
+        assert len(foods) == 3
+        assert len(portions) == 3
+        assert portions[0].weight_grams == 80.0
+        assert portions[1].weight_grams == 80.0
+        assert portions[2].weight_grams == 50.0
+    finally:
+        os.remove(path)
+

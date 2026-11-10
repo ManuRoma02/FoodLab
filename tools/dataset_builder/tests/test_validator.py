@@ -123,3 +123,10 @@ def test_portion_record_creation():
     assert portion.food_barcode_or_key == "8076809513753"
     assert portion.name == "1 biscotto"
     assert portion.weight_grams == 12.5
+
+
+def test_parse_numeric_rejects_booleans():
+    from tools.dataset_builder.validator import _parse_numeric
+    assert _parse_numeric(True) is None
+    assert _parse_numeric(False) is None
+

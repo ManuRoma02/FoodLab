@@ -6,14 +6,12 @@ raw HTML product pages, JSON-LD Schema.org metadata, and nutrition tables.
 
 from __future__ import annotations
 
-import html
 import json
 import logging
 from pathlib import Path
 import re
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 import urllib.parse
-import urllib.request
 
 import requests
 
@@ -613,18 +611,20 @@ class SupermarketSpider:
                 href = a["href"].strip()
                 if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
                     continue
-                full_url = urllib.parse.urljoin(base + "/" if base and not base.endswith("/") else base, href)
-                if full_url not in links:
-                    links.append(full_url)
+                link = urllib.parse.urljoin(base + "/" if base and not base.endswith("/") else base, href)
+                if not self.base_url or urllib.parse.urlparse(link).netloc == urllib.parse.urlparse(self.base_url).netloc:
+                    if link not in links:
+                        links.append(link)
         else:
             raw_hrefs = re.findall(r'href=["\']([^"\']+)["\']', html_content, re.IGNORECASE)
             for href in raw_hrefs:
                 href = href.strip()
                 if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
                     continue
-                full_url = urllib.parse.urljoin(base + "/" if base and not base.endswith("/") else base, href)
-                if full_url not in links:
-                    links.append(full_url)
+                link = urllib.parse.urljoin(base + "/" if base and not base.endswith("/") else base, href)
+                if not self.base_url or urllib.parse.urlparse(link).netloc == urllib.parse.urlparse(self.base_url).netloc:
+                    if link not in links:
+                        links.append(link)
 
         return links
 

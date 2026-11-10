@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Tuple, Union
 
 from tools.dataset_builder.models import FoodRecord, PortionRecord
@@ -65,12 +66,17 @@ def _extract_portion_record(raw: Dict[str, Any], food: FoodRecord) -> PortionRec
 
     try:
         if isinstance(raw_portion, str):
-            cleaned = raw_portion.replace(",", ".").strip()
-            import re
-            m = re.search(r"[-+]?\d*\.?\d+", cleaned)
-            if not m:
-                return None
-            weight = float(m.group(0))
+            cleaned = raw_portion.strip()
+            # Prioritize explicit gram-unit regex first (e.g. "1 porzione (80g)" -> 80.0)
+            m_g = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:g|grammi)\b", cleaned, re.IGNORECASE)
+            if m_g:
+                weight = float(m_g.group(1).replace(",", "."))
+            else:
+                cleaned_dots = cleaned.replace(",", ".")
+                m = re.search(r"[-+]?\d*\.?\d+", cleaned_dots)
+                if not m:
+                    return None
+                weight = float(m.group(0))
         else:
             weight = float(raw_portion)
 

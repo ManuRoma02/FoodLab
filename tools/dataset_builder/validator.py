@@ -9,6 +9,8 @@ def _parse_numeric(val: Any) -> Optional[float]:
     """Parse numeric values from int, float, or string representations."""
     if val is None:
         return None
+    if isinstance(val, bool):
+        return None
     if isinstance(val, (int, float)):
         import math
         if math.isnan(val) or math.isinf(val):
