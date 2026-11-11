@@ -29,12 +29,30 @@ object SearchOptimizer {
         "kfc" to "kentucky chicken"
     )
 
+    val ITALIAN_STOPWORDS: Set<String> = setOf(
+        "il", "lo", "la", "i", "gli", "le",
+        "un", "uno", "una", "un'",
+        "di", "del", "dello", "della", "dei", "degli", "delle",
+        "a", "ad", "al", "allo", "alla", "ai", "agli", "alle",
+        "da", "dal", "dallo", "dalla", "dai", "dagli", "dalle",
+        "in", "nel", "nello", "nella", "nei", "negli", "nelle",
+        "con", "col", "coi",
+        "su", "sul", "sullo", "sulla", "sui", "sugli", "sulle",
+        "per", "tra", "fra",
+        "e", "ed", "o", "od"
+    )
+
     fun normalizeQuery(query: String): String {
         return WHITESPACE_REGEX.replace(query.trim(), " ")
     }
 
     fun expandTokens(rawQuery: String): List<String> {
-        val norm = normalizeDiacritics(normalizeQuery(rawQuery)).lowercase(Locale.ROOT)
+        val sanitized = rawQuery
+            .replace('/', ' ')
+            .replace('-', ' ')
+            .replace('.', ' ')
+            .replace(',', ' ')
+        val norm = normalizeDiacritics(normalizeQuery(sanitized)).lowercase(Locale.ROOT)
         val tokens = norm.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
         val expanded = mutableListOf<String>()
         for (t in tokens) {
@@ -46,6 +64,36 @@ object SearchOptimizer {
             }
         }
         return expanded
+    }
+
+    fun tokenSqlVariants(token: String): List<String> {
+        val clean = escapeForLike(token)
+        val norm = escapeForLike(normalizeDiacritics(token))
+        val variants = linkedSetOf(clean, norm)
+
+        val target = if (norm.isNotBlank()) norm else clean
+        if (target.endsWith("e")) {
+            val base = target.dropLast(1)
+            variants.add("${base}è")
+            variants.add("${base}é")
+        } else if (target.endsWith("u")) {
+            val base = target.dropLast(1)
+            variants.add("${base}ù")
+            variants.add("${base}ú")
+        } else if (target.endsWith("a")) {
+            val base = target.dropLast(1)
+            variants.add("${base}à")
+            variants.add("${base}á")
+        } else if (target.endsWith("i")) {
+            val base = target.dropLast(1)
+            variants.add("${base}ì")
+            variants.add("${base}í")
+        } else if (target.endsWith("o")) {
+            val base = target.dropLast(1)
+            variants.add("${base}ò")
+            variants.add("${base}ó")
+        }
+        return variants.filter { it.isNotBlank() }
     }
 
     fun cacheKey(query: String): String {
@@ -91,7 +139,7 @@ object SearchOptimizer {
                     .thenBy { it.first.name.lowercase(Locale.ROOT) }
             )
             .map { it.first }
-        return if (scored.isNotEmpty()) scored else merged.take(20)
+        return scored
     }
 
     private fun defaultSort(): Comparator<FoodItem> {
@@ -207,6 +255,11 @@ object SearchOptimizer {
 
             if (token.all { it.isDigit() } && food.defaultServingSize.toString().contains(token)) {
                 score += 160
+                tokenMatched = true
+            }
+
+            if (token.all { it.isDigit() } && token.length >= 6 && food.barcode.isNotEmpty() && food.barcode.contains(token)) {
+                score += 5000
                 tokenMatched = true
             }
 

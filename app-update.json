@@ -1,9 +1,9 @@
 {
-  "versionCode": 48,
-  "versionName": "1.0.48",
+  "versionCode": 49,
+  "versionName": "1.0.49",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-release.apk",
-  "changelog": "• **Esportazione Cibi Personalizzati**: nuovo tasto nelle **Impostazioni** per condividere o copiare negli appunti tutti gli alimenti creati a mano o scansionati da **QR/barcode**\n• **Piatti Tradizionali Italiani**: aggiunte oltre **35 ricette tipiche** (Carbonara, Amatriciana, Pizza Margherita, Lasagne, Tiramisù) con porzioni standard certificate\n• **Integrazione & Fitness Suite**: estensione per marchi sportivi europei (**MyProtein**, **Prozis**, **Yamamoto**, **Enervit**)\n• **Database Room v13**: indicizzazione automatica `isUserCreated` con migrazione fluida e zero conflitti offline",
+  "changelog": "• **Ricerca Intelligente Ottimizzata**: ricerca perfetta con tolleranza per **accenti italiani** (es. caffè, tiramisù, purè), **punteggiatura**, codici a barre e **typo multi-parola**\n• **Zero Risultati Casuali**: risolto il fallback che mostrava cibi non correlati su ricerche non trovate, ora mostra correttamente lo **stato vuoto**\n• **Ordinamento per Rilevanza**: mantenuto il ranking di pertinenza in tutte le schermate del database alimenti\n• **Aggiornamento Database v5**: sincronizzazione automatica dei **218.000+ alimenti** offline su installazioni e upgrade\n• **Esportazione Cibi Migliorata**: supporto `FLAG_ACTIVITY_NEW_TASK` per condivisione immediata su ogni versione di Android",
   "releaseDate": "2026-11-11",
   "forceUpdate": false,
-  "sha256": "5fa63b8e410e9db8fd8b0945f7c5fb9cd4e727bded8b40a8742f6357621e1963"
+  "sha256": "6bb2d2044412b17f55e992cdb2d3c4e6ad6d33628a0c46bdaca821c6c2272a25"
 }

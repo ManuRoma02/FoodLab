@@ -139,15 +139,20 @@ fun FoodsDatabaseScreen(
     var selectedFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("TUTTI") }
     var selectedFoodId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
 
-    val displayedResults = remember(searchResults, selectedFilter) {
-        searchResults.filter { food ->
+    val displayedResults = remember(searchResults, selectedFilter, searchQuery) {
+        val filtered = searchResults.filter { food ->
             when (selectedFilter) {
                 "I MIEI CIBI" -> food.id > 0 && food.brand != "Recipe"
                 "RICETTE" -> food.brand == "Recipe"
                 "PREFERITI" -> food.isFavorite
                 else -> true
             }
-        }.sortedByDescending { it.useCount }
+        }
+        if (searchQuery.isBlank()) {
+            filtered.sortedByDescending { it.useCount }
+        } else {
+            filtered
+        }
     }
 
     if (isWideScreen) {

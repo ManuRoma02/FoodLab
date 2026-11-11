@@ -72,7 +72,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     putExtra(android.content.Intent.EXTRA_STREAM, uri)
                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(android.content.Intent.createChooser(shareIntent, "Export Data"))
+                val chooser = android.content.Intent.createChooser(shareIntent, "Export Data").apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(chooser)
                 _messages.tryEmit("Export ready to share.")
             } catch (e: Exception) {
                 _messages.tryEmit("Export failed. Check available storage and try again.")
@@ -138,7 +141,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     putExtra(android.content.Intent.EXTRA_STREAM, uri)
                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(android.content.Intent.createChooser(shareIntent, "Esporta Alimenti Personalizzati"))
+                val chooser = android.content.Intent.createChooser(shareIntent, "Esporta Alimenti Personalizzati").apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(chooser)
                 _messages.tryEmit("${userFoods.size} alimenti esportati e copiati negli appunti!")
             } catch (e: Exception) {
                 _messages.tryEmit("Errore durante l'esportazione degli alimenti.")

@@ -37,29 +37,90 @@ class Repository(
         val clean = SearchOptimizer.normalizeQuery(query)
         if (clean.isBlank()) return allFoods
 
+        // Direct numeric barcode check if user typed or pasted digits (e.g. 8-14 digits)
+        val digitsOnly = clean.filter(Char::isDigit)
+        if (digitsOnly.length in 8..14 && digitsOnly == clean) {
+            val escBarcode = SearchOptimizer.escapeForLike(digitsOnly)
+            val barcodeSql = "SELECT * FROM foods WHERE barcode = '$escBarcode' OR barcode LIKE '%$escBarcode%' ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 50"
+            return foodDao.searchFoodsRaw(SimpleSQLiteQuery(barcodeSql)).flatMapLatest { results ->
+                if (results.isNotEmpty()) {
+                    flowOf(results)
+                } else {
+                    executeSearchTokens(clean)
+                }
+            }
+        }
+
+        return executeSearchTokens(clean)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun executeSearchTokens(clean: String): Flow<List<FoodItem>> {
         val tokens = SearchOptimizer.expandTokens(clean)
+        if (tokens.isEmpty()) return allFoods
+
+        fun buildTokenClause(token: String): String {
+            val variants = SearchOptimizer.tokenSqlVariants(token)
+            return variants.joinToString(" OR ") { esc ->
+                "(name LIKE '%$esc%' ESCAPE '\\' OR brand LIKE '%$esc%' ESCAPE '\\')"
+            }
+        }
+
         val baseFlow = if (tokens.size > 1) {
             val whereClauses = tokens.joinToString(" AND ") { token ->
-                val esc = SearchOptimizer.escapeForLike(token)
-                "(name LIKE '%$esc%' ESCAPE '\\' OR brand LIKE '%$esc%' ESCAPE '\\')"
+                "(${buildTokenClause(token)})"
             }
             val sql = "SELECT * FROM foods WHERE $whereClauses ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
             foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
-        } else if (tokens.isNotEmpty()) {
-            foodDao.searchFoods(SearchOptimizer.escapeForLike(tokens[0]))
         } else {
-            return allFoods
+            val whereClause = buildTokenClause(tokens[0])
+            val sql = "SELECT * FROM foods WHERE $whereClause ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+            foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
         }
 
         return baseFlow.flatMapLatest { results ->
-            if (results.isEmpty() && tokens.size == 1 && tokens[0].length >= 4) {
-                // Typo prefix fallback: e.g. "nutela" -> prefix "nutel"
-                val token = tokens[0]
-                val prefixLen = (token.length - 1).coerceAtMost(5).coerceAtLeast(3)
-                val prefix = token.substring(0, prefixLen)
-                val escPrefix = SearchOptimizer.escapeForLike(prefix)
-                val fallbackSql = "SELECT * FROM foods WHERE (name LIKE '%$escPrefix%' ESCAPE '\\' OR brand LIKE '%$escPrefix%' ESCAPE '\\') ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
-                foodDao.searchFoodsRaw(SimpleSQLiteQuery(fallbackSql))
+            if (results.isEmpty()) {
+                if (tokens.size > 1) {
+                    val contentTokens = tokens.filter { it !in SearchOptimizer.ITALIAN_STOPWORDS && it.length >= 2 }
+                    val fallbackContentFlow = if (contentTokens.isNotEmpty() && contentTokens.size < tokens.size) {
+                        val contentWhere = contentTokens.joinToString(" AND ") { "(${buildTokenClause(it)})" }
+                        val contentSql = "SELECT * FROM foods WHERE $contentWhere ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+                        foodDao.searchFoodsRaw(SimpleSQLiteQuery(contentSql))
+                    } else null
+
+                    val nextFlow = fallbackContentFlow ?: run {
+                        // Multi-token prefix AND fallback for typos (e.g. "barila penne" -> prefix "bari" AND "penn")
+                        val prefixWhere = tokens.joinToString(" AND ") { t ->
+                            val pLen = if (t.length >= 4) (t.length - 1).coerceAtMost(5).coerceAtLeast(3) else t.length
+                            val pfx = t.substring(0, pLen)
+                            "(${buildTokenClause(pfx)})"
+                        }
+                        val prefixSql = "SELECT * FROM foods WHERE $prefixWhere ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+                        foodDao.searchFoodsRaw(SimpleSQLiteQuery(prefixSql))
+                    }
+
+                    nextFlow.flatMapLatest { fallbackResults ->
+                        if (fallbackResults.isNotEmpty()) {
+                            flowOf(fallbackResults)
+                        } else {
+                            // As final candidate pool for multi-token, match ANY of the content tokens with OR
+                            val orTokens = if (contentTokens.isNotEmpty()) contentTokens else tokens
+                            val orWhere = orTokens.joinToString(" OR ") { "(${buildTokenClause(it)})" }
+                            val orSql = "SELECT * FROM foods WHERE $orWhere ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 100"
+                            foodDao.searchFoodsRaw(SimpleSQLiteQuery(orSql))
+                        }
+                    }
+                } else if (tokens.size == 1 && tokens[0].length >= 4) {
+                    // Single token typo prefix fallback: e.g. "nutela" -> prefix "nutel"
+                    val token = tokens[0]
+                    val prefixLen = (token.length - 1).coerceAtMost(5).coerceAtLeast(3)
+                    val prefix = token.substring(0, prefixLen)
+                    val whereClause = buildTokenClause(prefix)
+                    val fallbackSql = "SELECT * FROM foods WHERE $whereClause ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+                    foodDao.searchFoodsRaw(SimpleSQLiteQuery(fallbackSql))
+                } else {
+                    flowOf(emptyList())
+                }
             } else {
                 flowOf(results)
             }

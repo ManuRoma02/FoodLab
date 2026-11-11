@@ -16,7 +16,7 @@ import java.util.zip.GZIPInputStream
 
 object CreaDatabaseImporter {
     private const val TAG = "CreaDatabaseImporter"
-    private const val PREF_KEY_MASTER_IMPORTED = "foodlab_master_dataset_v4"
+    private const val PREF_KEY_MASTER_IMPORTED = "foodlab_master_dataset_v5"
     private const val PREF_KEY_CREA_IMPORTED = "crea_imported_v3_enhanced"
 
     suspend fun importIfNeeded(context: Context, repository: Repository) {
@@ -63,11 +63,11 @@ object CreaDatabaseImporter {
                         db.execSQL("""
                             INSERT OR IGNORE INTO foods (
                                 id, name, brand, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g,
-                                defaultServingSize, isFavorite, useCount, barcode
+                                defaultServingSize, isFavorite, useCount, barcode, isUserCreated
                             )
                             SELECT 
                                 id, name, brand, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g,
-                                defaultServingSize, 0, 0, barcode
+                                defaultServingSize, 0, 0, barcode, 0
                             FROM master_import.foods
                         """)
                         db.execSQL("""

@@ -150,7 +150,61 @@ class SearchOptimizerTest {
         assertTrue(ranked.isNotEmpty())
     }
 
-    private fun food(id: Int, name: String, brand: String = "Test", caloriesPer100g: Int = 100, useCount: Int = 0) = FoodItem(
+    @Test
+    fun nonMatchingQueryReturnsEmptyListInsteadOfRandomFoods() {
+        val spaghetti = food(id = 1, name = "Spaghetti Barilla", brand = "Barilla")
+        val pizza = food(id = 2, name = "Pizza Margherita", brand = "Buitoni")
+
+        val ranked = SearchOptimizer.rank(listOf(spaghetti, pizza), emptyList(), "zzzznonexistent123")
+        assertTrue(ranked.isEmpty())
+    }
+
+    @Test
+    fun tokenSqlVariantsGeneratesItalianAccentedEndings() {
+        val caffeVariants = SearchOptimizer.tokenSqlVariants("caffe")
+        assertTrue(caffeVariants.contains("caffe"))
+        assertTrue(caffeVariants.contains("caffè"))
+        assertTrue(caffeVariants.contains("caffé"))
+
+        val tiramisuVariants = SearchOptimizer.tokenSqlVariants("tiramisu")
+        assertTrue(tiramisuVariants.contains("tiramisu"))
+        assertTrue(tiramisuVariants.contains("tiramisù"))
+
+        val pureVariants = SearchOptimizer.tokenSqlVariants("pure")
+        assertTrue(pureVariants.contains("pure"))
+        assertTrue(pureVariants.contains("purè"))
+
+        val baccalaVariants = SearchOptimizer.tokenSqlVariants("baccala")
+        assertTrue(baccalaVariants.contains("baccala"))
+        assertTrue(baccalaVariants.contains("baccalà"))
+    }
+
+    @Test
+    fun expandTokensHandlesHyphensSlashesAndPeriods() {
+        val tokensHyphen = SearchOptimizer.expandTokens("coca-cola zero")
+        assertTrue(tokensHyphen.contains("coca"))
+        assertTrue(tokensHyphen.contains("cola"))
+        assertTrue(tokensHyphen.contains("zero"))
+
+        val tokensSlash = SearchOptimizer.expandTokens("yogurt vaniglia/caffè")
+        assertTrue(tokensSlash.contains("yogurt"))
+        assertTrue(tokensSlash.contains("vaniglia"))
+        assertTrue(tokensSlash.contains("caffe"))
+
+        val tokensDot = SearchOptimizer.expandTokens("spaghetti n.5")
+        assertTrue(tokensDot.contains("spaghetti"))
+        assertTrue(tokensDot.contains("n"))
+        assertTrue(tokensDot.contains("5"))
+    }
+
+    @Test
+    fun barcodeMatchScoresHighInScoreFood() {
+        val foodWithBarcode = food(id = 1, name = "Biscotti", barcode = "8001234567890")
+        val score = SearchOptimizer.scoreFood(foodWithBarcode, "8001234567890")
+        assertTrue(score >= 5000)
+    }
+
+    private fun food(id: Int, name: String, brand: String = "Test", caloriesPer100g: Int = 100, useCount: Int = 0, barcode: String = "") = FoodItem(
         id = id,
         name = name,
         brand = brand,
@@ -158,6 +212,7 @@ class SearchOptimizerTest {
         proteinPer100g = 1f,
         carbsPer100g = 2f,
         fatPer100g = 3f,
-        useCount = useCount
+        useCount = useCount,
+        barcode = barcode
     )
 }
