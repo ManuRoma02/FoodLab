@@ -15,8 +15,11 @@
 .externalNativeBuild
 .cxx
 local.properties
-.env
+.env*
+!.env.example
 debug.keystore
+*.keystore
+*.jks
 .build-outputs/
 .gradle-home/
 .onedrive-placeholders/

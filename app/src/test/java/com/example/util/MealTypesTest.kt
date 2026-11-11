@@ -40,6 +40,8 @@ class MealTypesTest {
         assertEquals(MealTypes.LUNCH, MealTypes.canonicalize("pranzo"))
         assertEquals(MealTypes.DINNER, MealTypes.canonicalize("cena"))
         assertEquals(MealTypes.SNACK, MealTypes.canonicalize("spuntino"))
+        assertEquals(MealTypes.BREAKFAST, MealTypes.canonicalize("malicious/route"))
+        assertEquals(MealTypes.BREAKFAST, MealTypes.canonicalize(null))
 
         assertEquals("Colazione", MealTypes.displayName(MealTypes.BREAKFAST))
         assertEquals("Pranzo", MealTypes.displayName(MealTypes.LUNCH))

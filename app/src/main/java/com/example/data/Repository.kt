@@ -1,7 +1,11 @@
 package com.example.data
 
+import androidx.sqlite.db.SimpleSQLiteQuery
+import com.example.ui.SearchOptimizer
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 
 class Repository(
@@ -26,7 +30,33 @@ class Repository(
     suspend fun deletePortionsForFood(foodId: Int) = portionDao.deletePortionsForFood(foodId)
 
     
-    fun searchFoods(query: String) = foodDao.searchFoods(query)
+    suspend fun getAllFoodNames(): List<String> = foodDao.getAllFoodNames()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun searchFoods(query: String): Flow<List<FoodItem>> {
+        val clean = SearchOptimizer.normalizeQuery(query)
+        if (clean.isBlank()) return allFoods
+
+        val tokens = clean.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val baseFlow = if (tokens.size > 1) {
+            val whereClauses = tokens.joinToString(" AND ") { token ->
+                val esc = SearchOptimizer.escapeForLike(token)
+                "(name LIKE '%$esc%' ESCAPE '\\' OR brand LIKE '%$esc%' ESCAPE '\\')"
+            }
+            val sql = "SELECT * FROM foods WHERE $whereClauses ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+            foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
+        } else {
+            foodDao.searchFoods(SearchOptimizer.escapeForLike(clean))
+        }
+
+        return baseFlow.flatMapLatest { results ->
+            if (results.isEmpty()) {
+                allFoods
+            } else {
+                flowOf(results)
+            }
+        }
+    }
     suspend fun getFoodById(id: Int) = foodDao.getFoodById(id)
     suspend fun getFoodByBarcode(barcode: String): FoodItem? = foodDao.getFoodByBarcode(barcode)
     suspend fun getFoodsByIds(ids: List<Int>) = if (ids.isEmpty()) emptyList() else foodDao.getFoodsByIds(ids)

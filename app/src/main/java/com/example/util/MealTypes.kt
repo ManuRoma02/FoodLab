@@ -13,7 +13,7 @@ object MealTypes {
             "LUNCH", "PRANZO" -> LUNCH
             "DINNER", "CENA" -> DINNER
             "SNACK", "SPUNTINO" -> SNACK
-            else -> type?.trim()?.uppercase() ?: BREAKFAST
+            else -> BREAKFAST
         }
     }
 

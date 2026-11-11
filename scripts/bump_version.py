@@ -34,7 +34,8 @@ def bump():
         content = re.sub(r'"versionCode":\s*\d+', f'"versionCode": {new_code}', content)
         content = re.sub(r'"versionName":\s*"[^"]+"', f'"versionName": "{new_name}"', content)
         content = re.sub(r'"releaseDate":\s*"[^"]+"', f'"releaseDate": "{date.today().isoformat()}"', content)
-        content = re.sub(r'/v[^/]+/app-debug\.apk', f'/v{new_name}/app-debug.apk', content)
+        content = re.sub(r'/v[^/]+/app-(?:debug|release)\.apk', f'/v{new_name}/app-release.apk', content)
+        content = re.sub(r'download/app-(?:debug|release)\.apk', f'download/app-release.apk', content)
         with open(update_json_path, "w", encoding="utf-8") as f:
             f.write(content)
 

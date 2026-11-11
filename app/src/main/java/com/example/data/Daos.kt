@@ -4,7 +4,9 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Transaction
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -20,6 +22,12 @@ interface FoodDao {
         LIMIT 200
     """)
     fun searchFoods(query: String): Flow<List<FoodItem>>
+
+    @RawQuery(observedEntities = [FoodItem::class])
+    fun searchFoodsRaw(query: SupportSQLiteQuery): Flow<List<FoodItem>>
+
+    @Query("SELECT name FROM foods")
+    suspend fun getAllFoodNames(): List<String>
 
     @Query("SELECT COUNT(*) FROM foods")
     suspend fun getFoodCount(): Int

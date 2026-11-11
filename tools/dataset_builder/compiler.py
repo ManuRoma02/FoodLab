@@ -102,12 +102,12 @@ def _normalize_key_text(text: str) -> str:
 def _source_priority(source: str) -> int:
     """
     Return numerical priority for food source.
-    Precedence hierarchy: CREA > SCRAPLING > OFF > OTHER.
+    Precedence hierarchy: CREA / BDA / CIQUAL / CHAINS (3) > SCRAPLING / USDA (2) > OFF (1) > OTHER (0).
     """
     s = (source or "").upper().strip()
-    if "CREA" in s or "BDA" in s:
+    if any(k in s for k in ("CREA", "BDA", "CIQUAL", "CHAIN", "RISTO")):
         return 3
-    elif "SCRAP" in s or "SUPERMARKET" in s or "ESSELUNGA" in s or "CONAD" in s or "COOP" in s:
+    elif any(k in s for k in ("SCRAP", "SUPERMARKET", "ESSELUNGA", "CONAD", "COOP", "USDA")):
         return 2
     elif "OFF" in s or "OPENFOODFACTS" in s:
         return 1

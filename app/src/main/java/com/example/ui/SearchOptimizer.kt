@@ -7,7 +7,27 @@ object SearchOptimizer {
     private val WHITESPACE_REGEX = Regex("\\s+")
     private val DIACRITICS_REGEX = Regex("\\p{M}")
     private val NON_ALPHANUMERIC_REGEX = Regex("[^a-z0-9]")
+    private val APOSTROPHE_REGEX = Regex("['’`]")
     private val GENERIC_BRANDS = setOf("generic", "custom", "openfoodfacts", "crea", "generico")
+
+    // Common Italian food synonyms, abbreviations, and colloquial search terms
+    private val SYNONYMS: Map<String, String> = mapOf(
+        "evoo" to "olio extravergine oliva",
+        "evo" to "olio extravergine oliva",
+        "crudo" to "prosciutto crudo",
+        "cotto" to "prosciutto cotto",
+        "fesa" to "fesa tacchino",
+        "parmigiano" to "parmigiano reggiano",
+        "grana" to "grana padano",
+        "fiocchi" to "fiocchi latte",
+        "albume" to "albume uovo",
+        "albumi" to "albume uovo",
+        "bresaola" to "bresaola valtellina",
+        "mac" to "mcdonald",
+        "mc" to "mcdonald",
+        "bk" to "burger king",
+        "kfc" to "kentucky chicken"
+    )
 
     fun normalizeQuery(query: String): String {
         return WHITESPACE_REGEX.replace(query.trim(), " ")
@@ -67,11 +87,39 @@ object SearchOptimizer {
 
     fun normalizeDiacritics(text: String): String {
         val nfd = java.text.Normalizer.normalize(text.trim().lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
-        return DIACRITICS_REGEX.replace(nfd, "")
+        val withoutAccents = DIACRITICS_REGEX.replace(nfd, "")
+        return APOSTROPHE_REGEX.replace(withoutAccents, " ")
     }
 
     fun normalizeAlphanumeric(text: String): String {
         return NON_ALPHANUMERIC_REGEX.replace(normalizeDiacritics(text), "")
+    }
+
+    fun levenshteinDistance(s1: String, s2: String, maxDistance: Int = 2): Int {
+        if (s1 == s2) return 0
+        val len1 = s1.length
+        val len2 = s2.length
+        if (kotlin.math.abs(len1 - len2) > maxDistance) return maxDistance + 1
+        if (len1 == 0) return len2
+        if (len2 == 0) return len1
+
+        val dp = IntArray(len2 + 1) { it }
+        for (i in 1..len1) {
+            var prev = dp[0]
+            dp[0] = i
+            val c1 = s1[i - 1]
+            for (j in 1..len2) {
+                val temp = dp[j]
+                val cost = if (c1 == s2[j - 1]) 0 else 1
+                dp[j] = minOf(
+                    dp[j] + 1,       // deletion
+                    dp[j - 1] + 1,   // insertion
+                    prev + cost      // substitution
+                )
+                prev = temp
+            }
+        }
+        return dp[len2]
     }
 
     private fun deduplicate(localFoods: List<FoodItem>, apiFoods: List<FoodItem>): List<FoodItem> {
@@ -108,7 +156,7 @@ object SearchOptimizer {
         return result
     }
 
-    private fun scoreFood(food: FoodItem, normalizedQuery: String): Int {
+    fun scoreFood(food: FoodItem, normalizedQuery: String): Int {
         val normQuery = normalizeDiacritics(normalizedQuery)
         val name = normalizeDiacritics(food.name)
         val brand = normalizeDiacritics(food.brand)
@@ -118,6 +166,7 @@ object SearchOptimizer {
 
         val tokens = normQuery.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
         val nameWords = name.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
+        val brandWords = brand.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
 
         var score = 0
         if (name == normQuery) score += 6000
@@ -129,26 +178,78 @@ object SearchOptimizer {
         if (compactName.contains(compactQuery)) score += 800
         if (compactBrand.contains(compactQuery)) score += 500
 
+        var matchedTokensCount = 0
+
         for (token in tokens) {
-            if (name.startsWith(token)) score += 520
-            if (brand.startsWith(token)) score += 320
-            if (name.contains(token)) score += 230
-            if (brand.contains(token)) score += 140
-            if (nameWords.contains(token)) score += 200
+            var tokenMatched = false
+
+            if (name.startsWith(token)) { score += 520; tokenMatched = true }
+            if (brand.startsWith(token)) { score += 320; tokenMatched = true }
+            if (name.contains(token)) { score += 230; tokenMatched = true }
+            if (brand.contains(token)) { score += 140; tokenMatched = true }
+            if (nameWords.contains(token)) { score += 200; tokenMatched = true }
+            if (brandWords.contains(token)) { score += 150; tokenMatched = true }
+
             if (token.all { it.isDigit() } && food.defaultServingSize.toString().contains(token)) {
                 score += 160
+                tokenMatched = true
+            }
+
+            // Synonym / abbreviation check (e.g. evoo -> olio extravergine oliva)
+            val syn = SYNONYMS[token]
+            if (syn != null) {
+                val synWords = syn.split(WHITESPACE_REGEX)
+                for (sw in synWords) {
+                    if (name.contains(sw) || brand.contains(sw)) {
+                        score += 350
+                        tokenMatched = true
+                        break
+                    }
+                }
+            }
+
+            // Word-level Typo matching with bounded Levenshtein distance
+            if (!tokenMatched && token.length >= 4) {
+                // Check distance 1 for tokens >= 4 chars
+                val hitNameDist1 = nameWords.any { nw -> nw.length >= 3 && levenshteinDistance(token, nw, 1) <= 1 }
+                val hitBrandDist1 = brandWords.any { bw -> bw.length >= 3 && levenshteinDistance(token, bw, 1) <= 1 }
+
+                if (hitNameDist1) {
+                    score += 380
+                    tokenMatched = true
+                } else if (hitBrandDist1) {
+                    score += 240
+                    tokenMatched = true
+                } else if (token.length >= 7) {
+                    // Check distance 2 for tokens >= 7 chars
+                    val hitNameDist2 = nameWords.any { nw -> nw.length >= 5 && levenshteinDistance(token, nw, 2) <= 2 }
+                    val hitBrandDist2 = brandWords.any { bw -> bw.length >= 5 && levenshteinDistance(token, bw, 2) <= 2 }
+                    if (hitNameDist2) {
+                        score += 200
+                        tokenMatched = true
+                    } else if (hitBrandDist2) {
+                        score += 120
+                        tokenMatched = true
+                    }
+                }
+            }
+
+            if (tokenMatched) {
+                matchedTokensCount++
             }
         }
 
-        if (tokens.size > 1) {
-            val allTokensMatch = tokens.all { token ->
-                name.contains(token) || brand.contains(token)
-            }
-            if (allTokensMatch) score += 650
+        // Multi-token match across name, brand, or synonyms
+        if (tokens.size > 1 && matchedTokensCount == tokens.size) {
+            score += 1500
+        } else if (tokens.size > 1 && matchedTokensCount > 0) {
+            score += (matchedTokensCount * 250)
         }
+
+        if (score <= 0) return 0
 
         var finalScore = score + (food.useCount * 35)
-        if (food.isFavorite) finalScore += 260
+        if (food.isFavorite) finalScore += 300
         if (food.brand.equals("Recipe", ignoreCase = true)) finalScore += 15
         return if (food.id > 0) finalScore + 10 else finalScore
     }

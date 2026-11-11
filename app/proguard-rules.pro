@@ -27,3 +27,16 @@
 -keepclassmembers class * {
     @com.squareup.moshi.Json *;
 }
+
+# Strip Android Log debug and verbose calls in release builds
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+}
+
+# OkHttp optional TLS platform providers
+-dontwarn org.bouncycastle.jsse.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
+

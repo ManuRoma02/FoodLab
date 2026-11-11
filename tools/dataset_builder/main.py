@@ -17,8 +17,10 @@ import time
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from tools.dataset_builder.compiler import DatasetCompiler
+from tools.dataset_builder.extract_chains import extract_chains_foods
 from tools.dataset_builder.extract_crea import extract_crea_foods
 from tools.dataset_builder.extract_off import stream_off_italian_products
+from tools.dataset_builder.extract_scientific import extract_scientific_foods
 from tools.dataset_builder.models import FoodRecord, PortionRecord
 from tools.dataset_builder.scraper_scrapling import scrape_supermarket_catalog
 
@@ -51,14 +53,33 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--sources",
         type=str,
-        default="crea,off,scrapling",
-        help="Comma-separated list of sources to run (choices: crea, off, scrapling)",
+        default="crea,chains,off,scrapling,scientific",
+        help="Comma-separated list of sources to run (choices: crea, chains, off, scrapling, scientific)",
     )
     parser.add_argument(
         "--crea-path",
         type=str,
         default="app/src/main/assets/data/crea_foods.json",
         help="Path to CREA / BDA-IEO JSON data file",
+    )
+    parser.add_argument(
+        "--chains-path",
+        type=str,
+        default=None,
+        help="Path to optional custom Italian fast-food / chains JSON file",
+    )
+    parser.add_argument(
+        "--scientific-path",
+        type=str,
+        default=None,
+        help="Path to CIQUAL or USDA CSV/JSON scientific composition file",
+    )
+    parser.add_argument(
+        "--scientific-format",
+        type=str,
+        default="ciqual",
+        choices=["ciqual", "usda"],
+        help="Format type for scientific dataset (ciqual or usda)",
     )
     parser.add_argument(
         "--off-path",
@@ -101,8 +122,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
 
 def run_pipeline(
-    sources: Sequence[str],
+    sources: Sequence[str] = ("crea", "chains", "off", "scrapling", "scientific"),
     crea_path: Optional[str] = "app/src/main/assets/data/crea_foods.json",
+    chains_path: Optional[str] = None,
+    scientific_path: Optional[str] = None,
+    scientific_format: str = "ciqual",
     off_path: Optional[str] = None,
     scrapling_target: Optional[str] = None,
     output_db: str = "foodlab_dataset.db",
@@ -116,7 +140,7 @@ def run_pipeline(
     """
     start_time = time.time()
     active_sources = [s.strip().lower() for s in sources if s.strip()]
-    valid_choices = {"crea", "off", "scrapling"}
+    valid_choices = {"crea", "chains", "off", "scrapling", "scientific"}
     invalid = [s for s in active_sources if s not in valid_choices]
     if invalid:
         raise ValueError(f"Unknown sources specified: {invalid}. Supported choices: {sorted(valid_choices)}")
@@ -135,6 +159,8 @@ def run_pipeline(
     stats: Dict[str, Any] = {
         "sources": active_sources,
         "crea": {"extracted_foods": 0, "extracted_portions": 0},
+        "chains": {"extracted_foods": 0, "extracted_portions": 0},
+        "scientific": {"extracted_foods": 0},
         "off": {
             "total_evaluated": 0,
             "italian_candidates": 0,
@@ -186,7 +212,39 @@ def run_pipeline(
         else:
             logger.warning("CREA path not found: %s. Skipping CREA.", crea_path)
 
-    # 2. Ingest Open Food Facts
+    # 2. Ingest Italian Chains & Fast Food
+    if "chains" in active_sources:
+        logger.info("Ingesting Italian Fast Food & Restaurant Chains...")
+        try:
+            chain_foods, chain_portions = extract_chains_foods(custom_json_path=chains_path, limit=limit)
+            stats["chains"]["extracted_foods"] = len(chain_foods)
+            stats["chains"]["extracted_portions"] = len(chain_portions)
+            all_foods.extend(chain_foods)
+            all_portions.extend(chain_portions)
+            logger.info(
+                "Chains: Extracted %d foods and %d portions",
+                len(chain_foods),
+                len(chain_portions),
+            )
+        except Exception as e:
+            logger.error("Failed to extract Chains data: %s", e)
+
+    # 3. Ingest Scientific Databases (CIQUAL / USDA)
+    if "scientific" in active_sources:
+        logger.info("Ingesting Scientific databases (CIQUAL / USDA)...")
+        try:
+            sci_foods = extract_scientific_foods(
+                file_path=scientific_path,
+                format_type=scientific_format,
+                limit=limit,
+            )
+            stats["scientific"]["extracted_foods"] = len(sci_foods)
+            all_foods.extend(sci_foods)
+            logger.info("Scientific: Extracted %d foods", len(sci_foods))
+        except Exception as e:
+            logger.error("Failed to extract Scientific data: %s", e)
+
+    # 4. Ingest Open Food Facts
     if "off" in active_sources:
         if off_path:
             logger.info("Ingesting Open Food Facts data from: %s", off_path)
@@ -366,6 +424,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         run_pipeline(
             sources=source_list,
             crea_path=args.crea_path,
+            chains_path=args.chains_path,
+            scientific_path=args.scientific_path,
+            scientific_format=args.scientific_format,
             off_path=args.off_path,
             scrapling_target=args.scrapling_target,
             output_db=args.output_db,
