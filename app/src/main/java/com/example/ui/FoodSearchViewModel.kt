@@ -230,7 +230,7 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
             val safeQuantity = quantityGrams.coerceIn(1, 5_000)
             var localFoodId = food.id
             if (food.id < 0) {
-                val newFood = food.copy(id = 0, useCount = 1)
+                val newFood = food.copy(id = 0, useCount = 1, isUserCreated = true)
                 localFoodId = repository.insertFood(newFood).toInt()
                 // Save cached portion size if available
                 val cached = tempPortions[food.id]
@@ -277,7 +277,7 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
     fun toggleFavorite(food: FoodItem) {
         viewModelScope.launch {
             if (food.id < 0) {
-                val newFood = food.copy(id = 0, isFavorite = true)
+                val newFood = food.copy(id = 0, isFavorite = true, isUserCreated = true)
                 val localFoodId = repository.insertFood(newFood).toInt()
                 val cached = tempPortions[food.id]
                 if (!cached.isNullOrEmpty()) {
@@ -350,7 +350,8 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
                     proteinPer100g = protein.coerceIn(0f, 100f),
                     carbsPer100g = carbs.coerceIn(0f, 100f),
                     fatPer100g = fat.coerceIn(0f, 100f),
-                    barcode = barcode.filter(Char::isDigit).take(32)
+                    barcode = barcode.filter(Char::isDigit).take(32),
+                    isUserCreated = true
                 )
             )
             if (portions.isNotEmpty()) {

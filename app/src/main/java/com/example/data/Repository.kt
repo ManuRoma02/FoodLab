@@ -67,6 +67,8 @@ class Repository(
     }
     suspend fun getFoodById(id: Int) = foodDao.getFoodById(id)
     suspend fun getFoodByBarcode(barcode: String): FoodItem? = foodDao.getFoodByBarcode(barcode)
+    suspend fun getUserCreatedFoodsWithPortions() = foodDao.getUserCreatedFoodsWithPortions()
+    suspend fun getUserCreatedFoods() = foodDao.getUserCreatedFoods()
     suspend fun getFoodsByIds(ids: List<Int>) = if (ids.isEmpty()) emptyList() else foodDao.getFoodsByIds(ids)
     suspend fun incrementUseCount(id: Int) = foodDao.incrementUseCount(id)
     suspend fun incrementUseCounts(ids: List<Int>) {

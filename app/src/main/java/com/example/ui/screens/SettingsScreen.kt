@@ -1246,6 +1246,25 @@ fun SettingsScreen(
                                     IosRowDivider()
 
                                     IosSettingsRow(
+                                        icon = Icons.Default.Share,
+                                        iconBg = AppleGreen,
+                                        title = "Esporta Cibi Creati e Scansionati",
+                                        subtitle = "Condividi o copia i tuoi alimenti per il database",
+                                        trailing = {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        },
+                                        onClick = {
+                                            viewModel.exportUserCreatedFoods(context)
+                                        }
+                                    )
+
+                                    IosRowDivider()
+
+                                    IosSettingsRow(
                                         icon = Icons.Default.DeleteForever,
                                         iconBg = AppleRed,
                                         title = "Ripristina Applicazione",

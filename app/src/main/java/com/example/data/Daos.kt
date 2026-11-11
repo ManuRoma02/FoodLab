@@ -38,6 +38,13 @@ interface FoodDao {
     @Query("SELECT * FROM foods WHERE barcode = :barcode AND barcode != '' LIMIT 1")
     suspend fun getFoodByBarcode(barcode: String): FoodItem?
 
+    @Transaction
+    @Query("SELECT * FROM foods WHERE isUserCreated = 1 ORDER BY id DESC")
+    suspend fun getUserCreatedFoodsWithPortions(): List<FoodItemWithPortions>
+
+    @Query("SELECT * FROM foods WHERE isUserCreated = 1 ORDER BY id DESC")
+    suspend fun getUserCreatedFoods(): List<FoodItem>
+
     @Query("SELECT * FROM foods WHERE id IN (:ids)")
     suspend fun getFoodsByIds(ids: List<Int>): List<FoodItem>
 

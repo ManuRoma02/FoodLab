@@ -15,7 +15,8 @@ import androidx.room.Relation
         Index(value = ["brand"]),
         Index(value = ["isFavorite"]),
         Index(value = ["useCount"]),
-        Index(value = ["barcode"])
+        Index(value = ["barcode"]),
+        Index(value = ["isUserCreated"])
     ]
 )
 data class FoodItem(
@@ -29,7 +30,8 @@ data class FoodItem(
     val defaultServingSize: Int = 100,
     val isFavorite: Boolean = false,
     val useCount: Int = 0,
-    val barcode: String = ""
+    val barcode: String = "",
+    val isUserCreated: Boolean = false
 )
 
 @Immutable

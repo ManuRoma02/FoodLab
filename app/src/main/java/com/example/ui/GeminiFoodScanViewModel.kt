@@ -192,7 +192,8 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
                 carbsPer100g = scaledResult.carbsPer100g,
                 fatPer100g = scaledResult.fatPer100g,
                 defaultServingSize = safeGrams,
-                useCount = 1
+                useCount = 1,
+                isUserCreated = true
             )
             val insertedFoodId = repository.insertFood(foodItem).toInt()
 

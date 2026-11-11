@@ -1,9 +1,9 @@
 {
-  "versionCode": 47,
-  "versionName": "1.0.47",
+  "versionCode": 48,
+  "versionName": "1.0.48",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-release.apk",
-  "changelog": "• **Database Italiano Completo**: catalogo offline ampliato a **218.083 alimenti** con macro verificati, grandi marchi (**Barilla**, **Ferrero**, **Mulino Bianco**), GDO (**Esselunga**, **Coop**, **Conad**), discount (**MD**, **Lidl**, **Eurospin**, **Aldi**) e catene fast food\n• **Importazione Ultra-Veloce**: architettura basata su archivio compresso SQLite e transazione batch zero-overhead (<1s su disco)\n• **Ricerca Intelligente & Tolleranza Refusi**: matching **multi-token**, espansione **sinonimi italiani** (evoo, crudo, cotto, bk, mc) e fallback predittivo su refusi di battitura\n• **100% Offline-First**: tracciamento nutrizionale immediato e scansione barcode senza alcuna connessione internet richiesta",
+  "changelog": "• **Esportazione Cibi Personalizzati**: nuovo tasto nelle **Impostazioni** per condividere o copiare negli appunti tutti gli alimenti creati a mano o scansionati da **QR/barcode**\n• **Piatti Tradizionali Italiani**: aggiunte oltre **35 ricette tipiche** (Carbonara, Amatriciana, Pizza Margherita, Lasagne, Tiramisù) con porzioni standard certificate\n• **Integrazione & Fitness Suite**: estensione per marchi sportivi europei (**MyProtein**, **Prozis**, **Yamamoto**, **Enervit**)\n• **Database Room v13**: indicizzazione automatica `isUserCreated` con migrazione fluida e zero conflitti offline",
   "releaseDate": "2026-11-11",
   "forceUpdate": false,
-  "sha256": "9442e28e8875a7dc73afc30c8679db474df53a964d7e1c645ed1d874911fb78a"
+  "sha256": "5fa63b8e410e9db8fd8b0945f7c5fb9cd4e727bded8b40a8742f6357621e1963"
 }

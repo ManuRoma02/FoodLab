@@ -19,8 +19,10 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from tools.dataset_builder.compiler import DatasetCompiler
 from tools.dataset_builder.extract_chains import extract_chains_foods
 from tools.dataset_builder.extract_crea import extract_crea_foods
+from tools.dataset_builder.extract_fitness import stream_fitness_products_csv_gz
 from tools.dataset_builder.extract_off import stream_off_italian_products
 from tools.dataset_builder.extract_scientific import extract_scientific_foods
+from tools.dataset_builder.extract_traditional_dishes import extract_traditional_dishes
 from tools.dataset_builder.models import FoodRecord, PortionRecord
 from tools.dataset_builder.scraper_scrapling import scrape_supermarket_catalog
 
@@ -53,8 +55,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--sources",
         type=str,
-        default="crea,chains,off,scrapling,scientific",
-        help="Comma-separated list of sources to run (choices: crea, chains, off, scrapling, scientific)",
+        default="crea,chains,off,traditional,fitness,scrapling,scientific",
+        help="Comma-separated list of sources to run (choices: crea, chains, off, traditional, fitness, scrapling, scientific)",
     )
     parser.add_argument(
         "--crea-path",
@@ -160,6 +162,8 @@ def run_pipeline(
         "sources": active_sources,
         "crea": {"extracted_foods": 0, "extracted_portions": 0},
         "chains": {"extracted_foods": 0, "extracted_portions": 0},
+        "traditional": {"extracted_foods": 0, "extracted_portions": 0},
+        "fitness": {"extracted_foods": 0, "extracted_portions": 0},
         "scientific": {"extracted_foods": 0},
         "off": {
             "total_evaluated": 0,
@@ -229,7 +233,22 @@ def run_pipeline(
         except Exception as e:
             logger.error("Failed to extract Chains data: %s", e)
 
-    # 3. Ingest Scientific Databases (CIQUAL / USDA)
+    # 3. Ingest Traditional Italian Dishes
+    if "traditional" in active_sources:
+        logger.info("Ingesting Traditional Italian Dishes & Standard Recipes...")
+        try:
+            trad_foods, trad_portions = extract_traditional_dishes()
+            if limit is not None and limit > 0:
+                trad_foods = trad_foods[:limit]
+            stats["traditional"]["extracted_foods"] = len(trad_foods)
+            stats["traditional"]["extracted_portions"] = len(trad_portions)
+            all_foods.extend(trad_foods)
+            all_portions.extend(trad_portions)
+            logger.info("Traditional Dishes: Extracted %d foods and %d portions", len(trad_foods), len(trad_portions))
+        except Exception as e:
+            logger.error("Failed to extract Traditional Dishes: %s", e)
+
+    # 4. Ingest Scientific Databases (CIQUAL / USDA)
     if "scientific" in active_sources:
         logger.info("Ingesting Scientific databases (CIQUAL / USDA)...")
         try:
@@ -271,7 +290,25 @@ def run_pipeline(
         else:
             logger.info("No --off-path specified. Skipping Open Food Facts ingestion.")
 
-    # 3. Ingest Scrapling Supermarket Catalog
+    # 5. Ingest European & International Fitness Nutrition
+    if "fitness" in active_sources:
+        if off_path and Path(off_path).exists():
+            logger.info("Ingesting European & International Fitness Brands from: %s", off_path)
+            try:
+                fit_count = 0
+                for f_rec, p_list in stream_fitness_products_csv_gz(off_path, limit=limit):
+                    all_foods.append(f_rec)
+                    all_portions.extend(p_list)
+                    fit_count += 1
+                stats["fitness"]["extracted_foods"] = fit_count
+                stats["fitness"]["extracted_portions"] = len([p for p in all_portions if p.food_barcode_or_key])
+                logger.info("Fitness Nutrition: Streamed %d verified items", fit_count)
+            except Exception as e:
+                logger.error("Failed to extract Fitness Nutrition: %s", e)
+        else:
+            logger.info("No dump file available. Skipping Fitness Nutrition ingestion.")
+
+    # 6. Ingest Scrapling Supermarket Catalog
     if "scrapling" in active_sources:
         if scrapling_target:
             logger.info("Ingesting Supermarket data from: %s", scrapling_target)

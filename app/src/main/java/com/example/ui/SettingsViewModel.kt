@@ -80,6 +80,72 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun exportUserCreatedFoods(context: android.content.Context) {
+        viewModelScope.launch {
+            try {
+                val userFoods = repository.getUserCreatedFoodsWithPortions()
+                if (userFoods.isEmpty()) {
+                    _messages.tryEmit("Nessun alimento personalizzato o scansionato da esportare.")
+                    return@launch
+                }
+
+                val jsonArray = org.json.JSONArray()
+                for (item in userFoods) {
+                    val obj = org.json.JSONObject().apply {
+                        put("name", item.food.name)
+                        put("brand", item.food.brand)
+                        put("barcode", item.food.barcode)
+                        put("caloriesPer100g", item.food.caloriesPer100g)
+                        put("proteinPer100g", item.food.proteinPer100g.toDouble())
+                        put("carbsPer100g", item.food.carbsPer100g.toDouble())
+                        put("fatPer100g", item.food.fatPer100g.toDouble())
+                        put("defaultServingSize", item.food.defaultServingSize)
+                        if (item.portions.isNotEmpty()) {
+                            val portionsArray = org.json.JSONArray()
+                            item.portions.forEach { p ->
+                                portionsArray.put(org.json.JSONObject().apply {
+                                    put("name", p.name)
+                                    put("weightGrams", p.weightGrams.toDouble())
+                                })
+                            }
+                            put("portions", portionsArray)
+                        }
+                    }
+                    jsonArray.put(obj)
+                }
+
+                val jsonString = jsonArray.toString(2)
+
+                // Copy to Clipboard
+                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                if (clipboard != null) {
+                    val clip = android.content.ClipData.newPlainText("FoodLab Custom Foods", jsonString)
+                    clipboard.setPrimaryClip(clip)
+                }
+
+                // Write file and share via Intent
+                val file = withContext(Dispatchers.IO) {
+                    java.io.File(context.cacheDir, "foodlab_user_foods.json").also {
+                        it.writeText(jsonString, Charsets.UTF_8)
+                    }
+                }
+
+                val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "application/json"
+                    putExtra(android.content.Intent.EXTRA_SUBJECT, "FoodLab Custom Foods Export")
+                    putExtra(android.content.Intent.EXTRA_TEXT, jsonString)
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(android.content.Intent.createChooser(shareIntent, "Esporta Alimenti Personalizzati"))
+                _messages.tryEmit("${userFoods.size} alimenti esportati e copiati negli appunti!")
+            } catch (e: Exception) {
+                _messages.tryEmit("Errore durante l'esportazione degli alimenti.")
+            }
+        }
+    }
+
     private fun csvEscape(value: String): String {
         val sanitized = if (value.isNotEmpty() && value[0] in "=+-@\t\r") "'$value" else value
         return "\"${sanitized.replace("\"", "\"\"")}\""
