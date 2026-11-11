@@ -128,7 +128,7 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
         .map(SearchOptimizer::normalizeQuery)
         .distinctUntilChanged()
         .flatMapLatest { query ->
-            if (query.isBlank()) repository.allFoods else repository.searchFoods(SearchOptimizer.escapeForLike(query))
+            if (query.isBlank()) repository.allFoods else repository.searchFoods(query)
         }
 
     val searchResults: StateFlow<List<FoodItem>> = combine(

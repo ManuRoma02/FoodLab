@@ -258,8 +258,8 @@ def run_pipeline(
                     stats=off_stats,
                 ):
                     off_foods.append(record)
+                    all_foods.append(record)
 
-                all_foods.extend(off_foods)
                 logger.info(
                     "Open Food Facts: Streamed %d valid foods (Evaluated: %d, Rejected by Macro Gate: %d)",
                     len(off_foods),

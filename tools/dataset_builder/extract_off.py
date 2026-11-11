@@ -9,12 +9,33 @@ from __future__ import annotations
 import gzip
 import io
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Union
 import urllib.request
 
 from tools.dataset_builder.models import FoodRecord
 from tools.dataset_builder.validator import validate_and_normalize
+
+logger = logging.getLogger(__name__)
+
+
+# Known Italian store brands, private labels, discount markers, and supermarket chains
+ITALIAN_STORE_KEYWORDS = {
+    # Supermercati GDO
+    "esselunga", "conad", "coop", "carrefour", "despar", "pam", "panorama",
+    "bennet", "crai", "selex", "todis", "in's", "iper", "tigros",
+    # Discount
+    "md", "eurospin", "lidl", "aldi", "penny",
+    # Marche private discount (MD, Lidl, Eurospin, Aldi, Penny)
+    "vivo meglio", "malga paradiso", "lettere dall'italia", "botanica", "gustato", "cà dell'oro",
+    "milbona", "italiamo", "vemondo", "dulano", "bellarom", "chef select", "crownfield", "alesto",
+    "land", "tre mulini", "dolciando", "amo essere", "del duca", "dexal", "ondina",
+    "gut bio", "cucina nobile", "milsani", "il tagliere del re", "buon pane",
+    "cuor di terra", "valbontà", "welless", "naturgut",
+    # Marche private supermercati (Esselunga, Coop, Conad)
+    "smart", "fior fiore", "vivi verde", "bene.sì", "sapori & dintorni", "piacersi", "terre d'italia",
+}
 
 
 def is_italian_product(raw: Dict[str, Any]) -> bool:
@@ -267,14 +288,111 @@ def stream_off_italian_products(
                                     stats["rejected_macros"] = stats.get("rejected_macros", 0) + 1
                     return
 
-    # Streaming mode for line-delimited JSON (JSONL / JSONL.GZ / streams)
+    # Streaming mode for line-delimited JSON (JSONL / JSONL.GZ) and CSV (CSV / CSV.GZ / streams)
     stream, closer = _open_stream(file_or_url)
     yielded = 0
+    is_csv = ".csv" in url_str.lower()
+    header_indices = None
 
     try:
         for line in stream:
             line_str = line.strip()
             if not line_str:
+                continue
+
+            # Auto-detect tab-separated CSV from first line
+            if header_indices is None and (is_csv or ("\t" in line_str and "code\t" in line_str)):
+                is_csv = True
+                header_parts = line_str.split("\t")
+                header_indices = {col.strip(): idx for idx, col in enumerate(header_parts)}
+                continue
+
+            if is_csv and header_indices is not None:
+                if stats is not None:
+                    stats["total_evaluated"] = stats.get("total_evaluated", 0) + 1
+
+                parts = line_str.split("\t")
+                c_idx = header_indices.get("countries_tags", -1)
+                c_tags = parts[c_idx].lower() if c_idx >= 0 and len(parts) > c_idx else ""
+                code_idx = header_indices.get("code", 0)
+                barcode = parts[code_idx].strip() if len(parts) > code_idx else ""
+                stores_idx = header_indices.get("stores", -1)
+                stores_str = parts[stores_idx].lower() if stores_idx >= 0 and len(parts) > stores_idx else ""
+                brand_idx = header_indices.get("brands", -1)
+                brand_str = parts[brand_idx].lower() if brand_idx >= 0 and len(parts) > brand_idx else ""
+
+                is_explicitly_foreign = bool(c_tags) and not any(it in c_tags for it in ("italy", "italia", "en:it"))
+
+                if is_explicitly_foreign:
+                    is_it = False
+                else:
+                    is_it = (
+                        "en:italy" in c_tags or "italia" in c_tags or "italy" in c_tags or "en:it" in c_tags
+                        or barcode.startswith(("80", "81", "82", "83"))
+                        or any(k in stores_str for k in ITALIAN_STORE_KEYWORDS)
+                        or any(k in brand_str for k in ITALIAN_STORE_KEYWORDS)
+                    )
+
+                if filter_italian and not is_it:
+                    if stats is not None:
+                        stats["rejected_non_italian"] = stats.get("rejected_non_italian", 0) + 1
+                    continue
+
+                if stats is not None:
+                    stats["italian_candidates"] = stats.get("italian_candidates", 0) + 1
+
+                name_idx = header_indices.get("product_name_it", -1)
+                name = parts[name_idx].strip() if name_idx >= 0 and len(parts) > name_idx else ""
+                if not name:
+                    name_idx = header_indices.get("product_name", -1)
+                    name = parts[name_idx].strip() if name_idx >= 0 and len(parts) > name_idx else ""
+                if not name:
+                    name_idx = header_indices.get("generic_name", -1)
+                    name = parts[name_idx].strip() if name_idx >= 0 and len(parts) > name_idx else ""
+                if not name:
+                    continue
+
+                def get_val(key: str) -> Optional[str]:
+                    idx = header_indices.get(key, -1)
+                    if idx >= 0 and len(parts) > idx:
+                        v = parts[idx].strip()
+                        return v if v else None
+                    return None
+
+                raw_dict = {
+                    "name": name,
+                    "brand": get_val("brands") or "",
+                    "category": get_val("categories") or "",
+                    "barcode": barcode,
+                    "calories_100g": get_val("energy-kcal_100g") or get_val("energy_100g"),
+                    "protein_100g": get_val("proteins_100g"),
+                    "carbs_100g": get_val("carbohydrates_100g"),
+                    "fat_100g": get_val("fat_100g"),
+                    "sugars_100g": get_val("sugars_100g"),
+                    "saturated_fat_100g": get_val("saturated-fat_100g"),
+                    "fiber_100g": get_val("fiber_100g"),
+                    "salt_100g": get_val("salt_100g"),
+                    "sodium_100g": get_val("sodium_100g"),
+                    "default_serving_size": get_val("serving_quantity") or get_val("serving_size"),
+                }
+
+                record = validate_and_normalize(raw_dict, source="OFF_IT")
+                if record is not None:
+                    if stats is not None:
+                        stats["valid_records"] = stats.get("valid_records", 0) + 1
+                        if stats["valid_records"] % 2500 == 0:
+                            logger.info(
+                                "OFF Stream: %d valid Italian products extracted (evaluated: %d rows)...",
+                                stats["valid_records"],
+                                stats.get("total_evaluated", 0),
+                            )
+                    yield record
+                    yielded += 1
+                    if limit is not None and yielded >= limit:
+                        break
+                else:
+                    if stats is not None:
+                        stats["rejected_macros"] = stats.get("rejected_macros", 0) + 1
                 continue
 
             try:

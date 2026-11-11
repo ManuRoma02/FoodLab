@@ -44,3 +44,9 @@ skills-lock.json
 screenshots-studio/
 docs/drift-audit/
 emulator_*.png
+data_cache/
+*.db
+*.db.gz
+!app/src/main/assets/data/*.db.gz
+*.parquet
+

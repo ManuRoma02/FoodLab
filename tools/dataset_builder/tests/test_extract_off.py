@@ -295,3 +295,49 @@ def test_stream_off_italian_products_json_array():
 def test_stream_off_file_not_found():
     with pytest.raises(FileNotFoundError):
         list(stream_off_italian_products("non_existent_file_path_xyz.jsonl"))
+
+
+def test_stream_off_italian_products_csv_gz():
+    header = [
+        "code", "product_name", "brands", "stores", "categories", "countries_tags",
+        "serving_size", "energy-kcal_100g", "fat_100g", "saturated-fat_100g",
+        "carbohydrates_100g", "sugars_100g", "proteins_100g", "salt_100g", "fiber_100g"
+    ]
+    rows = [
+        # 1. Barilla Pasta
+        ["8000500310427", "Spaghetti n.5", "Barilla", "Esselunga", "Pasta", "en:italy", "80g", "359", "2.0", "0.5", "71.2", "3.5", "12.5", "0.01", "3.0"],
+        # 2. Esselunga Smart Latte
+        ["200000000001", "Latte Parzialmente Scremato", "Smart", "Esselunga", "Latticini", "en:italy", "200ml", "46", "1.5", "1.0", "4.9", "4.9", "3.2", "0.1", "0.0"],
+        # 3. Lidl Milbona Yogurt
+        ["200000000002", "Yogurt Greco", "Milbona", "Lidl", "Yogurt", "en:italy", "150g", "59", "0.0", "0.0", "3.6", "3.6", "10.3", "0.1", "0.0"],
+        # 4. MD Vivo Meglio Gallette
+        ["200000000003", "Gallette di Mais", "Vivo Meglio", "MD", "Snack", "en:italy", "20g", "380", "1.2", "0.2", "82.0", "0.5", "8.0", "0.2", "2.5"],
+        # 5. Eurospin Tre Mulini Farina
+        ["200000000004", "Farina Tipo 00", "Tre Mulini", "Eurospin", "Farine", "en:italy", "100g", "345", "1.0", "0.2", "72.0", "1.0", "11.0", "0.01", "2.0"],
+        # 6. Non-Italian French product (should be rejected)
+        ["300000000005", "Fromage Français", "Marque FR", "Carrefour FR", "Fromages", "en:france", "30g", "350", "28.0", "18.0", "0.5", "0.5", "25.0", "1.5", "0.0"],
+        # 7. Rejected by Macro Gate (missing protein)
+        ["8000500310499", "Prodotto Incompleto", "Barilla", "Coop", "Pasta", "en:italy", "80g", "350", "2.0", "0.5", "70.0", "2.0", "", "0.01", "2.0"]
+    ]
+
+    with tempfile.NamedTemporaryFile(suffix=".csv.gz", delete=False) as f:
+        gz_path = f.name
+
+    try:
+        with gzip.open(gz_path, "wt", encoding="utf-8") as gz:
+            gz.write("\t".join(header) + "\n")
+            for r in rows:
+                gz.write("\t".join(r) + "\n")
+
+        records = list(stream_off_italian_products(gz_path))
+        assert len(records) == 5
+        names = [r.name for r in records]
+        assert "Spaghetti n.5" in names
+        assert "Latte Parzialmente Scremato" in names
+        assert "Yogurt Greco" in names
+        assert "Gallette di Mais" in names
+        assert "Farina Tipo 00" in names
+        assert records[0].barcode == "8000500310427"
+    finally:
+        Path(gz_path).unlink(missing_ok=True)
+

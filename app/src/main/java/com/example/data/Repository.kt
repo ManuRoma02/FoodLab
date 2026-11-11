@@ -37,7 +37,7 @@ class Repository(
         val clean = SearchOptimizer.normalizeQuery(query)
         if (clean.isBlank()) return allFoods
 
-        val tokens = clean.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val tokens = SearchOptimizer.expandTokens(clean)
         val baseFlow = if (tokens.size > 1) {
             val whereClauses = tokens.joinToString(" AND ") { token ->
                 val esc = SearchOptimizer.escapeForLike(token)
@@ -45,13 +45,21 @@ class Repository(
             }
             val sql = "SELECT * FROM foods WHERE $whereClauses ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
             foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
+        } else if (tokens.isNotEmpty()) {
+            foodDao.searchFoods(SearchOptimizer.escapeForLike(tokens[0]))
         } else {
-            foodDao.searchFoods(SearchOptimizer.escapeForLike(clean))
+            return allFoods
         }
 
         return baseFlow.flatMapLatest { results ->
-            if (results.isEmpty()) {
-                allFoods
+            if (results.isEmpty() && tokens.size == 1 && tokens[0].length >= 4) {
+                // Typo prefix fallback: e.g. "nutela" -> prefix "nutel"
+                val token = tokens[0]
+                val prefixLen = (token.length - 1).coerceAtMost(5).coerceAtLeast(3)
+                val prefix = token.substring(0, prefixLen)
+                val escPrefix = SearchOptimizer.escapeForLike(prefix)
+                val fallbackSql = "SELECT * FROM foods WHERE (name LIKE '%$escPrefix%' ESCAPE '\\' OR brand LIKE '%$escPrefix%' ESCAPE '\\') ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+                foodDao.searchFoodsRaw(SimpleSQLiteQuery(fallbackSql))
             } else {
                 flowOf(results)
             }

@@ -33,6 +33,21 @@ object SearchOptimizer {
         return WHITESPACE_REGEX.replace(query.trim(), " ")
     }
 
+    fun expandTokens(rawQuery: String): List<String> {
+        val norm = normalizeDiacritics(normalizeQuery(rawQuery)).lowercase(Locale.ROOT)
+        val tokens = norm.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
+        val expanded = mutableListOf<String>()
+        for (t in tokens) {
+            val syn = SYNONYMS[t]
+            if (syn != null) {
+                expanded.addAll(syn.split(WHITESPACE_REGEX).filter { it.isNotBlank() })
+            } else {
+                expanded.add(t)
+            }
+        }
+        return expanded
+    }
+
     fun cacheKey(query: String): String {
         return normalizeQuery(query).lowercase(Locale.ROOT)
     }

@@ -1,9 +1,9 @@
 {
-  "versionCode": 46,
-  "versionName": "1.0.46",
+  "versionCode": 47,
+  "versionName": "1.0.47",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-release.apk",
-  "changelog": "• **Database Locale & Macro Verificati**: integrazione offline completa con **943 alimenti** certificati CREA, BDA-IEO, CIQUAL e USDA con **Mandatory Macro Gate** al 100%\n• **Fast Food & Catene Italiane**: valori nutrizionali e porzioni reali per **McDonald's**, **Burger King**, **Autogrill**, **Poke House**, **La Piadineria**, **Roadhouse** e **Old Wild West**\n• **Ricerca Testuale Intelligente**: motore ultra-rapido (<5ms) con **tolleranza refusi** (Levenshtein), corrispondenza **multi-token**, supporto **senza accenti** e **sinonimi italiani** (es. evoo, crudo, cotto)\n• **100% Offline-First**: tracciamento nutrizionale e consultazione istantanea senza alcuna dipendenza da rete",
+  "changelog": "• **Database Italiano Completo**: catalogo offline ampliato a **218.083 alimenti** con macro verificati, grandi marchi (**Barilla**, **Ferrero**, **Mulino Bianco**), GDO (**Esselunga**, **Coop**, **Conad**), discount (**MD**, **Lidl**, **Eurospin**, **Aldi**) e catene fast food\n• **Importazione Ultra-Veloce**: architettura basata su archivio compresso SQLite e transazione batch zero-overhead (<1s su disco)\n• **Ricerca Intelligente & Tolleranza Refusi**: matching **multi-token**, espansione **sinonimi italiani** (evoo, crudo, cotto, bk, mc) e fallback predittivo su refusi di battitura\n• **100% Offline-First**: tracciamento nutrizionale immediato e scansione barcode senza alcuna connessione internet richiesta",
   "releaseDate": "2026-11-11",
   "forceUpdate": false,
-  "sha256": "0a1741f9bdfc2c4eef5d7c1da58d5308b716f398e9a21d75c5348bfeb37dfc34"
+  "sha256": "9442e28e8875a7dc73afc30c8679db474df53a964d7e1c645ed1d874911fb78a"
 }

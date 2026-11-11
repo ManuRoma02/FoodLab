@@ -55,6 +55,19 @@ class SearchOptimizerTest {
     }
 
     @Test
+    fun expandTokensExpandsItalianSynonymsAndHandlesWhitespace() {
+        val expandedEvoo = SearchOptimizer.expandTokens("evoo biologico")
+        assertTrue(expandedEvoo.contains("olio"))
+        assertTrue(expandedEvoo.contains("extravergine"))
+        assertTrue(expandedEvoo.contains("biologico"))
+
+        val expandedBk = SearchOptimizer.expandTokens("bk whopper")
+        assertTrue(expandedBk.contains("burger"))
+        assertTrue(expandedBk.contains("king"))
+        assertTrue(expandedBk.contains("whopper"))
+    }
+
+    @Test
     fun levenshteinDistanceComputesCorrectly() {
         assertEquals(0, SearchOptimizer.levenshteinDistance("pasta", "pasta"))
         assertEquals(1, SearchOptimizer.levenshteinDistance("spaghetti", "spagetti"))
