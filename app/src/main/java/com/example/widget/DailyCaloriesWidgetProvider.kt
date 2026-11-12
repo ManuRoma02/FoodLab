@@ -116,6 +116,11 @@ internal suspend fun updateWidget(context: Context, appWidgetManager: AppWidgetM
 
         views.setTextViewText(R.id.calories_text, caloriesConsumed.toString())
         views.setTextViewText(R.id.daily_target_text, if (burned > 0) "su $targetCalories (+$burned) kcal" else "su $targetCalories kcal")
+        val remaining = effectiveTarget - caloriesConsumed
+        views.setContentDescription(
+            R.id.calories_text,
+            "Calorie consumate: $caloriesConsumed kcal. Calorie rimanenti: ${if (remaining > 0) remaining else 0} kcal."
+        )
         appWidgetManager.updateAppWidget(appWidgetId, views)
     } catch (e: Exception) {
         views.setTextViewText(R.id.calories_text, "—")

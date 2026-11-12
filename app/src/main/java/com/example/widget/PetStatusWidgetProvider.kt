@@ -115,9 +115,14 @@ internal suspend fun updatePetWidget(context: Context, appWidgetManager: AppWidg
         if (isOverTarget) {
             views.setTextViewText(R.id.pet_status_text, "ECCESSO")
             views.setTextColor(R.id.pet_status_text, 0xFFFF453A.toInt())
+        } else if (caloriesConsumed == 0) {
+            views.setTextViewText(R.id.pet_status_text, "A DIGIUNO")
+            views.setTextColor(R.id.pet_status_text, 0xFF8E8E93.toInt())
         } else {
-            views.setTextViewText(R.id.pet_status_text, "")
+            views.setTextViewText(R.id.pet_status_text, "IN TARGET")
+            views.setTextColor(R.id.pet_status_text, 0xFF30D158.toInt())
         }
+        views.setContentDescription(R.id.pet_hp_text, "Calorie: $caloriesConsumed. Target: $effectiveTarget kcal.")
         views.setImageViewResource(R.id.pet_image, R.drawable.foodlab_mascot_duo)
 
         appWidgetManager.updateAppWidget(appWidgetId, views)

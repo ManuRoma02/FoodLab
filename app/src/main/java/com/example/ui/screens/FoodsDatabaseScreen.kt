@@ -525,7 +525,7 @@ private fun FoodsListContent(
                     }
                 }
             } else {
-                items(items = displayedResults, key = { it.id }) { food ->
+                items(items = displayedResults, key = { it.id }, contentType = { "database_food" }) { food ->
                     val isSelected = selectedFoodId != null && selectedFoodId == food.id
                     val itemModifier = if (isSelected) {
                         Modifier

@@ -788,7 +788,7 @@ fun SearchScreen(
                             }
                         }
                     } else if (displayedResults.isNotEmpty()) {
-                        items(items = displayedResults, key = { it.id }) { food ->
+                        items(items = displayedResults, key = { it.id }, contentType = { "search_food" }) { food ->
                             SearchResultCard(
                                 food = food,
                                 showAddIcon = true,
