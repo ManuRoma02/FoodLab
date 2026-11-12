@@ -1,9 +1,9 @@
 {
-  "versionCode": 50,
-  "versionName": "1.0.50",
+  "versionCode": 51,
+  "versionName": "1.0.51",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-release.apk",
-  "changelog": "• **Widget Dinamici Migliorati**: nuovi stati per il widget mascotte (**\"A DIGIUNO\"**, **\"IN TARGET\"**, **\"ECCESSO\"**) e calcolo **calorie rimanenti** accessibile\n• **Edge-to-Edge Perfezionato**: integrazione `windowSoftInputMode=\"adjustResize\"` per evitare qualsiasi sovrapposizione tra tastiera e input\n• **Ottimizzazione Compose 120Hz**: riuso efficiente degli slot di ricomposizione con `contentType` nelle liste alimenti e ricerca\n• **Database Offline v5**: 218.000+ alimenti italiani e ricette tipiche integrate a latenza zero",
+  "changelog": "• **Ricerca Intelligente & Categorie**: risolto il matching per query multi-termine (es. **\"pasta Barilla\"** trova immediatamente **Spaghetti**, **Penne**, **Fusilli** al primo posto)\n• **Semantic Shape Matching**: espansione semantica delle categorie italiane (**pasta**, **biscotti**, **riso**, **pane**) nello scoring in-memory e query Room\n• **Candidate Pooling Bilanciato**: unione e deduplicazione bilanciata dei candidati di marca e categoria per eliminare ogni starvation alfabetica",
   "releaseDate": "2026-11-12",
   "forceUpdate": false,
-  "sha256": "12e4375ade0c55afff23db8e5835272cce99f542351b1bd70527e8369e432ed0"
+  "sha256": "8f6c6afe3fb7e7e42ca2547882f79dd11e7d08b659ec062e35eb00abca8c00d2"
 }

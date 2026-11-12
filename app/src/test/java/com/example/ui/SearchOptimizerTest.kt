@@ -100,6 +100,70 @@ class SearchOptimizerTest {
     }
 
     @Test
+    fun categorySearchPastaBarillaRanksBarillaPastaAboveGenericDishes() {
+        val spaghettiBarilla = food(id = 1, name = "Spaghetti No 5", brand = "Barilla")
+        val penneBarilla = food(id = 2, name = "Penne Rigate N°73", brand = "Barilla")
+        val cacioEPepe = food(id = 3, name = "Pasta cacio e pepe", brand = "")
+        val pestoBarilla = food(id = 4, name = "Pesto alla genovese", brand = "Barilla")
+        val spaghettiDeCecco = food(id = 5, name = "Spaghetti n.12", brand = "De Cecco")
+
+        val ranked = SearchOptimizer.rank(
+            listOf(cacioEPepe, pestoBarilla, spaghettiDeCecco, penneBarilla, spaghettiBarilla),
+            emptyList(),
+            "pasta barilla"
+        )
+
+        // Barilla pasta shapes must rank at the very top
+        val topIds = ranked.take(2).map { it.id }.toSet()
+        assertTrue("Top 2 must be Barilla pasta", topIds.contains(spaghettiBarilla.id) && topIds.contains(penneBarilla.id))
+        // Generic "Pasta cacio e pepe" (without brand Barilla) must NOT outrank Barilla pasta
+        val cacioIndex = ranked.indexOfFirst { it.id == cacioEPepe.id }
+        val spaghettiIndex = ranked.indexOfFirst { it.id == spaghettiBarilla.id }
+        assertTrue("Spaghetti Barilla must rank before Pasta cacio e pepe", spaghettiIndex < cacioIndex)
+    }
+
+    @Test
+    fun categorySearchPastaDeCeccoRanksDeCeccoAheadOfOtherBrands() {
+        val spaghettiBarilla = food(id = 1, name = "Spaghetti No 5", brand = "Barilla")
+        val spaghettiDeCecco = food(id = 2, name = "Spaghetti n.12", brand = "De Cecco")
+        val pastaCacioPepe = food(id = 3, name = "Pasta cacio e pepe", brand = "")
+
+        val ranked = SearchOptimizer.rank(
+            listOf(spaghettiBarilla, pastaCacioPepe, spaghettiDeCecco),
+            emptyList(),
+            "pasta de cecco"
+        )
+
+        assertEquals(spaghettiDeCecco.id, ranked.first().id)
+    }
+
+    @Test
+    fun categorySearchBiscottiMulinoBiancoRanksMacineAndPanDiStelle() {
+        val macine = food(id = 1, name = "Macine", brand = "Mulino Bianco")
+        val panDiStelle = food(id = 2, name = "Pan di Stelle", brand = "Mulino Bianco")
+        val genericBiscotti = food(id = 3, name = "Biscotti al burro", brand = "Generico")
+
+        val ranked = SearchOptimizer.rank(
+            listOf(genericBiscotti, panDiStelle, macine),
+            emptyList(),
+            "biscotti mulino bianco"
+        )
+
+        val topIds = ranked.take(2).map { it.id }.toSet()
+        assertTrue(topIds.contains(macine.id) && topIds.contains(panDiStelle.id))
+    }
+
+    @Test
+    fun typoInBrandWithPastaShapeRanksBarillaPastaAtTop() {
+        val spaghettiBarilla = food(id = 1, name = "Spaghetti No 5", brand = "Barilla")
+        val pane = food(id = 2, name = "Pane comune", brand = "Base")
+
+        val ranked = SearchOptimizer.rank(listOf(pane, spaghettiBarilla), emptyList(), "pasta barila")
+
+        assertEquals(spaghettiBarilla.id, ranked.first().id)
+    }
+
+    @Test
     fun italianSynonymEvooMatchesOlioExtravergine() {
         val olioEvo = food(id = 1, name = "Olio extravergine d'oliva")
         val burro = food(id = 2, name = "Burro tradizionale")

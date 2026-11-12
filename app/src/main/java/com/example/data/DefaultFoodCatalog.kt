@@ -22,6 +22,126 @@ object DefaultFoodCatalog {
         ),
         DefaultFoodSeed(
             FoodItem(
+                name = "Spaghetti No 5",
+                brand = "Barilla",
+                caloriesPer100g = 356,
+                proteinPer100g = 12.5f,
+                carbsPer100g = 72.0f,
+                fatPer100g = 1.5f,
+                defaultServingSize = 80
+            ),
+            portions = listOf("Porzione (80g)" to 80f, "Piatto abbondante (100g)" to 100f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Penne Rigate N°73",
+                brand = "Barilla",
+                caloriesPer100g = 356,
+                proteinPer100g = 12.5f,
+                carbsPer100g = 72.0f,
+                fatPer100g = 1.5f,
+                defaultServingSize = 80
+            ),
+            portions = listOf("Porzione (80g)" to 80f, "Piatto abbondante (100g)" to 100f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Fusilli No 98",
+                brand = "Barilla",
+                caloriesPer100g = 356,
+                proteinPer100g = 12.5f,
+                carbsPer100g = 72.0f,
+                fatPer100g = 1.5f,
+                defaultServingSize = 80
+            ),
+            portions = listOf("Porzione (80g)" to 80f, "Piatto abbondante (100g)" to 100f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Farfalle N° 265",
+                brand = "Barilla",
+                caloriesPer100g = 356,
+                proteinPer100g = 12.5f,
+                carbsPer100g = 72.0f,
+                fatPer100g = 1.5f,
+                defaultServingSize = 80
+            ),
+            portions = listOf("Porzione (80g)" to 80f, "Piatto abbondante (100g)" to 100f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Spaghetti n.12",
+                brand = "De Cecco",
+                caloriesPer100g = 351,
+                proteinPer100g = 14.0f,
+                carbsPer100g = 69.5f,
+                fatPer100g = 1.5f,
+                defaultServingSize = 80
+            ),
+            portions = listOf("Porzione (80g)" to 80f, "Piatto abbondante (100g)" to 100f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Penne Rigate n.41",
+                brand = "De Cecco",
+                caloriesPer100g = 351,
+                proteinPer100g = 14.0f,
+                carbsPer100g = 69.5f,
+                fatPer100g = 1.5f,
+                defaultServingSize = 80
+            ),
+            portions = listOf("Porzione (80g)" to 80f, "Piatto abbondante (100g)" to 100f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Macine",
+                brand = "Mulino Bianco",
+                caloriesPer100g = 470,
+                proteinPer100g = 7.0f,
+                carbsPer100g = 67.5f,
+                fatPer100g = 18.5f,
+                defaultServingSize = 30
+            ),
+            portions = listOf("2 biscotti (26g)" to 26f, "4 biscotti (52g)" to 52f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Pan di Stelle",
+                brand = "Mulino Bianco",
+                caloriesPer100g = 483,
+                proteinPer100g = 7.5f,
+                carbsPer100g = 66.0f,
+                fatPer100g = 20.0f,
+                defaultServingSize = 30
+            ),
+            portions = listOf("3 biscotti (24g)" to 24f, "5 biscotti (40g)" to 40f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Gocciole Chocolate",
+                brand = "Pavesi",
+                caloriesPer100g = 474,
+                proteinPer100g = 6.5f,
+                carbsPer100g = 67.0f,
+                fatPer100g = 19.5f,
+                defaultServingSize = 35
+            ),
+            portions = listOf("3 biscotti (35g)" to 35f, "5 biscotti (60g)" to 60f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
+                name = "Passata di Pomodoro",
+                brand = "Mutti",
+                caloriesPer100g = 36,
+                proteinPer100g = 1.6f,
+                carbsPer100g = 5.1f,
+                fatPer100g = 0.2f,
+                defaultServingSize = 100
+            ),
+            portions = listOf("Porzione (100g)" to 100f, "Vasetto (200g)" to 200f)
+        ),
+        DefaultFoodSeed(
+            FoodItem(
                 name = "Riso Basmati",
                 brand = "Base",
                 caloriesPer100g = 350,

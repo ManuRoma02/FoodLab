@@ -29,6 +29,41 @@ object SearchOptimizer {
         "kfc" to "kentucky chicken"
     )
 
+    // Category-to-format mappings for semantic Italian food searches (e.g. "pasta" matches "spaghetti", "penne", etc.)
+    val CATEGORY_SHAPES: Map<String, Set<String>> = mapOf(
+        "pasta" to setOf(
+            "spaghetti", "spaghettini", "spaghettoni", "penne", "pennette", "fusilli", "farfalle",
+            "rigatoni", "tortiglioni", "maccheroni", "tagliatelle", "bavette", "linguine",
+            "sedanini", "sedani", "ditalini", "bucatini", "orecchiette", "lasagne", "gnocchi",
+            "ravioli", "tortellini", "vermicelli", "pappardelle", "fettuccine", "cannelloni",
+            "mezze maniche", "paccheri", "calamarata", "caserecce", "trofie", "pici", "garganelli",
+            "strozzapreti", "capellini", "ziti", "mafaldine", "anellini", "stelline", "maltagliati"
+        ),
+        "biscotti" to setOf(
+            "frollini", "savoiardi", "gocciole", "pan di stelle", "tarallucci", "abbracci",
+            "nascondini", "baiocchi", "macine", "campagnole", "batticuori", "spicchi di sole",
+            "ritornelli", "galletti", "rigoli", "molinetti", "cuoricini", "krumiri", "amaretti",
+            "cantucci", "wafer", "oro saiwa", "biscotto", "frollino"
+        ),
+        "biscotto" to setOf(
+            "frollini", "savoiardi", "gocciole", "pan di stelle", "tarallucci", "abbracci",
+            "nascondini", "baiocchi", "macine", "campagnole", "batticuori", "spicchi di sole",
+            "ritornelli", "galletti", "rigoli", "molinetti", "cuoricini", "krumiri", "amaretti",
+            "cantucci", "wafer", "oro saiwa"
+        ),
+        "cereali" to setOf(
+            "muesli", "granola", "corn flakes", "avena", "fiocchi", "porridge", "cheerios", "special k"
+        ),
+        "riso" to setOf(
+            "basmati", "carnaroli", "arborio", "vialone", "roma", "originario", "parboiled",
+            "venere", "rosso", "integrale", "risotto"
+        ),
+        "pane" to setOf(
+            "ciabatta", "baguette", "rosetta", "focaccia", "piadina", "toast", "pancarre",
+            "pan bauletto", "michetta", "sfilatino"
+        )
+    )
+
     val ITALIAN_STOPWORDS: Set<String> = setOf(
         "il", "lo", "la", "i", "gli", "le",
         "un", "uno", "una", "un'",
@@ -242,16 +277,23 @@ object SearchOptimizer {
         if (compactBrand.contains(compactQuery)) score += 500
 
         var matchedTokensCount = 0
+        var matchedBrandTokensCount = 0
 
         for (token in tokens) {
             var tokenMatched = false
+            var tokenMatchedBrand = false
 
+            // Brand direct matches (boosted so brand query heavily rewards brand)
+            if (brand == token) { score += 700; tokenMatched = true; tokenMatchedBrand = true }
+            if (brand.startsWith(token)) { score += 450; tokenMatched = true; tokenMatchedBrand = true }
+            if (brandWords.contains(token)) { score += 400; tokenMatched = true; tokenMatchedBrand = true }
+            if (brand.contains(token)) { score += 250; tokenMatched = true; tokenMatchedBrand = true }
+
+            // Name direct matches
+            if (name == token) { score += 600; tokenMatched = true }
             if (name.startsWith(token)) { score += 520; tokenMatched = true }
-            if (brand.startsWith(token)) { score += 320; tokenMatched = true }
+            if (nameWords.contains(token)) { score += 300; tokenMatched = true }
             if (name.contains(token)) { score += 230; tokenMatched = true }
-            if (brand.contains(token)) { score += 140; tokenMatched = true }
-            if (nameWords.contains(token)) { score += 200; tokenMatched = true }
-            if (brandWords.contains(token)) { score += 150; tokenMatched = true }
 
             if (token.all { it.isDigit() } && food.defaultServingSize.toString().contains(token)) {
                 score += 160
@@ -261,6 +303,15 @@ object SearchOptimizer {
             if (token.all { it.isDigit() } && token.length >= 6 && food.barcode.isNotEmpty() && food.barcode.contains(token)) {
                 score += 5000
                 tokenMatched = true
+            }
+
+            // Category semantic format match (e.g. token is "pasta" and food name contains "spaghetti", "penne", etc.)
+            val categoryFormats = CATEGORY_SHAPES[token]
+            if (categoryFormats != null) {
+                if (categoryFormats.any { fmt -> name.contains(fmt) }) {
+                    score += 750
+                    tokenMatched = true
+                }
             }
 
             // Synonym / abbreviation check (e.g. evoo -> olio extravergine oliva)
@@ -286,8 +337,9 @@ object SearchOptimizer {
                     score += 380
                     tokenMatched = true
                 } else if (hitBrandDist1) {
-                    score += 240
+                    score += 320
                     tokenMatched = true
+                    tokenMatchedBrand = true
                 } else if (token.length >= 7) {
                     // Check distance 2 for tokens >= 7 chars
                     val hitNameDist2 = nameWords.any { nw -> nw.length >= 5 && levenshteinDistance(token, nw, 2) <= 2 }
@@ -296,8 +348,9 @@ object SearchOptimizer {
                         score += 200
                         tokenMatched = true
                     } else if (hitBrandDist2) {
-                        score += 120
+                        score += 180
                         tokenMatched = true
+                        tokenMatchedBrand = true
                     }
                 }
             }
@@ -305,11 +358,17 @@ object SearchOptimizer {
             if (tokenMatched) {
                 matchedTokensCount++
             }
+            if (tokenMatchedBrand) {
+                matchedBrandTokensCount++
+            }
         }
 
-        // Multi-token match across name, brand, or synonyms
+        // Multi-token match across name, brand, category shapes, or synonyms
         if (tokens.size > 1 && matchedTokensCount == tokens.size) {
-            score += 1500
+            score += 2000
+            if (matchedBrandTokensCount > 0) {
+                score += 1000 // Product/category + brand match synergy bonus
+            }
         } else if (tokens.size > 1 && matchedTokensCount > 0) {
             score += (matchedTokensCount * 250)
         }

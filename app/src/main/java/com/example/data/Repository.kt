@@ -61,9 +61,19 @@ class Repository(
 
         fun buildTokenClause(token: String): String {
             val variants = SearchOptimizer.tokenSqlVariants(token)
-            return variants.joinToString(" OR ") { esc ->
+            val clauses = variants.map { esc ->
                 "(name LIKE '%$esc%' ESCAPE '\\' OR brand LIKE '%$esc%' ESCAPE '\\')"
+            }.toMutableList()
+
+            // Expand category tokens (e.g. "pasta", "biscotti", "riso") to their specific shapes/formats in SQL
+            val shapes = SearchOptimizer.CATEGORY_SHAPES[token]
+            if (shapes != null) {
+                for (s in shapes.take(18)) {
+                    val sEsc = SearchOptimizer.escapeForLike(s)
+                    clauses.add("name LIKE '%$sEsc%' ESCAPE '\\'")
+                }
             }
+            return clauses.joinToString(" OR ")
         }
 
         val baseFlow = if (tokens.size > 1) {
@@ -103,11 +113,12 @@ class Repository(
                         if (fallbackResults.isNotEmpty()) {
                             flowOf(fallbackResults)
                         } else {
-                            // As final candidate pool for multi-token, match ANY of the content tokens with OR
+                            // As final candidate pool for multi-token, match tokens with balanced UNION per token
                             val orTokens = if (contentTokens.isNotEmpty()) contentTokens else tokens
-                            val orWhere = orTokens.joinToString(" OR ") { "(${buildTokenClause(it)})" }
-                            val orSql = "SELECT * FROM foods WHERE $orWhere ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 100"
-                            foodDao.searchFoodsRaw(SimpleSQLiteQuery(orSql))
+                            val unionSql = orTokens.joinToString(" UNION ") { token ->
+                                "SELECT * FROM (SELECT * FROM foods WHERE (${buildTokenClause(token)}) ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 60)"
+                            }
+                            foodDao.searchFoodsRaw(SimpleSQLiteQuery(unionSql))
                         }
                     }
                 } else if (tokens.size == 1 && tokens[0].length >= 4) {
