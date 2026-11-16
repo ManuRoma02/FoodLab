@@ -48,7 +48,7 @@ data class OFFBarcodeResponse(
 )
 
 interface OpenFoodFactsApi {
-    @GET("cgi/search.pl?search_simple=1&action=process&json=1&page_size=20&sort_by=unique_scans_n&fields=product_name,brands,serving_quantity,serving_size,nutriments")
+    @GET("cgi/search.pl?search_simple=1&action=process&json=1&page_size=40&sort_by=unique_scans_n&tagtype_0=countries&tag_contains_0=contains&tag_0=en:italy&fields=product_name,brands,serving_quantity,serving_size,nutriments")
     suspend fun searchFoods(
         @Query("search_terms") query: String
     ): OFFResponse

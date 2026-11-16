@@ -1,9 +1,9 @@
 {
-  "versionCode": 51,
-  "versionName": "1.0.51",
+  "versionCode": 52,
+  "versionName": "1.0.52",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-release.apk",
-  "changelog": "• **Ricerca Intelligente & Categorie**: risolto il matching per query multi-termine (es. **\"pasta Barilla\"** trova immediatamente **Spaghetti**, **Penne**, **Fusilli** al primo posto)\n• **Semantic Shape Matching**: espansione semantica delle categorie italiane (**pasta**, **biscotti**, **riso**, **pane**) nello scoring in-memory e query Room\n• **Candidate Pooling Bilanciato**: unione e deduplicazione bilanciata dei candidati di marca e categoria per eliminare ogni starvation alfabetica",
-  "releaseDate": "2026-11-13",
+  "changelog": "• **Ricerca**: stopword e lettere singole fuori dalla query (**pasta con tonno**, **olio d'oliva**)\n• **Categorie complete**: **ravioli**, **lasagne** e **gnocchi** nella ricerca pasta\n• **Ranking**: pool da **1000** alimenti, ordinati dopo il match\n• **Open Food Facts Italia**: **40** prodotti del mercato italiano",
+  "releaseDate": "2026-11-16",
   "forceUpdate": false,
-  "sha256": "8f6c6afe3fb7e7e42ca2547882f79dd11e7d08b659ec062e35eb00abca8c00d2"
+  "sha256": "ab68efcb713253561711ac0f2cf9439c13f06417b006975f8c71f7b1e667a6f2"
 }

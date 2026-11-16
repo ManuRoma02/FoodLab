@@ -101,6 +101,14 @@ object SearchOptimizer {
         return expanded
     }
 
+    fun searchTokens(rawQuery: String): List<String> {
+        val tokens = expandTokens(rawQuery)
+        val content = tokens.filter { token ->
+            token !in ITALIAN_STOPWORDS && (token.length >= 2 || token.all { it.isDigit() })
+        }
+        return content.ifEmpty { tokens }
+    }
+
     fun tokenSqlVariants(token: String): List<String> {
         val clean = escapeForLike(token)
         val norm = escapeForLike(normalizeDiacritics(token))
@@ -145,6 +153,11 @@ object SearchOptimizer {
 
     fun isResponseForActiveQuery(responseQuery: String, activeQuery: String): Boolean {
         return cacheKey(responseQuery) == cacheKey(activeQuery)
+    }
+
+    fun categoryShapeNeedles(token: String): List<String> {
+        val shapes = CATEGORY_SHAPES[token] ?: return emptyList()
+        return shapes.map { escapeForLike(it) }
     }
 
     fun escapeForLike(query: String): String {

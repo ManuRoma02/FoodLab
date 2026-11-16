@@ -56,7 +56,7 @@ class Repository(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun executeSearchTokens(clean: String): Flow<List<FoodItem>> {
-        val tokens = SearchOptimizer.expandTokens(clean)
+        val tokens = SearchOptimizer.searchTokens(clean)
         if (tokens.isEmpty()) return allFoods
 
         fun buildTokenClause(token: String): String {
@@ -66,12 +66,8 @@ class Repository(
             }.toMutableList()
 
             // Expand category tokens (e.g. "pasta", "biscotti", "riso") to their specific shapes/formats in SQL
-            val shapes = SearchOptimizer.CATEGORY_SHAPES[token]
-            if (shapes != null) {
-                for (s in shapes.take(18)) {
-                    val sEsc = SearchOptimizer.escapeForLike(s)
-                    clauses.add("name LIKE '%$sEsc%' ESCAPE '\\'")
-                }
+            for (sEsc in SearchOptimizer.categoryShapeNeedles(token)) {
+                clauses.add("name LIKE '%$sEsc%' ESCAPE '\\'")
             }
             return clauses.joinToString(" OR ")
         }
@@ -80,11 +76,11 @@ class Repository(
             val whereClauses = tokens.joinToString(" AND ") { token ->
                 "(${buildTokenClause(token)})"
             }
-            val sql = "SELECT * FROM foods WHERE $whereClauses ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+            val sql = "SELECT * FROM foods WHERE $whereClauses LIMIT 1000"
             foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
         } else {
             val whereClause = buildTokenClause(tokens[0])
-            val sql = "SELECT * FROM foods WHERE $whereClause ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+            val sql = "SELECT * FROM foods WHERE $whereClause LIMIT 1000"
             foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
         }
 
@@ -94,7 +90,7 @@ class Repository(
                     val contentTokens = tokens.filter { it !in SearchOptimizer.ITALIAN_STOPWORDS && it.length >= 2 }
                     val fallbackContentFlow = if (contentTokens.isNotEmpty() && contentTokens.size < tokens.size) {
                         val contentWhere = contentTokens.joinToString(" AND ") { "(${buildTokenClause(it)})" }
-                        val contentSql = "SELECT * FROM foods WHERE $contentWhere ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+                        val contentSql = "SELECT * FROM foods WHERE $contentWhere LIMIT 1000"
                         foodDao.searchFoodsRaw(SimpleSQLiteQuery(contentSql))
                     } else null
 
@@ -105,7 +101,7 @@ class Repository(
                             val pfx = t.substring(0, pLen)
                             "(${buildTokenClause(pfx)})"
                         }
-                        val prefixSql = "SELECT * FROM foods WHERE $prefixWhere ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+                        val prefixSql = "SELECT * FROM foods WHERE $prefixWhere LIMIT 1000"
                         foodDao.searchFoodsRaw(SimpleSQLiteQuery(prefixSql))
                     }
 
@@ -116,7 +112,7 @@ class Repository(
                             // As final candidate pool for multi-token, match tokens with balanced UNION per token
                             val orTokens = if (contentTokens.isNotEmpty()) contentTokens else tokens
                             val unionSql = orTokens.joinToString(" UNION ") { token ->
-                                "SELECT * FROM (SELECT * FROM foods WHERE (${buildTokenClause(token)}) ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 60)"
+                                "SELECT * FROM (SELECT * FROM foods WHERE (${buildTokenClause(token)}) LIMIT 1000)"
                             }
                             foodDao.searchFoodsRaw(SimpleSQLiteQuery(unionSql))
                         }
@@ -127,7 +123,7 @@ class Repository(
                     val prefixLen = (token.length - 1).coerceAtMost(5).coerceAtLeast(3)
                     val prefix = token.substring(0, prefixLen)
                     val whereClause = buildTokenClause(prefix)
-                    val fallbackSql = "SELECT * FROM foods WHERE $whereClause ORDER BY isFavorite DESC, useCount DESC, name ASC LIMIT 200"
+                    val fallbackSql = "SELECT * FROM foods WHERE $whereClause LIMIT 1000"
                     foodDao.searchFoodsRaw(SimpleSQLiteQuery(fallbackSql))
                 } else {
                     flowOf(emptyList())

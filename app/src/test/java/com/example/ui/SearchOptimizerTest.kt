@@ -55,6 +55,24 @@ class SearchOptimizerTest {
     }
 
     @Test
+    fun pastaShapeNeedlesIncludeShapesBeyondEighteen() {
+        val needles = SearchOptimizer.categoryShapeNeedles("pasta")
+        assertTrue(needles.size > 18)
+        assertTrue(needles.contains("ravioli"))
+        assertTrue(needles.contains("lasagne"))
+        assertTrue(needles.contains("gnocchi"))
+    }
+
+    @Test
+    fun searchTokensDropItalianStopwordsBeforeSql() {
+        assertEquals(listOf("pasta", "tonno"), SearchOptimizer.searchTokens("pasta con tonno"))
+        assertEquals(listOf("oliva"), SearchOptimizer.searchTokens("un'oliva"))
+        assertEquals(listOf("olio", "oliva"), SearchOptimizer.searchTokens("olio d'oliva"))
+        assertEquals(listOf("spaghetti", "5"), SearchOptimizer.searchTokens("spaghetti n.5"))
+        assertEquals(listOf("con"), SearchOptimizer.searchTokens("con"))
+    }
+
+    @Test
     fun expandTokensExpandsItalianSynonymsAndHandlesWhitespace() {
         val expandedEvoo = SearchOptimizer.expandTokens("evoo biologico")
         assertTrue(expandedEvoo.contains("olio"))
