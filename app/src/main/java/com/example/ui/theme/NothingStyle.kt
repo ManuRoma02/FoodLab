@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import com.example.ui.foundation.animatorDurationScale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -509,10 +510,11 @@ fun NothingPocketOperatorLcd(
     val haptic = LocalHapticFeedback.current
     var tapCounter by remember { mutableIntStateOf(0) }
 
+    val motionAllowed = animatorDurationScale() > 0f
     val infiniteTransition = rememberInfiniteTransition(label = "PocketOperatorClock")
     val frameSwitch by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 2f,
+        targetValue = if (motionAllowed) 2f else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(1100, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -520,8 +522,8 @@ fun NothingPocketOperatorLcd(
         label = "LcdFrame"
     )
     val vuMeterPulse by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 4f,
+        initialValue = if (motionAllowed) 1f else 2.5f,
+        targetValue = if (motionAllowed) 4f else 2.5f,
         animationSpec = infiniteRepeatable(
             animation = tween(650, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse

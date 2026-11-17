@@ -10,6 +10,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import com.example.ui.foundation.animatorDurationScale
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -142,11 +143,12 @@ fun AppLoadingScreen(
     }
 
     // Continuous rotation animation
+    val motionAllowed = animatorDurationScale() > 0f
     val infiniteTransition = rememberInfiniteTransition(label = "quantum_engine")
 
     val t by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = (2f * PI).toFloat(),
+        targetValue = if (motionAllowed) (2f * PI).toFloat() else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(2800, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -155,8 +157,8 @@ fun AppLoadingScreen(
     )
 
     val glowPulse by infiniteTransition.animateFloat(
-        initialValue = 0.70f,
-        targetValue = 1.0f,
+        initialValue = if (motionAllowed) 0.70f else 0.85f,
+        targetValue = if (motionAllowed) 1.0f else 0.85f,
         animationSpec = infiniteRepeatable(
             animation = tween(1400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -166,7 +168,7 @@ fun AppLoadingScreen(
 
     val proteinOrbitAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
+        targetValue = if (motionAllowed) 360f else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(2400, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -176,7 +178,7 @@ fun AppLoadingScreen(
 
     val carbOrbitAngle by infiniteTransition.animateFloat(
         initialValue = 360f,
-        targetValue = 0f,
+        targetValue = if (motionAllowed) 0f else 360f,
         animationSpec = infiniteRepeatable(
             animation = tween(2800, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -186,7 +188,7 @@ fun AppLoadingScreen(
 
     val fatOrbitAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
+        targetValue = if (motionAllowed) 360f else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(2000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart

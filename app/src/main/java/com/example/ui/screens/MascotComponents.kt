@@ -12,6 +12,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import com.example.ui.foundation.animatorDurationScale
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -73,6 +74,7 @@ fun AnimatedFoodLabMascot(
     val haptic = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val motionAllowed = animatorDurationScale() > 0f
 
     // Interactive 3D Drag Rotation & Physics
     val rotX = remember { Animatable(0f) }
@@ -123,7 +125,7 @@ fun AnimatedFoodLabMascot(
     val motion = rememberInfiniteTransition(label = "MascotAliveMotion")
     val idlePhase by motion.animateFloat(
         initialValue = 0f,
-        targetValue = (2f * PI).toFloat(),
+        targetValue = if (motionAllowed) (2f * PI).toFloat() else 0f,
         animationSpec = infiniteRepeatable(
             animation = tween(2800, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -131,8 +133,8 @@ fun AnimatedFoodLabMascot(
         label = "MascotIdlePhase"
     )
     val glowPulse by motion.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 0.60f,
+        initialValue = if (motionAllowed) 0.25f else 0.425f,
+        targetValue = if (motionAllowed) 0.60f else 0.425f,
         animationSpec = infiniteRepeatable(
             animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse

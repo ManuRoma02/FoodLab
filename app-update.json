@@ -1,9 +1,9 @@
 {
-  "versionCode": 52,
-  "versionName": "1.0.52",
+  "versionCode": 53,
+  "versionName": "1.0.53",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-release.apk",
-  "changelog": "• **Ricerca**: stopword e lettere singole fuori dalla query (**pasta con tonno**, **olio d'oliva**)\n• **Categorie complete**: **ravioli**, **lasagne** e **gnocchi** nella ricerca pasta\n• **Ranking**: pool da **1000** alimenti, ordinati dopo il match\n• **Open Food Facts Italia**: **40** prodotti del mercato italiano",
-  "releaseDate": "2026-11-16",
+  "changelog": "• **Animazioni**: pasti e grafici in **fade**, senza allungare l'altezza\n• **Elimina pasto**: uscita rapida, senza **rimbalzo**\n• **Trascina**: il bersaglio **scala**, il bordo resta fermo\n• **Movimento ridotto**: le animazioni seguono la scala di sistema",
+  "releaseDate": "2026-11-17",
   "forceUpdate": false,
-  "sha256": "ab68efcb713253561711ac0f2cf9439c13f06417b006975f8c71f7b1e667a6f2"
+  "sha256": "1654d4682922bdf17a219e3e37c92ca21654716c87668287d9b915b98e20fa94"
 }

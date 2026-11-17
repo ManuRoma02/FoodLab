@@ -6,8 +6,10 @@ import androidx.compose.animation.core.*
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import com.example.ui.foundation.AppleSprings
+import com.example.ui.foundation.animatorDurationScale
 import com.example.ui.foundation.rememberAppleHaptics
 import com.example.ui.theme.AppleOrange
 import com.example.ui.theme.AppleBlue
@@ -38,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -65,6 +68,39 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 
 private const val SCREEN_TAG = "SearchScreen"
+private val EaseOut = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
+
+@Composable
+private fun SearchDisclosure(
+    visible: Boolean,
+    content: @Composable () -> Unit
+) {
+    val motionAllowed = animatorDurationScale() > 0f
+    val enterFade = fadeIn(tween(180, easing = EaseOut))
+    val exitFade = fadeOut(tween(120, easing = EaseOut))
+    AnimatedVisibility(
+        visible = visible,
+        enter = if (motionAllowed) {
+            enterFade + scaleIn(
+                initialScale = 0.95f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = AppleSprings.SnappyFloat
+            )
+        } else {
+            enterFade
+        },
+        exit = if (motionAllowed) {
+            exitFade + scaleOut(
+                targetScale = 0.95f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = AppleSprings.SnappyFloat
+            )
+        } else {
+            exitFade
+        },
+        content = { content() }
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -290,11 +326,7 @@ fun SearchScreen(
             )
 
             // Graceful Non-blocking Offline Banner
-            AnimatedVisibility(
-                visible = isOffline || searchError != null,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
+            SearchDisclosure(visible = isOffline || searchError != null) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -503,11 +535,7 @@ fun SearchScreen(
                                     }
                                 }
 
-                                AnimatedVisibility(
-                                    visible = isLoggedMealsExpanded,
-                                    enter = fadeIn() + expandVertically(),
-                                    exit = fadeOut() + shrinkVertically()
-                                ) {
+                                SearchDisclosure(visible = isLoggedMealsExpanded) {
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()

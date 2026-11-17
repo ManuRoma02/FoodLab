@@ -1,9 +1,14 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import com.example.ui.foundation.AppleSprings
+import com.example.ui.foundation.animatorDurationScale
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -33,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -231,6 +237,37 @@ private fun AppleHighlightTile(
             )
         }
     }
+}
+
+private val EaseOut = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
+
+@Composable
+private fun chartVisibility(visible: Boolean, content: @Composable () -> Unit) {
+    val motionAllowed = animatorDurationScale() > 0f
+    val enterFade = fadeIn(tween(200, easing = EaseOut))
+    val exitFade = fadeOut(tween(140, easing = EaseOut))
+    AnimatedVisibility(
+        visible = visible,
+        enter = if (motionAllowed) {
+            enterFade + scaleIn(
+                initialScale = 0.95f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = AppleSprings.SheetFloat
+            )
+        } else {
+            enterFade
+        },
+        exit = if (motionAllowed) {
+            exitFade + scaleOut(
+                targetScale = 0.95f,
+                transformOrigin = TransformOrigin(0.5f, 0f),
+                animationSpec = AppleSprings.SheetFloat
+            )
+        } else {
+            exitFade
+        },
+        content = { content() }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -611,7 +648,7 @@ fun AnalyticsScreen(
             // ==========================================
             // 2. UNIFIED INTERACTIVE CHART (Calories & Macros)
             // ==========================================
-            AnimatedVisibility(visible = showCalorieChart) {
+            chartVisibility(visible = showCalorieChart) {
                 UnifiedIntakeExplorerCard(
                     dailyIntakes = dailyIntakes,
                     targetCalories = defaultTargetCalories,
@@ -624,7 +661,7 @@ fun AnalyticsScreen(
             // ==========================================
             // 3. MACRO DISTRIBUTION & DAILY AVERAGES
             // ==========================================
-            AnimatedVisibility(visible = showMacroBreakdown) {
+            chartVisibility(visible = showMacroBreakdown) {
                 MacroDistributionCard(
                     dailyIntakes = dailyIntakes,
                     todayProtein = todayProtein,
@@ -639,7 +676,7 @@ fun AnalyticsScreen(
             // ==========================================
             // 4. MEAL CONSISTENCY & STREAK
             // ==========================================
-            AnimatedVisibility(visible = showStreakCard) {
+            chartVisibility(visible = showStreakCard) {
                 ConsistencyStreakCard(
                     allMeals = allMeals,
                     targetCalories = defaultTargetCalories
@@ -649,7 +686,7 @@ fun AnalyticsScreen(
             // ==========================================
             // 5. WEIGHT PROGRESSION (Apple Health Curve)
             // ==========================================
-            AnimatedVisibility(visible = showWeightChart) {
+            chartVisibility(visible = showWeightChart) {
                 AppleWeightProgressionCard(
                     weights = weights,
                     targetWeightKg = 70.0f,

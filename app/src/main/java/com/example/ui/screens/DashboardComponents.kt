@@ -13,8 +13,9 @@ import com.example.ui.foundation.rememberAppleHaptics
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import com.example.ui.foundation.animatorDurationScale
 import com.example.ui.theme.AppleBlue
 import com.example.ui.theme.AppleGreen
 import com.example.ui.theme.AppleOrange
@@ -67,8 +68,11 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.scaleIn
@@ -183,6 +187,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.input.pointer.pointerInput
 import com.example.util.MealTypes
+
+private val MealEaseOut = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 
 @Composable
 fun CompactWeightChip(
@@ -3363,10 +3369,10 @@ fun UnifiedMealsCard(
                 animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
                 label = "targetMealBorderColor"
             )
-            val cardBorderWidth by animateDpAsState(
-                targetValue = if (isHoveredTarget) 2.dp else 1.dp,
-                animationSpec = appleSpring(dampingRatio = 0.75f, stiffness = 300f),
-                label = "targetMealBorderWidth"
+            val hoverScale by animateFloatAsState(
+                targetValue = if (isHoveredTarget && animatorDurationScale() > 0f) 1.02f else 1f,
+                animationSpec = AppleSprings.SnappyFloat,
+                label = "targetMealHoverScale"
             )
 
             DisposableEffect(typeKey) {
@@ -3523,7 +3529,7 @@ fun UnifiedMealsCard(
                     isNothing -> 1.dp
                     isNeo -> 2.dp
                     isBento -> 1.8.dp
-                    else -> cardBorderWidth
+                    else -> 1.dp
                 }
                 val mealBorderColor = when {
                     isNothing -> if (isHoveredTarget) NothingRed else NothingBorderVisible
@@ -3541,6 +3547,10 @@ fun UnifiedMealsCard(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .graphicsLayer {
+                            scaleX = hoverScale
+                            scaleY = hoverScale
+                        }
                         .onGloballyPositioned { coordinates ->
                             dragDropState?.registerMealBounds(typeKey, coordinates.boundsInRoot())
                         }
@@ -3573,19 +3583,27 @@ fun UnifiedMealsCard(
                             meals.forEachIndexed { index, meal ->
                                 key(meal.id) {
                                     var isDeleted by remember(meal.id) { mutableStateOf(false) }
+                                    val motionAllowed = animatorDurationScale() > 0f
                                     AnimatedVisibility(
                                         visible = !isDeleted,
-                                        exit = scaleOut(
-                                            targetScale = 0.85f,
-                                            animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessMedium
+                                        enter = if (motionAllowed) {
+                                            fadeIn(tween(180, easing = MealEaseOut)) + scaleIn(
+                                                initialScale = 0.95f,
+                                                transformOrigin = TransformOrigin(0.5f, 0.5f),
+                                                animationSpec = AppleSprings.SnappyFloat
                                             )
-                                        ) + shrinkVertically(
-                                            animationSpec = appleSpring(dampingRatio = 0.85f, stiffness = 400f)
-                                        ) + fadeOut(
-                                            animationSpec = tween(durationMillis = 150)
-                                        )
+                                        } else {
+                                            fadeIn(tween(180, easing = MealEaseOut))
+                                        },
+                                        exit = if (motionAllowed) {
+                                            fadeOut(tween(120, easing = MealEaseOut)) + scaleOut(
+                                                targetScale = 0.95f,
+                                                transformOrigin = TransformOrigin(0.5f, 0.5f),
+                                                animationSpec = AppleSprings.SnappyFloat
+                                            )
+                                        } else {
+                                            fadeOut(tween(120, easing = MealEaseOut))
+                                        }
                                     ) {
                                         Column(modifier = Modifier.fillMaxWidth()) {
                                             MealItemRow(
