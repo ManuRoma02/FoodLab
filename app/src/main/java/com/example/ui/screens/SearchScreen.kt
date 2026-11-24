@@ -699,7 +699,11 @@ fun SearchScreen(
                     } else {
                         items(items = templates, key = { it.template.id }) { templateWithItems ->
                             val t = templateWithItems.template
+                            val servings = t.servings.coerceAtLeast(1)
                             val templateFoodList = templateWithItems.items
+                            val perServingTotalCals = templateFoodList.sumOf {
+                                (it.caloriesPer100g * (it.quantityGrams / servings).coerceIn(1, 5_000)) / 100
+                            }
                             
                             Surface(
                                 modifier = Modifier
@@ -719,7 +723,8 @@ fun SearchScreen(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(t.name, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
-                                            Text("${templateFoodList.size} alimenti  •  ${templateFoodList.sumOf { (it.caloriesPer100g * it.quantityGrams) / 100 }} kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            val portionSuffix = if (servings > 1) " (1/$servings porz.)" else ""
+                                            Text("${templateFoodList.size} alimenti$portionSuffix  •  $perServingTotalCals kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                             IconButton(onClick = {
@@ -745,12 +750,13 @@ fun SearchScreen(
 
                                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         templateFoodList.forEach { item ->
-                                            val cals = (item.caloriesPer100g * item.quantityGrams) / 100
+                                            val qty = (item.quantityGrams / servings).coerceIn(1, 5_000)
+                                            val cals = (item.caloriesPer100g * qty) / 100
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
-                                                Text("• ${item.foodName} (${item.quantityGrams}g)", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text("• ${item.foodName} (${qty}g)", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text("$cals kcal", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
@@ -851,7 +857,11 @@ fun SearchScreen(
                                             .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
                                             .applePressEffect(pressedScale = 0.98f) {
                                                 appleHaptics.tactileClick()
-                                                onNavigateToCreateFood(searchQuery, "")
+                                                val trimmed = searchQuery.trim()
+                                                val isBarcode = trimmed.isNotEmpty() && trimmed.all { it.isDigit() }
+                                                val barcodeParam = if (isBarcode) trimmed else ""
+                                                val nameParam = if (!isBarcode) trimmed else ""
+                                                onNavigateToCreateFood(barcodeParam, nameParam)
                                             },
                                         contentAlignment = Alignment.Center
                                     ) {

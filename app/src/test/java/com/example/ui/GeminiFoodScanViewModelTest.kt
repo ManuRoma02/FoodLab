@@ -6,12 +6,14 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.FoodLabApplication
 import com.example.data.GeminiFoodScanResult
 import com.example.data.GeminiFoodScannerService
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -310,6 +312,96 @@ class GeminiFoodScanViewModelTest {
         assertTrue(jpegBytes.isNotEmpty())
         assertEquals(0xFF.toByte(), jpegBytes[0])
         assertEquals(0xD8.toByte(), jpegBytes[1])
+    }
+
+    @Test
+    fun testResetState_cancelsActiveScanAndIgnoresStaleCompletion() = runTest(testDispatcher) {
+        val gate = CompletableDeferred<Result<GeminiFoodScanResult>>()
+        val suspendingService = object : GeminiFoodScannerService {
+            override suspend fun analyzeFoodImage(jpegBytes: ByteArray): Result<GeminiFoodScanResult> {
+                return gate.await()
+            }
+        }
+        val viewModel = GeminiFoodScanViewModel(
+            application = app,
+            scannerService = suspendingService,
+            repository = app.repository,
+            widgetUpdater = { widgetUpdatedCount++ },
+            defaultDispatcher = testDispatcher
+        )
+
+        val scanJob = viewModel.analyzeImageBytes(byteArrayOf(1, 2, 3))
+        testScheduler.runCurrent()
+        assertTrue(viewModel.uiState.value is GeminiScanUiState.Analyzing)
+
+        viewModel.resetState()
+        assertEquals(GeminiScanUiState.Idle, viewModel.uiState.value)
+        assertTrue(scanJob.isCancelled)
+
+        gate.complete(Result.success(sampleScanResult))
+        testScheduler.advanceUntilIdle()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(GeminiScanUiState.Idle, viewModel.uiState.value)
+    }
+
+    @Test
+    fun testAnalyzeImageBytes_cancelsPriorScanAndKeepsLatestResult() = runTest(testDispatcher) {
+        val firstGate = CompletableDeferred<Result<GeminiFoodScanResult>>()
+        val secondResult = sampleScanResult.copy(foodName = "Insalata di Quinoa")
+        var callIndex = 0
+        val service = object : GeminiFoodScannerService {
+            override suspend fun analyzeFoodImage(jpegBytes: ByteArray): Result<GeminiFoodScanResult> {
+                callIndex++
+                return if (callIndex == 1) firstGate.await() else Result.success(secondResult)
+            }
+        }
+        val viewModel = GeminiFoodScanViewModel(
+            application = app,
+            scannerService = service,
+            repository = app.repository,
+            widgetUpdater = { widgetUpdatedCount++ },
+            defaultDispatcher = testDispatcher
+        )
+
+        val firstJob = viewModel.analyzeImageBytes(byteArrayOf(1, 2))
+        testScheduler.runCurrent()
+        val secondJob = viewModel.analyzeImageBytes(byteArrayOf(3, 4))
+        testScheduler.advanceUntilIdle()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertTrue(firstJob.isCancelled)
+        assertTrue(secondJob.isCompleted)
+        firstGate.complete(Result.failure(IOException("Errore vecchio")))
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as GeminiScanUiState.Success
+        assertEquals("Insalata di Quinoa", state.result.foodName)
+    }
+
+    @Test
+    fun testConfirmAndLogMeal_doubleTapGuardPreventsDuplicateInsert() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.analyzeImageBytes(byteArrayOf(1, 2, 3))
+        testScheduler.advanceUntilIdle()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val targetDate = "2026-10-08"
+        val firstJob = viewModel.confirmAndLogMeal(sampleScanResult, 200, "LUNCH", targetDate)
+        val savingState = viewModel.uiState.value as GeminiScanUiState.Success
+        assertTrue("Expected isSaving = true while save is queued", savingState.isSaving)
+
+        val secondJob = viewModel.confirmAndLogMeal(sampleScanResult, 200, "LUNCH", targetDate)
+        assertEquals(firstJob, secondJob)
+
+        firstJob.join()
+        testScheduler.advanceUntilIdle()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val mealsForDate = app.repository.getMealsForDate(targetDate).first()
+            .filter { it.foodName == "Pasta al Pesto" }
+        assertEquals(1, mealsForDate.size)
+        assertEquals(1, widgetUpdatedCount)
     }
 }
 

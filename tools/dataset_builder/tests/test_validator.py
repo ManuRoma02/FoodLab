@@ -130,3 +130,29 @@ def test_parse_numeric_rejects_booleans():
     assert _parse_numeric(True) is None
     assert _parse_numeric(False) is None
 
+
+def test_parse_numeric_kj_and_dual_energy_strings():
+    """Regression P-4: convert standalone kJ -> kcal and prefer kcal in dual strings."""
+    from tools.dataset_builder.validator import _parse_numeric
+    assert round(_parse_numeric("1985 kJ"), 1) == 474.4
+    assert _parse_numeric("1985 kJ / 473 kcal") == 473.0
+    assert _parse_numeric("473 kcal / 1985 kJ") == 473.0
+    assert _parse_numeric("12,5 g") == 12.5
+    assert _parse_numeric("50 mg") == 0.05
+
+    food = validate_and_normalize(
+        {
+            "name": "Biscotto Dual Energy",
+            "calories": "1985 kJ / 473 kcal",
+            "protein": "7,5 g",
+            "carbs": "68,0 g",
+            "fat": "18,5 g",
+            "sodium": "120 mg",
+        },
+        "TEST",
+    )
+    assert food is not None
+    assert food.calories_100g == 473
+    assert food.protein_100g == 7.5
+    assert food.sodium_100g == 0.12
+

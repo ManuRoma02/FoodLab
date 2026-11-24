@@ -167,6 +167,47 @@ object SearchOptimizer {
             .replace("_", "\\_")
     }
 
+    private fun stripSpaces(text: String): String {
+        var hasSpace = false
+        for (i in text.indices) {
+            if (text[i].isWhitespace()) { hasSpace = true; break }
+        }
+        if (!hasSpace) return text
+        val sb = StringBuilder(text.length)
+        for (i in text.indices) {
+            val ch = text[i]
+            if (!ch.isWhitespace()) sb.append(ch)
+        }
+        return sb.toString()
+    }
+
+    private fun splitWords(text: String): List<String> {
+        if (text.isEmpty()) return emptyList()
+        val result = ArrayList<String>(4)
+        var start = -1
+        for (i in text.indices) {
+            if (text[i].isWhitespace()) {
+                if (start >= 0) {
+                    result.add(text.substring(start, i))
+                    start = -1
+                }
+            } else if (start < 0) {
+                start = i
+            }
+        }
+        if (start >= 0) result.add(text.substring(start))
+        return result
+    }
+
+    private class PreparedQuery(rawNormalizedQuery: String) {
+        val normQuery: String = normalizeDiacritics(rawNormalizedQuery)
+        val compactQuery: String = stripSpaces(normQuery)
+        val tokens: List<String> = splitWords(normQuery)
+        val tokenAllDigits: BooleanArray = BooleanArray(tokens.size) { tokens[it].all(Char::isDigit) }
+        val tokenCategories: Array<Set<String>?> = Array(tokens.size) { CATEGORY_SHAPES[tokens[it]] }
+        val tokenSynonyms: Array<List<String>?> = Array(tokens.size) { SYNONYMS[tokens[it]]?.let(::splitWords) }
+    }
+
     fun rank(localFoods: List<FoodItem>, apiFoods: List<FoodItem>, rawQuery: String): List<FoodItem> {
         val normalizedQuery = cacheKey(rawQuery)
         if (normalizedQuery.isBlank()) {
@@ -178,16 +219,19 @@ object SearchOptimizer {
         }
 
         val merged = if (apiFoods.isEmpty()) localFoods else deduplicate(localFoods, apiFoods)
-        val scored = merged.map { it to scoreFood(it, normalizedQuery) }
-            .filter { it.second > 0 }
-            .sortedWith(
-                compareByDescending<Pair<FoodItem, Int>> { it.second }
-                    .thenByDescending { it.first.isFavorite }
-                    .thenByDescending { it.first.useCount }
-                    .thenBy { it.first.name.lowercase(Locale.ROOT) }
-            )
-            .map { it.first }
-        return scored
+        val prepared = PreparedQuery(normalizedQuery)
+        val scored = ArrayList<Pair<FoodItem, Int>>(merged.size)
+        for (food in merged) {
+            val s = scoreFoodPrepared(food, prepared)
+            if (s > 0) scored.add(food to s)
+        }
+        scored.sortWith(
+            compareByDescending<Pair<FoodItem, Int>> { it.second }
+                .thenByDescending { it.first.isFavorite }
+                .thenByDescending { it.first.useCount }
+                .thenBy { it.first.name.lowercase(Locale.ROOT) }
+        )
+        return scored.map { it.first }
     }
 
     private fun defaultSort(): Comparator<FoodItem> {
@@ -197,9 +241,21 @@ object SearchOptimizer {
     }
 
     fun normalizeDiacritics(text: String): String {
-        val nfd = java.text.Normalizer.normalize(text.trim().lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
-        val withoutAccents = DIACRITICS_REGEX.replace(nfd, "")
-        return APOSTROPHE_REGEX.replace(withoutAccents, " ")
+        val trimmed = text.trim().lowercase(Locale.ROOT)
+        var hasNonAscii = false
+        var hasApostrophe = false
+        for (i in trimmed.indices) {
+            val ch = trimmed[i]
+            if (ch.code >= 128) hasNonAscii = true
+            if (ch == '\'' || ch == '\u2019' || ch == '`') hasApostrophe = true
+        }
+        val withoutAccents = if (!hasNonAscii) {
+            trimmed
+        } else {
+            val nfd = java.text.Normalizer.normalize(trimmed, java.text.Normalizer.Form.NFD)
+            DIACRITICS_REGEX.replace(nfd, "")
+        }
+        return if (hasApostrophe) APOSTROPHE_REGEX.replace(withoutAccents, " ") else withoutAccents
     }
 
     fun normalizeAlphanumeric(text: String): String {
@@ -268,16 +324,20 @@ object SearchOptimizer {
     }
 
     fun scoreFood(food: FoodItem, normalizedQuery: String): Int {
-        val normQuery = normalizeDiacritics(normalizedQuery)
+        return scoreFoodPrepared(food, PreparedQuery(normalizedQuery))
+    }
+
+    private fun scoreFoodPrepared(food: FoodItem, query: PreparedQuery): Int {
+        val normQuery = query.normQuery
         val name = normalizeDiacritics(food.name)
         val brand = normalizeDiacritics(food.brand)
-        val compactQuery = WHITESPACE_REGEX.replace(normQuery, "")
-        val compactName = WHITESPACE_REGEX.replace(name, "")
-        val compactBrand = WHITESPACE_REGEX.replace(brand, "")
+        val compactQuery = query.compactQuery
+        val compactName = stripSpaces(name)
+        val compactBrand = stripSpaces(brand)
 
-        val tokens = normQuery.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
-        val nameWords = name.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
-        val brandWords = brand.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
+        val tokens = query.tokens
+        val nameWords = splitWords(name)
+        val brandWords = splitWords(brand)
 
         var score = 0
         if (name == normQuery) score += 6000
@@ -292,7 +352,8 @@ object SearchOptimizer {
         var matchedTokensCount = 0
         var matchedBrandTokensCount = 0
 
-        for (token in tokens) {
+        for (idx in tokens.indices) {
+            val token = tokens[idx]
             var tokenMatched = false
             var tokenMatchedBrand = false
 
@@ -308,18 +369,19 @@ object SearchOptimizer {
             if (nameWords.contains(token)) { score += 300; tokenMatched = true }
             if (name.contains(token)) { score += 230; tokenMatched = true }
 
-            if (token.all { it.isDigit() } && food.defaultServingSize.toString().contains(token)) {
+            val isDigitToken = query.tokenAllDigits[idx]
+            if (isDigitToken && food.defaultServingSize.toString().contains(token)) {
                 score += 160
                 tokenMatched = true
             }
 
-            if (token.all { it.isDigit() } && token.length >= 6 && food.barcode.isNotEmpty() && food.barcode.contains(token)) {
+            if (isDigitToken && token.length >= 6 && food.barcode.isNotEmpty() && food.barcode.contains(token)) {
                 score += 5000
                 tokenMatched = true
             }
 
             // Category semantic format match (e.g. token is "pasta" and food name contains "spaghetti", "penne", etc.)
-            val categoryFormats = CATEGORY_SHAPES[token]
+            val categoryFormats = query.tokenCategories[idx]
             if (categoryFormats != null) {
                 if (categoryFormats.any { fmt -> name.contains(fmt) }) {
                     score += 750
@@ -328,9 +390,8 @@ object SearchOptimizer {
             }
 
             // Synonym / abbreviation check (e.g. evoo -> olio extravergine oliva)
-            val syn = SYNONYMS[token]
-            if (syn != null) {
-                val synWords = syn.split(WHITESPACE_REGEX)
+            val synWords = query.tokenSynonyms[idx]
+            if (synWords != null) {
                 for (sw in synWords) {
                     if (name.contains(sw) || brand.contains(sw)) {
                         score += 350

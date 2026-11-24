@@ -16,12 +16,25 @@ import java.util.zip.GZIPInputStream
 
 object CreaDatabaseImporter {
     private const val TAG = "CreaDatabaseImporter"
+    internal const val IMPORT_PREFS_NAME = "foodlab_import_prefs"
+    private const val LEGACY_PREFS_NAME = "foodlab_prefs"
     private const val PREF_KEY_MASTER_IMPORTED = "foodlab_master_dataset_v5"
     private const val PREF_KEY_CREA_IMPORTED = "crea_imported_v3_enhanced"
 
     suspend fun importIfNeeded(context: Context, repository: Repository) {
         withContext(Dispatchers.IO) {
-            val prefs = context.getSharedPreferences("foodlab_prefs", Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences(IMPORT_PREFS_NAME, Context.MODE_PRIVATE)
+            val legacyPrefs = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+            if (!prefs.contains(PREF_KEY_MASTER_IMPORTED) && legacyPrefs.getBoolean(PREF_KEY_MASTER_IMPORTED, false)) {
+                prefs.edit()
+                    .putBoolean(PREF_KEY_MASTER_IMPORTED, true)
+                    .putBoolean(PREF_KEY_CREA_IMPORTED, legacyPrefs.getBoolean(PREF_KEY_CREA_IMPORTED, true))
+                    .apply()
+            } else if (!prefs.contains(PREF_KEY_CREA_IMPORTED) && legacyPrefs.getBoolean(PREF_KEY_CREA_IMPORTED, false)) {
+                prefs.edit()
+                    .putBoolean(PREF_KEY_CREA_IMPORTED, true)
+                    .apply()
+            }
             if (prefs.getBoolean(PREF_KEY_MASTER_IMPORTED, false)) {
                 Log.d(TAG, "Master Italian food dataset already imported.")
                 return@withContext
@@ -56,34 +69,51 @@ object CreaDatabaseImporter {
                     val db = appDb.openHelper.writableDatabase
 
                     val escapedPath = tempDbFile.absolutePath.replace("'", "''")
+                    // ATTACH/DETACH must stay outside the SQLite transaction boundary.
                     db.execSQL("ATTACH DATABASE '$escapedPath' AS master_import")
 
-                    db.beginTransaction()
+                    var committed = false
                     try {
-                        db.execSQL("""
-                            INSERT OR IGNORE INTO foods (
-                                id, name, brand, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g,
-                                defaultServingSize, isFavorite, useCount, barcode, isUserCreated
-                            )
-                            SELECT 
-                                id, name, brand, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g,
-                                defaultServingSize, 0, 0, barcode, 0
-                            FROM master_import.foods
-                        """)
-                        db.execSQL("""
-                            INSERT OR IGNORE INTO food_portions (id, foodId, name, weightGrams)
-                            SELECT id, foodId, name, weightGrams
-                            FROM master_import.food_portions
-                        """)
-                        db.setTransactionSuccessful()
+                        db.beginTransaction()
+                        try {
+                            val foodIdOffset = db.query("SELECT COALESCE(MAX(id), 0) FROM foods").use { cursor ->
+                                if (cursor.moveToFirst()) cursor.getLong(0) else 0L
+                            }
+                            val portionIdOffset = db.query("SELECT COALESCE(MAX(id), 0) FROM food_portions").use { cursor ->
+                                if (cursor.moveToFirst()) cursor.getLong(0) else 0L
+                            }
+                            db.execSQL("""
+                                INSERT OR IGNORE INTO foods (
+                                    id, name, brand, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g,
+                                    defaultServingSize, isFavorite, useCount, barcode, isUserCreated
+                                )
+                                SELECT 
+                                    id + $foodIdOffset, name, brand, caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g,
+                                    defaultServingSize, 0, 0, barcode, 0
+                                FROM master_import.foods
+                            """)
+                            db.execSQL("""
+                                INSERT OR IGNORE INTO food_portions (id, foodId, name, weightGrams)
+                                SELECT id + $portionIdOffset, foodId + $foodIdOffset, name, weightGrams
+                                FROM master_import.food_portions
+                            """)
+                            db.setTransactionSuccessful()
+                            committed = true
+                        } finally {
+                            db.endTransaction()
+                        }
                     } finally {
-                        db.endTransaction()
                         try {
                             db.execSQL("DETACH DATABASE master_import")
                         } catch (e: Exception) {
                             Log.w(TAG, "Error detaching master_import", e)
                         }
                         tempDbFile.delete()
+                    }
+
+                    if (committed) {
+                        // Raw writableDatabase inserts bypass Room DAO hooks; notify observers after commit.
+                        appDb.invalidationTracker.refreshVersionsAsync()
                     }
 
                     prefs.edit()

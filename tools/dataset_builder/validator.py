@@ -1,5 +1,6 @@
 """Nutrient validation and normalization engine for FoodLab."""
 
+import math
 import re
 from typing import Any, Dict, List, Optional
 from tools.dataset_builder.models import FoodRecord
@@ -12,7 +13,6 @@ def _parse_numeric(val: Any) -> Optional[float]:
     if isinstance(val, bool):
         return None
     if isinstance(val, (int, float)):
-        import math
         if math.isnan(val) or math.isinf(val):
             return None
         return float(val)
@@ -27,6 +27,23 @@ def _parse_numeric(val: Any) -> Optional[float]:
         if cleaned.startswith("<"):
             cleaned = cleaned[1:].strip()
 
+        # Energy strings: prefer kcal when both kJ and kcal appear; convert standalone kJ -> kcal
+        cleaned_energy = cleaned.replace("\xa0", " ").replace(",", ".")
+        kcal_match = re.search(r"([-+]?\d*\.?\d+)\s*kcal(?![a-z])", cleaned_energy)
+        if kcal_match:
+            try:
+                num = float(kcal_match.group(1))
+                return num if math.isfinite(num) else None
+            except ValueError:
+                return None
+        kj_match = re.search(r"([-+]?\d*\.?\d+)\s*kj(?![a-z])", cleaned_energy)
+        if kj_match:
+            try:
+                num = float(kj_match.group(1))
+                return (num / 4.184) if math.isfinite(num) else None
+            except ValueError:
+                return None
+
         # Handle units
         is_mg = False
         if cleaned.endswith("mg"):
@@ -34,10 +51,6 @@ def _parse_numeric(val: Any) -> Optional[float]:
             cleaned = cleaned[:-2].strip()
         elif cleaned.endswith("g"):
             cleaned = cleaned[:-1].strip()
-        elif cleaned.endswith("kcal"):
-            cleaned = cleaned[:-4].strip()
-        elif cleaned.endswith("kj"):
-            cleaned = cleaned[:-2].strip()
 
         # Replace European decimal comma
         cleaned = cleaned.replace(",", ".")

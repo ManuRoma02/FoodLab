@@ -1,5 +1,6 @@
 package com.example.widget
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -10,7 +11,6 @@ import com.example.MainActivity
 import com.example.R
 import com.example.data.AppDatabase
 import com.example.ui.SessionManager
-import com.example.util.MealTypes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,6 +20,12 @@ class DailyCaloriesWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         val action = intent.action
+        if (action == ACTION_MIDNIGHT_REFRESH) {
+            com.example.util.StepCounterStore.resetForNewDay(context)
+            com.example.util.WidgetUpdater.updateAllWidgets(context)
+            scheduleMidnightRefresh(context)
+            return
+        }
         if (action == Intent.ACTION_DATE_CHANGED || 
             action == Intent.ACTION_TIMEZONE_CHANGED || 
             action == Intent.ACTION_TIME_CHANGED || 
@@ -31,11 +37,13 @@ class DailyCaloriesWidgetProvider : AppWidgetProvider() {
             if (appWidgetIds.isNotEmpty()) {
                 updateWidgetsAsync(context, appWidgetManager, appWidgetIds)
             }
+            scheduleMidnightRefresh(context)
         }
     }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         updateWidgetsAsync(context, appWidgetManager, appWidgetIds)
+        scheduleMidnightRefresh(context)
     }
 
     private fun updateWidgetsAsync(context: Context, manager: AppWidgetManager, ids: IntArray) {
@@ -54,11 +62,33 @@ class DailyCaloriesWidgetProvider : AppWidgetProvider() {
             }
         }
     }
+
+    companion object {
+        internal const val ACTION_MIDNIGHT_REFRESH = "com.example.MIDNIGHT_WIDGET_REFRESH"
+    }
 }
 
-private fun getMealTypeForCurrentTime(): String {
-    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    return MealTypes.inferMealTypeFromHour(hour)
+internal fun scheduleMidnightRefresh(context: Context) {
+    try {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val nextMidnight = java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 1)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        val intent = Intent(context, DailyCaloriesWidgetProvider::class.java).apply {
+            action = DailyCaloriesWidgetProvider.ACTION_MIDNIGHT_REFRESH
+        }
+        val pending = PendingIntent.getBroadcast(
+            context,
+            9901,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC, nextMidnight.timeInMillis, pending)
+    } catch (_: Exception) {}
 }
 
 private fun dailyPercentageOf(consumed: Int, target: Int): Int {
@@ -81,10 +111,8 @@ internal suspend fun updateWidget(context: Context, appWidgetManager: AppWidgetM
     )
     views.setOnClickPendingIntent(R.id.widget_container, appPendingIntent)
 
-    val timeMealType = getMealTypeForCurrentTime()
     val searchIntent = Intent(context, MainActivity::class.java).apply {
         action = "WIDGET_ADD_FOOD"
-        putExtra("MEAL_TYPE", timeMealType)
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
     val searchPendingIntent = PendingIntent.getActivity(

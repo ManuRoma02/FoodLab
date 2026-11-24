@@ -16,23 +16,28 @@
         android:background="@drawable/widget_mascot_halo_bg"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="7dp"
+        android:paddingHorizontal="6dp"
         android:paddingVertical="3dp">
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="0.58"
+            android:layout_weight="0.64"
             android:gravity="center_vertical"
             android:orientation="vertical">
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:autoSizeMaxTextSize="10sp"
+                android:autoSizeMinTextSize="7sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
                 android:includeFontPadding="false"
                 android:letterSpacing="0.06"
-                android:singleLine="true"
+                android:maxLines="1"
                 android:text="CALORIE"
                 android:textColor="#8E8E93"
                 android:textSize="10sp"
@@ -40,23 +45,33 @@
 
             <TextView
                 android:id="@+id/calories_text"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:autoSizeMaxTextSize="22sp"
+                android:autoSizeMinTextSize="12sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:ellipsize="end"
                 android:fontFamily="sans-serif"
                 android:includeFontPadding="false"
-                android:singleLine="true"
+                android:maxLines="1"
                 android:text="1850"
                 android:textColor="#FFFFFF"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/daily_target_text"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:autoSizeMaxTextSize="10sp"
+                android:autoSizeMinTextSize="7sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:ellipsize="end"
                 android:fontFamily="sans-serif"
                 android:includeFontPadding="false"
-                android:singleLine="true"
+                android:maxLines="1"
                 android:text="su 2500 kcal"
                 android:textColor="#8E8E93"
                 android:textSize="10sp" />
@@ -65,12 +80,12 @@
         <ImageView
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginStart="4dp"
-            android:layout_weight="0.42"
+            android:layout_marginStart="2dp"
+            android:layout_weight="0.36"
             android:contentDescription="@string/widget_mascot_status"
             android:padding="2dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/foodlab_mascot_duo" />
+            android:src="@drawable/foodlab_mascot_duo_widget" />
     </LinearLayout>
 
     <!-- Bottom Action Button: Apple Pill -->

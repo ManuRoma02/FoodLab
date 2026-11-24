@@ -1,5 +1,6 @@
 package com.example.data
 
+import androidx.room.withTransaction
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.example.ui.SearchOptimizer
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -7,6 +8,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class Repository(
     private val foodDao: FoodDao,
@@ -16,8 +19,10 @@ class Repository(
     private val templateDao: MealTemplateDao,
     private val portionDao: FoodPortionDao,
     private val shoppingDao: ShoppingItemDao? = null,
-    val openFoodFactsApi: OpenFoodFactsApi? = null
+    val openFoodFactsApi: OpenFoodFactsApi? = null,
+    private val database: AppDatabase? = null
 ) {
+    private val seedMutex = Mutex()
     val allFoods: Flow<List<FoodItem>> = foodDao.getAllFoods()
     val allWeights: Flow<List<WeightLog>> = weightDao.getAllWeights()
     val allWeightsDesc: Flow<List<WeightLog>> = weightDao.getAllWeightsDesc()
@@ -72,15 +77,17 @@ class Repository(
             return clauses.joinToString(" OR ")
         }
 
+        val orderClause = "ORDER BY isFavorite DESC, useCount DESC, isUserCreated DESC, name ASC"
+
         val baseFlow = if (tokens.size > 1) {
             val whereClauses = tokens.joinToString(" AND ") { token ->
                 "(${buildTokenClause(token)})"
             }
-            val sql = "SELECT * FROM foods WHERE $whereClauses LIMIT 1000"
+            val sql = "SELECT * FROM foods WHERE $whereClauses $orderClause LIMIT 1000"
             foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
         } else {
             val whereClause = buildTokenClause(tokens[0])
-            val sql = "SELECT * FROM foods WHERE $whereClause LIMIT 1000"
+            val sql = "SELECT * FROM foods WHERE $whereClause $orderClause LIMIT 1000"
             foodDao.searchFoodsRaw(SimpleSQLiteQuery(sql))
         }
 
@@ -90,7 +97,7 @@ class Repository(
                     val contentTokens = tokens.filter { it !in SearchOptimizer.ITALIAN_STOPWORDS && it.length >= 2 }
                     val fallbackContentFlow = if (contentTokens.isNotEmpty() && contentTokens.size < tokens.size) {
                         val contentWhere = contentTokens.joinToString(" AND ") { "(${buildTokenClause(it)})" }
-                        val contentSql = "SELECT * FROM foods WHERE $contentWhere LIMIT 1000"
+                        val contentSql = "SELECT * FROM foods WHERE $contentWhere $orderClause LIMIT 1000"
                         foodDao.searchFoodsRaw(SimpleSQLiteQuery(contentSql))
                     } else null
 
@@ -101,7 +108,7 @@ class Repository(
                             val pfx = t.substring(0, pLen)
                             "(${buildTokenClause(pfx)})"
                         }
-                        val prefixSql = "SELECT * FROM foods WHERE $prefixWhere LIMIT 1000"
+                        val prefixSql = "SELECT * FROM foods WHERE $prefixWhere $orderClause LIMIT 1000"
                         foodDao.searchFoodsRaw(SimpleSQLiteQuery(prefixSql))
                     }
 
@@ -112,7 +119,7 @@ class Repository(
                             // As final candidate pool for multi-token, match tokens with balanced UNION per token
                             val orTokens = if (contentTokens.isNotEmpty()) contentTokens else tokens
                             val unionSql = orTokens.joinToString(" UNION ") { token ->
-                                "SELECT * FROM (SELECT * FROM foods WHERE (${buildTokenClause(token)}) LIMIT 1000)"
+                                "SELECT * FROM (SELECT * FROM foods WHERE (${buildTokenClause(token)}) $orderClause LIMIT 1000)"
                             }
                             foodDao.searchFoodsRaw(SimpleSQLiteQuery(unionSql))
                         }
@@ -123,7 +130,7 @@ class Repository(
                     val prefixLen = (token.length - 1).coerceAtMost(5).coerceAtLeast(3)
                     val prefix = token.substring(0, prefixLen)
                     val whereClause = buildTokenClause(prefix)
-                    val fallbackSql = "SELECT * FROM foods WHERE $whereClause LIMIT 1000"
+                    val fallbackSql = "SELECT * FROM foods WHERE $whereClause $orderClause LIMIT 1000"
                     foodDao.searchFoodsRaw(SimpleSQLiteQuery(fallbackSql))
                 } else {
                     flowOf(emptyList())
@@ -135,27 +142,48 @@ class Repository(
     }
     suspend fun getFoodById(id: Int) = foodDao.getFoodById(id)
     suspend fun getFoodByBarcode(barcode: String): FoodItem? = foodDao.getFoodByBarcode(barcode)
+    suspend fun getFoodByNameAndBrand(name: String, brand: String): FoodItem? =
+        foodDao.getFoodByNameAndBrand(name, brand)
     suspend fun getUserCreatedFoodsWithPortions() = foodDao.getUserCreatedFoodsWithPortions()
     suspend fun getUserCreatedFoods() = foodDao.getUserCreatedFoods()
-    suspend fun getFoodsByIds(ids: List<Int>) = if (ids.isEmpty()) emptyList() else foodDao.getFoodsByIds(ids)
+    suspend fun getFoodsByIds(ids: List<Int>): List<FoodItem> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(SQLITE_IN_CHUNK_SIZE).flatMap { foodDao.getFoodsByIds(it) }
+    }
     suspend fun incrementUseCount(id: Int) = foodDao.incrementUseCount(id)
     suspend fun incrementUseCounts(ids: List<Int>) {
-        if (ids.isNotEmpty()) foodDao.incrementUseCounts(ids.distinct())
+        if (ids.isEmpty()) return
+        ids.distinct().chunked(SQLITE_IN_CHUNK_SIZE).forEach { foodDao.incrementUseCounts(it) }
     }
     suspend fun setFavorite(id: Int, isFavorite: Boolean) = foodDao.setFavorite(id, isFavorite)
     suspend fun insertFood(food: FoodItem): Long = foodDao.insertFood(food)
     suspend fun insertInitialFoods(foods: List<FoodItem>): List<Long> = foodDao.insertFoods(foods)
 
     suspend fun ensureDefaultFoodsSeeded() {
-        if (foodDao.getFoodCount() == 0) {
-            DefaultFoodCatalog.items.forEach { seed ->
-                val foodId = foodDao.insertFood(seed.food).toInt()
-                if (seed.portions.isNotEmpty()) {
-                    val portions = seed.portions.map { (name, weight) ->
-                        FoodPortion(foodId = foodId, name = name, weightGrams = weight)
+        seedMutex.withLock {
+            if (foodDao.getFoodCount() != 0) return
+            val seedBlock: suspend () -> Unit = {
+                if (foodDao.getFoodCount() == 0) {
+                    val insertedIds = foodDao.insertFoods(DefaultFoodCatalog.items.map { it.food })
+                    val allPortions = buildList {
+                        DefaultFoodCatalog.items.forEachIndexed { index, seed ->
+                            val foodId = insertedIds.getOrNull(index)?.toInt() ?: 0
+                            if (foodId > 0 && seed.portions.isNotEmpty()) {
+                                seed.portions.forEach { (name, weight) ->
+                                    add(FoodPortion(foodId = foodId, name = name, weightGrams = weight))
+                                }
+                            }
+                        }
                     }
-                    portionDao.insertPortions(portions)
+                    if (allPortions.isNotEmpty()) {
+                        portionDao.insertPortions(allPortions)
+                    }
                 }
+            }
+            if (database != null) {
+                database.withTransaction { seedBlock() }
+            } else {
+                seedBlock()
             }
         }
     }
@@ -225,7 +253,15 @@ class Repository(
 
     fun getTargetForDate(date: String) = targetDao.getTargetForDate(date)
     fun getFixedTarget() = targetDao.getFixedTarget()
-    fun getTargetsForDates(dates: List<String>) = targetDao.getTargetsForDates(dates)
+    fun getTargetsForDates(dates: List<String>): Flow<List<DailyTarget>> {
+        val distinctDates = dates.distinct()
+        if (distinctDates.isEmpty()) return flowOf(emptyList())
+        val chunks = distinctDates.chunked(SQLITE_IN_CHUNK_SIZE)
+        if (chunks.size == 1) return targetDao.getTargetsForDates(chunks.first())
+        return combine(chunks.map { targetDao.getTargetsForDates(it) }) { results ->
+            results.flatMap { it }
+        }
+    }
     suspend fun insertTarget(target: DailyTarget) = targetDao.insertTarget(target)
 
     fun resolveTargetForDate(date: String): Flow<DailyTarget> {
@@ -320,6 +356,10 @@ class Repository(
         } catch (e: Exception) {
             BarcodeLookupResult.NetworkError("Could not reach Open Food Facts. Check your connection and try again.")
         }
+    }
+
+    private companion object {
+        const val SQLITE_IN_CHUNK_SIZE = 900
     }
 }
 

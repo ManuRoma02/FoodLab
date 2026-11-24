@@ -71,24 +71,12 @@ private data class NutritionSummary(
 private const val BASE_PAGE_INDEX = 5000
 private const val TOTAL_PAGES = 10000
 
-private fun daysBetween(fromDate: String, toDate: String): Int {
+internal fun daysBetween(fromDate: String, toDate: String): Int {
     return try {
-        val calFrom = Calendar.getInstance().apply {
-            time = SessionManager.parseDateString(fromDate)
-            set(Calendar.HOUR_OF_DAY, 12)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val calTo = Calendar.getInstance().apply {
-            time = SessionManager.parseDateString(toDate)
-            set(Calendar.HOUR_OF_DAY, 12)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val diffMillis = calTo.timeInMillis - calFrom.timeInMillis
-        (diffMillis / (24L * 60 * 60 * 1000)).toInt()
+        java.time.temporal.ChronoUnit.DAYS.between(
+            java.time.LocalDate.parse(fromDate),
+            java.time.LocalDate.parse(toDate)
+        ).toInt()
     } catch (_: Exception) {
         0
     }
@@ -186,10 +174,10 @@ fun DashboardScreen(
 
     val currentSelectedDate by rememberUpdatedState(currentDate)
 
-    // Synchronize currentDate when pager page advances
+    // Synchronize currentDate when pager settles on a new page
     LaunchedEffect(pagerState, today) {
-        snapshotFlow { pagerState.currentPage }.collect { currPage ->
-            val pageDate = dateForPageIndex(currPage, today)
+        snapshotFlow { pagerState.settledPage }.collect { settledPage ->
+            val pageDate = dateForPageIndex(settledPage, today)
             if (pageDate != currentSelectedDate) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 soundManager.playSound("click")
@@ -373,7 +361,7 @@ fun DashboardScreen(
                         UnifiedMealsCard(
                             mealsByType = pageSummary.mealsByType,
                             favoriteFoods = favoriteFoods,
-                            dragDropState = dragDropState,
+                            dragDropState = if (page == pagerState.currentPage) dragDropState else null,
                             onAddMealClick = { mealType ->
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onNavigateToSearch(mealType)

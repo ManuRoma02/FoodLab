@@ -133,11 +133,19 @@ fun FoodsDatabaseScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
     val isSearchLoading by viewModel.isSearchLoading.collectAsStateWithLifecycle()
+    val promotedFoodIds by viewModel.promotedFoodIds.collectAsStateWithLifecycle()
     val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp
     val isWideScreen = screenWidth >= 600
 
     var selectedFilter by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("TUTTI") }
     var selectedFoodId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(selectedFoodId, promotedFoodIds) {
+        val currentId = selectedFoodId
+        if (currentId != null && currentId < 0) {
+            promotedFoodIds[currentId]?.let { selectedFoodId = it }
+        }
+    }
 
     val displayedResults = remember(searchResults, selectedFilter, searchQuery) {
         val filtered = searchResults.filter { food ->
@@ -157,10 +165,18 @@ fun FoodsDatabaseScreen(
 
     if (isWideScreen) {
         // Dual Pane Layout (Tablet & Foldable)
-        val selectedFood by androidx.compose.runtime.produceState<com.example.data.FoodItem?>(initialValue = null, selectedFoodId) {
-            val id = selectedFoodId
-            value = if (id != null) viewModel.getFoodById(id) else null
+        val resolvedSelectedId = selectedFoodId?.let { promotedFoodIds[it] ?: it }
+        val selectedFromResults = remember(searchResults, resolvedSelectedId) {
+            resolvedSelectedId?.let { id -> searchResults.find { it.id == id } }
         }
+        val fetchedSelectedFood by androidx.compose.runtime.produceState<com.example.data.FoodItem?>(
+            initialValue = null,
+            resolvedSelectedId,
+            selectedFromResults
+        ) {
+            value = selectedFromResults ?: resolvedSelectedId?.let { viewModel.getFoodById(it) }
+        }
+        val selectedFood = selectedFromResults ?: fetchedSelectedFood
 
         Row(
             modifier = Modifier

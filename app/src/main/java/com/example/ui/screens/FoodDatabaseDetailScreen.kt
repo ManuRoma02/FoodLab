@@ -192,14 +192,46 @@ fun FoodDatabaseDetailScreen(
     onNavigateBack: () -> Unit,
     onLogFood: ((Int) -> Unit)? = null
 ) {
-    val food by androidx.compose.runtime.produceState<com.example.data.FoodItem?>(initialValue = null, foodId) {
-        value = viewModel.getFoodById(foodId)
+    val foodState by androidx.compose.runtime.produceState<Pair<com.example.data.FoodItem?, Boolean>>(
+        initialValue = null to true,
+        foodId
+    ) {
+        value = viewModel.getFoodById(foodId) to false
     }
-    
-    val currentFood = food
-    
-    if (currentFood == null) {
+
+    val (currentFood, isLoading) = foodState
+
+    if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { androidx.compose.material3.CircularProgressIndicator() }
+        return
+    }
+
+    if (currentFood == null) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            FoodLabScreenHeader(
+                title = "Dettagli alimento",
+                subtitle = "Alimento non trovato",
+                onBack = onNavigateBack,
+                modifier = Modifier.padding(16.dp)
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Alimento non trovato",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         return
     }
 

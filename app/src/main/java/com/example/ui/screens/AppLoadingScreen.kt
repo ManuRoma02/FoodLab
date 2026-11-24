@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.foundation.appleSpring
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -265,6 +266,8 @@ fun AppLoadingScreen(
             // Completion
             safetyTimeoutJob.cancel()
             completeOnce()
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             completeOnce()
         }

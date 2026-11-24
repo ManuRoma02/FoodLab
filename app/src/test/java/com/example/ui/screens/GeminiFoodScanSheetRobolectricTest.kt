@@ -6,6 +6,7 @@ import com.example.data.GeminiFoodScanResult
 import com.example.ui.GeminiScanUiState
 import com.example.util.MealTypes
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -129,5 +130,25 @@ class GeminiFoodScanSheetRobolectricTest {
 
         composeTestRule.onNodeWithText("Annulla").performClick()
         assertTrue(dismissed)
+    }
+
+    @Test
+    fun testSuccessStateWhenSavingDisablesConfirmButton() {
+        var confirmed = false
+
+        composeTestRule.setContent {
+            GeminiFoodScanSheetContent(
+                uiState = GeminiScanUiState.Success(sampleResult, adjustedGrams = 200, isSaving = true),
+                currentMealType = MealTypes.LUNCH,
+                currentDate = "2026-10-08",
+                onAdjustGrams = {},
+                onConfirmMeal = { _, _, _, _ -> confirmed = true },
+                onRetry = {},
+                onDismiss = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("Salvataggio...").performScrollTo().assertIsNotEnabled()
+        assertFalse(confirmed)
     }
 }

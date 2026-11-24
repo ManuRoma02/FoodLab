@@ -293,3 +293,37 @@ def test_cli_help_flag():
     assert "--output-db" in res.stdout
     assert "--output-parquet" in res.stdout
 
+
+def test_run_pipeline_traditional_and_fitness_sources_and_scoped_portions():
+    """Regression P-1: traditional & fitness are valid_choices; fitness portions count is scoped."""
+    import gzip
+    from tools.dataset_builder.main import run_pipeline
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        db_path = tmp_path / "p1.db"
+        off_tsv = tmp_path / "fitness.csv.gz"
+        header = [
+            "code", "product_name", "brands", "countries_tags",
+            "serving_size", "energy-kcal_100g", "fat_100g",
+            "carbohydrates_100g", "proteins_100g",
+        ]
+        row = [
+            "8001112223334", "Impact Whey Protein", "MyProtein", "en:italy",
+            "30g", "395", "7.0", "4.0", "78.0",
+        ]
+        with gzip.open(off_tsv, "wt", encoding="utf-8") as gz:
+            gz.write("\t".join(header) + "\n")
+            gz.write("\t".join(row) + "\n")
+
+        stats = run_pipeline(
+            sources=["traditional", "fitness"],
+            off_path=str(off_tsv),
+            output_db=str(db_path),
+            limit=5,
+        )
+        assert stats["traditional"]["extracted_foods"] == 5
+        assert stats["traditional"]["extracted_portions"] > 0
+        assert stats["fitness"]["extracted_foods"] == 1
+        assert stats["fitness"]["extracted_portions"] == 1
+

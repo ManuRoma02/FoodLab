@@ -156,12 +156,22 @@ interface GeminiFoodScannerService {
                 null
             }
 
+            val isGeminiEnvelope = envelope != null &&
+                (envelope.candidates != null || envelope.promptFeedback != null || envelope.error != null)
             val candidateText = envelope?.candidates?.firstOrNull()?.content?.parts?.firstOrNull { !it.text.isNullOrBlank() }?.text
             if (!candidateText.isNullOrBlank()) {
                 return parseScanResult(candidateText)
             }
 
-            // If not envelope or candidate parts empty, parse directly
+            if (isGeminiEnvelope) {
+                val reason = envelope?.error?.message?.takeIf { it.isNotBlank() }
+                    ?: envelope?.promptFeedback?.blockReason?.takeIf { it.isNotBlank() }?.let { "Contenuto bloccato ($it)" }
+                    ?: envelope?.candidates?.firstOrNull()?.finishReason?.takeIf { it.isNotBlank() }?.let { "Risposta vuota (finishReason: $it)" }
+                    ?: "Risposta Gemini priva di contenuti testuali"
+                throw IOException("Errore risposta Gemini: $reason")
+            }
+
+            // If not envelope, parse directly
             return parseScanResult(cleanJson)
         }
 

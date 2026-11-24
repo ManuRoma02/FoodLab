@@ -12,11 +12,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FoodSearchViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as FoodLabApplication
     private val repository = app.repository
+    private val promoteMutex = Mutex()
 
     val allTemplates: StateFlow<List<MealTemplateWithItems>> = repository.allTemplates
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -56,8 +59,9 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
 
     fun logTemplate(templateWithItems: MealTemplateWithItems, date: String, mealType: String) {
         viewModelScope.launch {
+            val servings = templateWithItems.template.servings.coerceAtLeast(1)
             val entries = templateWithItems.items.map { item ->
-                val quantity = item.quantityGrams.coerceIn(1, 5_000)
+                val quantity = (item.quantityGrams / servings).coerceIn(1, 5_000)
                 val nutrition = NutritionCalculator.fromPer100g(
                     quantityGrams = quantity,
                     caloriesPer100g = item.caloriesPer100g,
@@ -107,6 +111,8 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
     val isOffline = _isOffline.asStateFlow()
 
     private val _offResults = MutableStateFlow<List<FoodItem>>(emptyList())
+    private val _promotedFoodIds = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val promotedFoodIds: StateFlow<Map<Int, Int>> = _promotedFoodIds.asStateFlow()
     private val offSearchCache: MutableMap<String, List<FoodItem>> = java.util.Collections.synchronizedMap(
         object : LinkedHashMap<String, List<FoodItem>>(24, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<FoodItem>>?): Boolean = size > 40
@@ -119,9 +125,11 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
         }
     )
 
-    private fun nextOffId(): Int {
+    internal fun nextOffId(): Int {
         if (offIdCounter >= 0) offIdCounter = -1
-        return offIdCounter--
+        val start = offIdCounter
+        offIdCounter -= 50
+        return start
     }
 
     private val localSearchResults = _searchQuery
@@ -136,7 +144,7 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
         _offResults,
         _searchQuery
     ) { localFoods, offFoods, query ->
-        SearchOptimizer.rank(localFoods, offFoods, query)
+        SearchOptimizer.rank(localFoods, offFoods, query).distinctBy { it.id }
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -225,21 +233,70 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
         return result
     }
 
+    private suspend fun promoteOffFood(
+        food: FoodItem,
+        markFavorite: Boolean = false,
+        incrementUseCount: Boolean = false
+    ): FoodItem = promoteMutex.withLock {
+        if (food.id >= 0) return@withLock food
+        val cleanBarcode = food.barcode.trim()
+        val existing = _promotedFoodIds.value[food.id]?.let { repository.getFoodById(it) }
+            ?: (if (cleanBarcode.isNotBlank()) repository.getFoodByBarcode(cleanBarcode) else null)
+            ?: repository.getFoodByNameAndBrand(food.name, food.brand)
+
+        val cached = tempPortions[food.id]
+        val promoted = if (existing != null) {
+            val targetFavorite = if (markFavorite) !food.isFavorite else existing.isFavorite
+            if (markFavorite && existing.isFavorite != targetFavorite) {
+                repository.setFavorite(existing.id, targetFavorite)
+            }
+            if (incrementUseCount) {
+                repository.incrementUseCount(existing.id)
+            }
+            if (!cached.isNullOrEmpty() && repository.getPortionsForFood(existing.id).isEmpty()) {
+                repository.insertPortions(cached.map { it.copy(id = 0, foodId = existing.id) })
+            }
+            existing.copy(
+                isFavorite = targetFavorite,
+                useCount = if (incrementUseCount) existing.useCount + 1 else existing.useCount
+            )
+        } else {
+            val newFood = food.copy(
+                id = 0,
+                useCount = if (incrementUseCount) 1 else food.useCount,
+                isFavorite = if (markFavorite) !food.isFavorite else food.isFavorite,
+                isUserCreated = true
+            )
+            val localFoodId = repository.insertFood(newFood).toInt()
+            if (!cached.isNullOrEmpty()) {
+                repository.insertPortions(cached.map { it.copy(id = 0, foodId = localFoodId) })
+            }
+            newFood.copy(id = localFoodId)
+        }
+
+        if (!cached.isNullOrEmpty()) {
+            tempPortions[promoted.id] = cached.map { it.copy(foodId = promoted.id) }
+        }
+        _promotedFoodIds.value = _promotedFoodIds.value + (food.id to promoted.id)
+        _offResults.value = _offResults.value.map { if (it.id == food.id) promoted else it }
+        synchronized(offSearchCache) {
+            offSearchCache.entries.forEach { entry ->
+                if (entry.value.any { it.id == food.id }) {
+                    entry.setValue(entry.value.map { if (it.id == food.id) promoted else it })
+                }
+            }
+        }
+        return@withLock promoted
+    }
+
     fun addMealEntry(food: FoodItem, quantityGrams: Int, mealType: String, dateString: String) {
         viewModelScope.launch {
             val safeQuantity = quantityGrams.coerceIn(1, 5_000)
-            var localFoodId = food.id
-            if (food.id < 0) {
-                val newFood = food.copy(id = 0, useCount = 1, isUserCreated = true)
-                localFoodId = repository.insertFood(newFood).toInt()
-                // Save cached portion size if available
-                val cached = tempPortions[food.id]
-                if (!cached.isNullOrEmpty()) {
-                    val dbPortions = cached.map { it.copy(id = 0, foodId = localFoodId) }
-                    repository.insertPortions(dbPortions)
-                }
+            val localFoodId = if (food.id < 0) {
+                promoteOffFood(food, incrementUseCount = true).id
             } else {
                 repository.incrementUseCount(food.id)
+                food.id
             }
             
             val nutrition = NutritionCalculator.fromPer100g(
@@ -277,13 +334,7 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
     fun toggleFavorite(food: FoodItem) {
         viewModelScope.launch {
             if (food.id < 0) {
-                val newFood = food.copy(id = 0, isFavorite = true, isUserCreated = true)
-                val localFoodId = repository.insertFood(newFood).toInt()
-                val cached = tempPortions[food.id]
-                if (!cached.isNullOrEmpty()) {
-                    val dbPortions = cached.map { it.copy(id = 0, foodId = localFoodId) }
-                    repository.insertPortions(dbPortions)
-                }
+                promoteOffFood(food, markFavorite = true)
             } else {
                 repository.setFavorite(food.id, !food.isFavorite)
             }
@@ -291,17 +342,22 @@ class FoodSearchViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     suspend fun getFoodById(id: Int): FoodItem? {
-        if (id < 0) {
-            return _offResults.value.find { it.id == id }
+        val resolvedId = _promotedFoodIds.value[id] ?: id
+        if (resolvedId < 0) {
+            return _offResults.value.find { it.id == resolvedId }
+                ?: synchronized(offSearchCache) {
+                    offSearchCache.values.asSequence().flatten().find { it.id == resolvedId }
+                }
         }
-        return repository.getFoodById(id)
+        return repository.getFoodById(resolvedId)
     }
 
     suspend fun getPortionsForFood(foodId: Int): List<FoodPortion> {
-        if (foodId < 0) {
-            return tempPortions[foodId] ?: emptyList()
+        val resolvedId = _promotedFoodIds.value[foodId] ?: foodId
+        if (resolvedId < 0) {
+            return tempPortions[resolvedId] ?: emptyList()
         }
-        return repository.getPortionsForFood(foodId)
+        return repository.getPortionsForFood(resolvedId)
     }
 
     fun getLoggedMealsForDate(date: String): Flow<List<MealEntry>> {

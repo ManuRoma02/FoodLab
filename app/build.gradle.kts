@@ -49,12 +49,14 @@ android {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       val releaseFile = file(keystorePath)
+      val allowDebugReleaseSigning =
+        providers.gradleProperty("allowDebugReleaseSigning").orNull.equals("true", ignoreCase = true)
       if (releaseFile.exists()) {
         storeFile = releaseFile
         storePassword = System.getenv("STORE_PASSWORD")
         keyAlias = "upload"
         keyPassword = System.getenv("KEY_PASSWORD")
-      } else {
+      } else if (allowDebugReleaseSigning) {
         storeFile = file("${rootDir}/debug.keystore")
         storePassword = "android"
         keyAlias = "androiddebugkey"
@@ -181,11 +183,24 @@ tasks.register("bumpVersion") {
             val content = updateJsonFile.readText()
             val today = LocalDate.now().toString()
             val updated = content
-                .replace(Regex("""\"versionCode\":\\s*\\d+"""), "\"versionCode\": $newCode")
-                .replace(Regex("""\"versionName\":\\s*\"[^\"]+\""""), "\"versionName\": \"$newName\"")
-                .replace(Regex("""\"releaseDate\":\\s*\"[^\"]+\""""), "\"releaseDate\": \"$today\"")
+                .replace(Regex("\"versionCode\":\\s*\\d+"), "\"versionCode\": $newCode")
+                .replace(Regex("\"versionName\":\\s*\"[^\"]+\""), "\"versionName\": \"$newName\"")
+                .replace(Regex("\"releaseDate\":\\s*\"[^\"]+\""), "\"releaseDate\": \"$today\"")
             updateJsonFile.writeText(updated)
             println("SUCCESS: Updated app-update.json with new version details.")
+        }
+    }
+}
+
+tasks.matching { it.name == "validateSigningRelease" }.configureEach {
+    val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+    val allowDebugReleaseSigning =
+        providers.gradleProperty("allowDebugReleaseSigning").orNull.equals("true", ignoreCase = true)
+    if (!file(keystorePath).exists() && !allowDebugReleaseSigning) {
+        doFirst {
+            throw GradleException(
+                "Release keystore not found at '$keystorePath'. Provide KEYSTORE_PATH / my-upload-key.jks or pass -PallowDebugReleaseSigning=true."
+            )
         }
     }
 }

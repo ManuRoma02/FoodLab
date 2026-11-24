@@ -454,3 +454,94 @@ def test_export_parquet():
     finally:
         Path(db_path).unlink(missing_ok=True)
         Path(parquet_path).unlink(missing_ok=True)
+
+
+def test_compiler_rejects_non_finite_macros():
+    """Regression P-6: _deduplicate_foods skips NaN/Inf calories or macros."""
+    foods = [
+        FoodRecord(
+            name="Bad NaN Calories",
+            calories_100g=float("nan"),  # type: ignore[arg-type]
+            protein_100g=10.0,
+            carbs_100g=10.0,
+            fat_100g=2.0,
+            source="TEST",
+        ),
+        FoodRecord(
+            name="Bad Inf Protein",
+            calories_100g=200,
+            protein_100g=float("inf"),
+            carbs_100g=10.0,
+            fat_100g=2.0,
+            source="TEST",
+        ),
+        FoodRecord(
+            name="Valid Food",
+            calories_100g=100,
+            protein_100g=10.0,
+            carbs_100g=10.0,
+            fat_100g=2.0,
+            source="TEST",
+        ),
+    ]
+    with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".db") as f:
+        db_path = f.name
+    try:
+        compiler = DatasetCompiler(db_path)
+        count_foods, _ = compiler.compile(foods)
+        assert count_foods == 1
+    finally:
+        Path(db_path).unlink(missing_ok=True)
+
+
+def test_compiler_recompile_no_duplicates_and_brand_name_portion_lookup():
+    """Regression P-7: recompiling replaces existing rows and links portions by (brand, name) first."""
+    foods = [
+        FoodRecord(
+            name="Pasta",
+            brand="",
+            calories_100g=350,
+            protein_100g=12.0,
+            carbs_100g=72.0,
+            fat_100g=1.5,
+            source="CREA",
+        ),
+        FoodRecord(
+            name="Pasta",
+            brand="Barilla",
+            calories_100g=359,
+            protein_100g=12.5,
+            carbs_100g=71.2,
+            fat_100g=2.0,
+            source="OFF_IT",
+        ),
+    ]
+    portions = [
+        PortionRecord(food_barcode_or_key="Pasta", name="Porzione generica", weight_grams=80.0),
+        PortionRecord(food_barcode_or_key="Barilla|Pasta", name="Porzione Barilla", weight_grams=100.0),
+    ]
+    with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".db") as f:
+        db_path = f.name
+    try:
+        compiler = DatasetCompiler(db_path)
+        c1, p1 = compiler.compile(foods, portions)
+        assert (c1, p1) == (2, 2)
+        # Re-compile onto existing DB must not duplicate rows
+        c2, p2 = compiler.compile(foods, portions)
+        assert (c2, p2) == (2, 2)
+
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM foods")
+        assert cur.fetchone()[0] == 2
+        cur.execute("SELECT COUNT(*) FROM foods_fts")
+        assert cur.fetchone()[0] == 2
+        cur.execute("SELECT COUNT(*) FROM food_portions")
+        assert cur.fetchone()[0] == 2
+        cur.execute(
+            "SELECT f.brand, p.name FROM food_portions p JOIN foods f ON p.food_id = f.id ORDER BY p.weight_grams"
+        )
+        assert cur.fetchall() == [("", "Porzione generica"), ("Barilla", "Porzione Barilla")]
+        conn.close()
+    finally:
+        Path(db_path).unlink(missing_ok=True)

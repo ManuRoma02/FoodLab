@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import math
 from pathlib import Path
 import sqlite3
 from typing import List, Tuple
@@ -55,15 +56,23 @@ def parse_user_export(json_path: str) -> Tuple[List[FoodRecord], List[PortionRec
         if food_rec:
             foods.append(food_rec)
             raw_portions = item.get("portions", [])
-            for p in raw_portions:
-                p_name = p.get("name")
-                p_weight = p.get("weightGrams", p.get("weight_grams"))
-                if p_name and p_weight and float(p_weight) > 0:
-                    portions.append(PortionRecord(
-                        food_barcode_or_key=food_rec.barcode or food_rec.name,
-                        name=str(p_name),
-                        weight_grams=float(p_weight)
-                    ))
+            if isinstance(raw_portions, list):
+                for p in raw_portions:
+                    if not isinstance(p, dict):
+                        continue
+                    p_name = p.get("name")
+                    p_weight = p.get("weightGrams", p.get("weight_grams"))
+                    if p_name and str(p_name).strip() and p_weight is not None and not isinstance(p_weight, bool):
+                        try:
+                            weight_val = float(p_weight)
+                        except (TypeError, ValueError):
+                            continue
+                        if math.isfinite(weight_val) and weight_val > 0:
+                            portions.append(PortionRecord(
+                                food_barcode_or_key=food_rec.barcode or food_rec.name,
+                                name=str(p_name).strip(),
+                                weight_grams=weight_val
+                            ))
 
     return foods, portions
 
@@ -73,41 +82,48 @@ def merge_user_foods_into_db(db_path: str, foods: List[FoodRecord], portions: Li
         return 0
 
     conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
     inserted_count = 0
-    for food in foods:
-        # Check if already exists by barcode or identical name and brand
-        if food.barcode:
-            cursor.execute("SELECT id FROM foods WHERE barcode = ?", (food.barcode,))
-        else:
-            cursor.execute("SELECT id FROM foods WHERE name = ? AND brand = ?", (food.name, food.brand))
+    try:
+        cursor = conn.cursor()
 
-        existing = cursor.fetchone()
-        if existing:
-            food_id = existing[0]
-        else:
-            cursor.execute("""
-                INSERT INTO foods (name, brand, category, barcode, calories_100g, protein_100g, carbs_100g, fat_100g, default_serving_size, source)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                food.name, food.brand, food.category, food.barcode,
-                food.calories_100g, food.protein_100g, food.carbs_100g, food.fat_100g,
-                food.default_serving_size, food.source
-            ))
-            food_id = cursor.lastrowid
-            inserted_count += 1
+        for food in foods:
+            # Check if already exists by barcode or identical name and brand
+            if food.barcode:
+                cursor.execute("SELECT id FROM foods WHERE barcode = ?", (food.barcode,))
+            else:
+                cursor.execute("SELECT id FROM foods WHERE name = ? AND brand = ?", (food.name, food.brand))
 
-        # Link portions for this food
-        for p in portions:
-            if p.food_barcode_or_key in (food.barcode, food.name):
+            existing = cursor.fetchone()
+            if existing:
+                food_id = existing[0]
+            else:
                 cursor.execute("""
-                    INSERT OR IGNORE INTO food_portions (food_id, name, weight_grams)
-                    VALUES (?, ?, ?)
-                """, (food_id, p.name, p.weight_grams))
+                    INSERT INTO foods (name, brand, category, barcode, calories_100g, protein_100g, carbs_100g, fat_100g, default_serving_size, source)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    food.name, food.brand, food.category, food.barcode,
+                    food.calories_100g, food.protein_100g, food.carbs_100g, food.fat_100g,
+                    food.default_serving_size, food.source
+                ))
+                food_id = cursor.lastrowid
+                inserted_count += 1
 
-    conn.commit()
-    conn.close()
+            # Link portions for this food, avoiding duplicates when food_portions lacks UNIQUE constraint
+            for p in portions:
+                if (food.barcode and p.food_barcode_or_key == food.barcode) or p.food_barcode_or_key == food.name:
+                    cursor.execute(
+                        "SELECT 1 FROM food_portions WHERE food_id = ? AND name = ? AND weight_grams = ? LIMIT 1",
+                        (food_id, p.name, p.weight_grams),
+                    )
+                    if cursor.fetchone() is None:
+                        cursor.execute(
+                            "INSERT INTO food_portions (food_id, name, weight_grams) VALUES (?, ?, ?)",
+                            (food_id, p.name, p.weight_grams),
+                        )
+
+        conn.commit()
+    finally:
+        conn.close()
     logger.info(f"Ingested {inserted_count} new foods and associated portions into {db_path}!")
     return inserted_count
 

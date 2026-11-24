@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,12 +43,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -256,7 +259,24 @@ private fun IosTargetControlRow(
     onValueChange: (Float) -> Unit
 ) {
     val isNeo = MaterialTheme.isNeoBrutalist
-    var textValue by remember(value) { mutableStateOf(value.roundToInt().toString()) }
+    val focusManager = LocalFocusManager.current
+    var isFocused by remember { mutableStateOf(false) }
+    var textValue by remember { mutableStateOf(value.roundToInt().toString()) }
+    LaunchedEffect(value, isFocused) {
+        if (!isFocused) {
+            textValue = value.roundToInt().toString()
+        }
+    }
+    val commitTextInput: () -> Unit = {
+        val parsed = textValue.toFloatOrNull()
+        if (parsed != null) {
+            val clamped = parsed.coerceIn(valueRange.start, valueRange.endInclusive)
+            textValue = clamped.roundToInt().toString()
+            onValueChange(clamped)
+        } else {
+            textValue = value.roundToInt().toString()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -332,10 +352,6 @@ private fun IosTargetControlRow(
                         value = textValue,
                         onValueChange = { input ->
                             textValue = input
-                            val parsed = input.toFloatOrNull()
-                            if (parsed != null) {
-                                onValueChange(parsed.coerceIn(valueRange.start, valueRange.endInclusive))
-                            }
                         },
                         textStyle = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
@@ -343,9 +359,23 @@ private fun IosTargetControlRow(
                             textAlign = TextAlign.Center
                         ),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                commitTextInput()
+                                focusManager.clearFocus()
+                            }
+                        ),
                         singleLine = true,
                         cursorBrush = SolidColor(accentColor),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                val wasFocused = isFocused
+                                isFocused = focusState.isFocused
+                                if (wasFocused && !focusState.isFocused) {
+                                    commitTextInput()
+                                }
+                            }
                     )
                 }
 
@@ -871,6 +901,7 @@ fun SettingsScreen(
                                         onValueChange = {
                                             steps = it
                                             preferencesManager.setStepGoal(it.roundToInt())
+                                            com.example.util.WidgetUpdater.updateAllWidgets(context)
                                         }
                                     )
                                 }

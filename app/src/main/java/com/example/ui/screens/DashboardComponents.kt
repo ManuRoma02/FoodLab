@@ -83,6 +83,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 
 import androidx.compose.foundation.Image
@@ -725,6 +726,7 @@ fun MealItemRow(
     val effectiveSecondaryColor = secondaryTextColor ?: if (isBento) BentoCocoa.copy(alpha = 0.70f) else MaterialTheme.colorScheme.onSurfaceVariant
     val effectiveRowBg = rowBackgroundColor ?: if (isBento) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer
     var itemCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val currentMeal by rememberUpdatedState(meal)
     val isBeingDragged = dragDropState?.isDragging == true && dragDropState?.draggedMeal?.id == meal.id
 
     val isAnyDragging = dragDropState?.isDragging == true
@@ -800,8 +802,8 @@ fun MealItemRow(
                                                 val touchInRoot = rootTopLeft + localOffset
                                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 dragDropState.onDragStart(
-                                                    meal = meal,
-                                                    sourceMealType = meal.mealType,
+                                                    meal = currentMeal,
+                                                    sourceMealType = currentMeal.mealType,
                                                     itemTopLeftInRoot = rootTopLeft,
                                                     itemWidthPx = coords.size.width.toFloat(),
                                                     itemHeightPx = coords.size.height.toFloat(),
@@ -824,7 +826,7 @@ fun MealItemRow(
                                         }
                                     )
                                 } finally {
-                                    if (dragDropState.isDragging && dragDropState.draggedMeal?.id == meal.id) {
+                                    if (dragDropState.isDragging && dragDropState.draggedMeal?.id == currentMeal.id) {
                                         dragDropState.onDragCancel()
                                     }
                                 }
@@ -3676,6 +3678,19 @@ fun UnifiedMealsCard(
 
 
 
+internal fun buildAlignedStreakCalendarCells(todayStr: String): List<String?> {
+    val last28Days = (27 downTo 0).map { daysAgo ->
+        SessionManager.getPreviousDay(todayStr, daysAgo)
+    }
+    val leadingEmptyCount = try {
+        java.time.LocalDate.parse(last28Days.first()).dayOfWeek.value - 1
+    } catch (_: Exception) {
+        0
+    }
+    val trailingEmptyCount = (7 - (leadingEmptyCount + last28Days.size) % 7) % 7
+    return List(leadingEmptyCount) { null } + last28Days + List(trailingEmptyCount) { null }
+}
+
 @Composable
 fun MonthlyStreakDialog(
     allMeals: List<MealEntry>,
@@ -3703,11 +3718,9 @@ fun MonthlyStreakDialog(
         }
     }
 
-    // Last 28 days (4 full rows of 7 days)
-    val last28Days = remember(todayStr) {
-        (27 downTo 0).map { daysAgo ->
-            SessionManager.getPreviousDay(todayStr, daysAgo)
-        }
+    // Last 28 days aligned to LUN..DOM columns
+    val calendarCells = remember(todayStr) {
+        buildAlignedStreakCalendarCells(todayStr)
     }
     val mealsByDate = remember(allMeals) {
         allMeals.groupBy { it.dateString }
@@ -3815,81 +3828,89 @@ fun MonthlyStreakDialog(
                         }
                     }
 
-                    // 4 Weeks x 7 Days Grid
-                    last28Days.chunked(7).forEach { rowDates ->
+                    // Weeks x 7 Days Grid aligned to LUN..DOM
+                    calendarCells.chunked(7).forEach { rowDates ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             rowDates.forEach { date ->
-                                val meals = mealsByDate[date] ?: emptyList()
-                                val totalCals = meals.sumOf { it.calories }
-                                val isLogged = totalCals > 0
-                                val isSelected = date == selectedDate
-                                val dayNumber = date.takeLast(2).toIntOrNull()?.toString() ?: date.takeLast(2)
+                                if (date == null) {
+                                    Spacer(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                    )
+                                } else {
+                                    val meals = mealsByDate[date] ?: emptyList()
+                                    val totalCals = meals.sumOf { it.calories }
+                                    val isLogged = totalCals > 0
+                                    val isSelected = date == selectedDate
+                                    val dayNumber = date.takeLast(2).toIntOrNull()?.toString() ?: date.takeLast(2)
 
-                                val dayTarget = resolveCalendarDayTarget(date, allTargets, defaultTarget)
+                                    val dayTarget = resolveCalendarDayTarget(date, allTargets, defaultTarget)
 
-                                val (cellTextColor, cellBgColor, cellBorderColor) = when {
-                                    !isLogged -> Triple(
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.35f),
-                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-                                    )
-                                    totalCals <= dayTarget -> Triple(
-                                        Color(0xFF22C55E), // Verde (Dentro le calorie)
-                                        Color(0xFF22C55E).copy(alpha = 0.20f),
-                                        Color(0xFF22C55E).copy(alpha = 0.80f)
-                                    )
-                                    totalCals <= dayTarget + 200 -> Triple(
-                                        Color(0xFFF59E0B), // Giallo / Ambra (Poco oltre)
-                                        Color(0xFFF59E0B).copy(alpha = 0.20f),
-                                        Color(0xFFF59E0B).copy(alpha = 0.80f)
-                                    )
-                                    else -> Triple(
-                                        Color(0xFFEF4444), // Rosso (Tanto oltre)
-                                        Color(0xFFEF4444).copy(alpha = 0.20f),
-                                        Color(0xFFEF4444).copy(alpha = 0.80f)
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(cellBgColor)
-                                        .border(
-                                            width = if (isSelected) 2.dp else 1.dp,
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else cellBorderColor,
-                                            shape = RoundedCornerShape(10.dp)
+                                    val (cellTextColor, cellBgColor, cellBorderColor) = when {
+                                        !isLogged -> Triple(
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.35f),
+                                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
                                         )
-                                        .clickable {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            soundManager.playSound("click")
-                                            selectedDate = date
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            text = dayNumber,
-                                            style = MaterialTheme.typography.labelMedium.copy(
-                                                fontWeight = if (isSelected || isLogged) FontWeight.Bold else FontWeight.Medium
-                                            ),
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else cellTextColor
+                                        totalCals <= dayTarget -> Triple(
+                                            Color(0xFF22C55E), // Verde (Dentro le calorie)
+                                            Color(0xFF22C55E).copy(alpha = 0.20f),
+                                            Color(0xFF22C55E).copy(alpha = 0.80f)
                                         )
-                                        if (isLogged) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .padding(top = 2.dp)
-                                                    .size(4.dp)
-                                                    .clip(RoundedCornerShape(2.dp))
-                                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else cellTextColor)
+                                        totalCals <= dayTarget + 200 -> Triple(
+                                            Color(0xFFF59E0B), // Giallo / Ambra (Poco oltre)
+                                            Color(0xFFF59E0B).copy(alpha = 0.20f),
+                                            Color(0xFFF59E0B).copy(alpha = 0.80f)
+                                        )
+                                        else -> Triple(
+                                            Color(0xFFEF4444), // Rosso (Tanto oltre)
+                                            Color(0xFFEF4444).copy(alpha = 0.20f),
+                                            Color(0xFFEF4444).copy(alpha = 0.80f)
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(cellBgColor)
+                                            .border(
+                                                width = if (isSelected) 2.dp else 1.dp,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else cellBorderColor,
+                                                shape = RoundedCornerShape(10.dp)
                                             )
+                                            .clickable {
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                soundManager.playSound("click")
+                                                selectedDate = date
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(
+                                                text = dayNumber,
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    fontWeight = if (isSelected || isLogged) FontWeight.Bold else FontWeight.Medium
+                                                ),
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else cellTextColor
+                                            )
+                                            if (isLogged) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(top = 2.dp)
+                                                        .size(4.dp)
+                                                        .clip(RoundedCornerShape(2.dp))
+                                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else cellTextColor)
+                                                )
+                                            }
                                         }
                                     }
                                 }

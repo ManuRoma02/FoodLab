@@ -26,7 +26,8 @@ class FoodLabApplication : Application() {
             database.mealTemplateDao(),
             database.foodPortionDao(),
             database.shoppingItemDao(),
-            openFoodFactsApi
+            openFoodFactsApi,
+            database
         )
     }
 
@@ -47,8 +48,8 @@ class FoodLabApplication : Application() {
             com.example.util.WidgetUpdater.updateAllWidgets(this)
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    repository.ensureDefaultFoodsSeeded()
                     CreaDatabaseImporter.importIfNeeded(this@FoodLabApplication, repository)
+                    repository.ensureDefaultFoodsSeeded()
                 } catch (e: Exception) {
                     android.util.Log.e("FoodLabApp", "Error during background seeding", e)
                 }

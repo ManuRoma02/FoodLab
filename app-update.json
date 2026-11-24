@@ -1,9 +1,9 @@
 {
-  "versionCode": 53,
-  "versionName": "1.0.53",
+  "versionCode": 54,
+  "versionName": "1.0.54",
   "apkUrl": "https://github.com/ManuRoma02/FoodLab/releases/latest/download/app-release.apk",
-  "changelog": "• **Animazioni**: pasti e grafici in **fade**, senza allungare l'altezza\n• **Elimina pasto**: uscita rapida, senza **rimbalzo**\n• **Trascina**: il bersaglio **scala**, il bordo resta fermo\n• **Movimento ridotto**: le animazioni seguono la scala di sistema",
-  "releaseDate": "2026-11-17",
+  "changelog": "• **Database & Ricerca**: fix collisione ID all'avvio, **ricerca** più veloce e ordinata per **preferiti**\n• **Dashboard & Pager**: fix cambio giorno a **mezzanotte**, calendario **streak** allineato e **drag-drop** sicuro\n• **Scanner AI & OTA**: blocco duplicati al **salvataggio**, **download OTA** stabile e permessi **Health Connect** corretti\n• **Widget & Impostazioni**: layout **2x2/1x1** ottimizzati, **obiettivo passi** sincronizzato e input target fluidi",
+  "releaseDate": "2026-11-24",
   "forceUpdate": false,
-  "sha256": "1654d4682922bdf17a219e3e37c92ca21654716c87668287d9b915b98e20fa94"
+  "sha256": "ab34fcd5839dc53b1d959045b4f6dca1a6541e679943ef3a84ccc9f3a814a175"
 }

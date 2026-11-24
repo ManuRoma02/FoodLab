@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import re
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -162,13 +163,27 @@ def parse_usda_foundation_record(raw: Dict[str, Any]) -> Optional[FoodRecord]:
         for n in nutrients:
             if not isinstance(n, dict):
                 continue
+            nutrient_meta = n.get("nutrient") or {}
+            if not isinstance(nutrient_meta, dict):
+                nutrient_meta = {}
             name_n = str(
-                n.get("nutrientName") or n.get("name") or (n.get("nutrient") or {}).get("name") or ""
+                n.get("nutrientName") or n.get("name") or nutrient_meta.get("name") or ""
             ).lower()
+            unit_n = str(
+                n.get("unitName") or nutrient_meta.get("unitName") or ""
+            ).strip().upper()
             val = n.get("amount") if n.get("amount") is not None else n.get("value")
 
-            if "energy" in name_n and ("kcal" in name_n or n.get("unitName") == "KCAL"):
-                kcal = val
+            if "energy" in name_n:
+                if "kcal" in name_n or unit_n == "KCAL":
+                    kcal = val
+                elif ("kj" in name_n or unit_n == "KJ") and kcal is None and val is not None:
+                    try:
+                        kj_num = float(val)
+                        if math.isfinite(kj_num):
+                            kcal = kj_num / 4.184
+                    except (TypeError, ValueError):
+                        pass
             elif "protein" in name_n:
                 protein = val
             elif "carbohydrate" in name_n:
@@ -184,7 +199,13 @@ def parse_usda_foundation_record(raw: Dict[str, Any]) -> Optional[FoodRecord]:
             elif "fiber, total dietary" in name_n or name_n == "fiber":
                 fiber = val
             elif "sodium" in name_n:
-                sodium = val
+                if val is not None:
+                    try:
+                        sod_num = float(val)
+                        if math.isfinite(sod_num):
+                            sodium = sod_num / 1000.0 if unit_n == "MG" else sod_num
+                    except (TypeError, ValueError):
+                        sodium = val
     elif isinstance(nutrients, dict):
         kcal = nutrients.get("calories") or nutrients.get("kcal")
         protein = nutrients.get("protein")

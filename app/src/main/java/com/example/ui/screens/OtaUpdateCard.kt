@@ -35,7 +35,6 @@ import com.example.util.LocalSoundManager
 import com.example.util.OtaUpdateInfo
 import com.example.util.OtaUpdateManager
 import com.example.util.OtaUpdateState
-import kotlinx.coroutines.launch
 
 @Composable
 fun OtaUpdateCard(
@@ -43,7 +42,6 @@ fun OtaUpdateCard(
     otaManager: OtaUpdateManager = remember { OtaUpdateManager.getInstance() }
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
     val soundManager = LocalSoundManager.current
     val state by otaManager.state.collectAsStateWithLifecycle()
@@ -150,9 +148,7 @@ fun OtaUpdateCard(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 soundManager.playSound("click")
-                                scope.launch {
-                                    otaManager.checkForUpdates()
-                                }
+                                otaManager.startCheckForUpdates()
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -231,7 +227,7 @@ fun OtaUpdateCard(
                             }
                             Button(
                                 onClick = {
-                                    scope.launch { otaManager.checkForUpdates() }
+                                    otaManager.startCheckForUpdates()
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -297,9 +293,7 @@ fun OtaUpdateCard(
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     soundManager.playSound("coin")
-                                    scope.launch {
-                                        otaManager.downloadUpdate(context, info)
-                                    }
+                                    otaManager.startDownloadUpdate(context, info)
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary,
@@ -472,7 +466,7 @@ fun OtaUpdateCard(
                             Button(
                                 onClick = {
                                     otaManager.resetState()
-                                    scope.launch { otaManager.checkForUpdates() }
+                                    otaManager.startCheckForUpdates()
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,

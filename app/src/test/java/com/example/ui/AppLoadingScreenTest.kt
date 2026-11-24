@@ -60,4 +60,29 @@ class AppLoadingScreenTest {
         assertTrue("Updated callback should be invoked", updatedCallbackInvoked)
         org.junit.Assert.assertFalse("Initial callback should not be invoked", firstCallbackInvoked)
     }
+
+    @Test
+    fun testAppLoadingScreenDisposalDoesNotInvokeComplete() {
+        composeTestRule.mainClock.autoAdvance = false
+        var completed = false
+        val showLoading = androidx.compose.runtime.mutableStateOf(true)
+
+        composeTestRule.setContent {
+            if (showLoading.value) {
+                AppLoadingScreen(
+                    onLoadingComplete = { completed = true }
+                )
+            }
+        }
+
+        composeTestRule.mainClock.advanceTimeBy(400)
+        showLoading.value = false
+        composeTestRule.waitForIdle()
+        composeTestRule.mainClock.advanceTimeBy(2500)
+
+        org.junit.Assert.assertFalse(
+            "Disposing AppLoadingScreen must rethrow CancellationException without calling onLoadingComplete",
+            completed
+        )
+    }
 }

@@ -8,10 +8,16 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.example.BuildConfig
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -47,6 +53,33 @@ class OtaUpdateManager(
 ) {
     private val _state = MutableStateFlow<OtaUpdateState>(OtaUpdateState.Idle)
     val state: StateFlow<OtaUpdateState> = _state.asStateFlow()
+
+    private val otaScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var activeCheckJob: Job? = null
+    private var activeDownloadJob: Job? = null
+
+    fun startCheckForUpdates(
+        currentCode: Int = BuildConfig.VERSION_CODE,
+        currentName: String = BuildConfig.VERSION_NAME,
+        manifestUrl: String = DEFAULT_MANIFEST_URL
+    ): Job {
+        activeCheckJob?.takeIf { it.isActive }?.let { return it }
+        return otaScope.launch {
+            checkForUpdates(currentCode, currentName, manifestUrl)
+        }.also { activeCheckJob = it }
+    }
+
+    fun startDownloadUpdate(
+        context: Context,
+        info: OtaUpdateInfo,
+        onProgress: ((Float, Long, Long) -> Unit)? = null
+    ): Job {
+        activeDownloadJob?.takeIf { it.isActive }?.let { return it }
+        val appContext = context.applicationContext ?: context
+        return otaScope.launch {
+            downloadUpdate(appContext, info, onProgress)
+        }.also { activeDownloadJob = it }
+    }
 
     companion object {
         private const val TAG = "OtaUpdateManager"
@@ -93,6 +126,8 @@ class OtaUpdateManager(
                 _state.value = OtaUpdateState.UpToDate
             }
             Result.success(resultInfo)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error checking for updates", e)
             _state.value = OtaUpdateState.Error(e.message ?: "Errore sconosciuto")
@@ -117,6 +152,8 @@ class OtaUpdateManager(
                     sha256 = json.optString("sha256", "").trim()
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Failed to fetch from primary manifest: ${e.message}")
             null
@@ -165,6 +202,8 @@ class OtaUpdateManager(
                     null
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Failed to fetch from GitHub Releases: ${e.message}")
             null
@@ -216,6 +255,7 @@ class OtaUpdateManager(
                         val buffer = ByteArray(8 * 1024)
                         var read: Int
                         while (input.read(buffer).also { read = it } != -1) {
+                            coroutineContext.ensureActive()
                             output.write(buffer, 0, read)
                             downloadedBytes += read
                             val progress = if (totalBytes > 0) downloadedBytes.toFloat() / totalBytes else 0f
@@ -259,6 +299,11 @@ class OtaUpdateManager(
 
             _state.value = OtaUpdateState.ReadyToInstall(destination, info)
             Result.success(destination)
+        } catch (e: CancellationException) {
+            try {
+                if (tempDestination.exists()) tempDestination.delete()
+            } catch (_: Exception) {}
+            throw e
         } catch (e: Exception) {
             try {
                 if (tempDestination.exists()) tempDestination.delete()

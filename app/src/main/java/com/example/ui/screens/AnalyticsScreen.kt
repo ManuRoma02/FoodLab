@@ -302,8 +302,33 @@ fun AnalyticsScreen(
     // Selected Time Horizon: 7, 14, 30 days
     var selectedHorizonDays by remember { mutableIntStateOf(7) }
 
-    val todayStr = remember { SessionManager.formatDate(Date()) }
-    val todaySteps: Int = remember(todayStr) { com.example.util.StepCounterStore.savedSteps(context, todayStr) }
+    var todayStr by remember { mutableStateOf(SessionManager.formatDate(Date())) }
+    var todaySteps by remember(todayStr) {
+        mutableIntStateOf(com.example.util.StepCounterStore.savedSteps(context, todayStr))
+    }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        val prefs = context.getSharedPreferences("pedometer_prefs", android.content.Context.MODE_PRIVATE)
+        val refreshSteps = {
+            val currentToday = SessionManager.formatDate(Date())
+            todayStr = currentToday
+            todaySteps = com.example.util.StepCounterStore.savedSteps(context, currentToday)
+        }
+        val prefListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            refreshSteps()
+        }
+        prefs.registerOnSharedPreferenceChangeListener(prefListener)
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                refreshSteps()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
+        }
+    }
 
     val horizonDaysList = remember(todayStr, selectedHorizonDays) {
         ((selectedHorizonDays - 1) downTo 0).map { daysAgo ->

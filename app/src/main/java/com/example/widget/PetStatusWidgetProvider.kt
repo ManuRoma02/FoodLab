@@ -123,11 +123,16 @@ internal suspend fun updatePetWidget(context: Context, appWidgetManager: AppWidg
             views.setTextColor(R.id.pet_status_text, 0xFF30D158.toInt())
         }
         views.setContentDescription(R.id.pet_hp_text, "Calorie: $caloriesConsumed. Target: $effectiveTarget kcal.")
-        views.setImageViewResource(R.id.pet_image, R.drawable.foodlab_mascot_duo)
+        views.setImageViewResource(R.id.pet_image, R.drawable.foodlab_mascot_duo_widget)
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
     } catch (e: Exception) {
         views.setTextViewText(R.id.pet_status_text, "APRI APP")
+        views.setTextViewText(R.id.pet_hp_text, "—")
+        views.setTextViewText(R.id.pet_target_text, "Apri FoodLab")
+        views.setTextViewText(R.id.protein_text, "—")
+        views.setTextViewText(R.id.carbs_text, "—")
+        views.setTextViewText(R.id.fat_text, "—")
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 }

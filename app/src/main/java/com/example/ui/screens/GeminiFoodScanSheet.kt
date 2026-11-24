@@ -182,13 +182,15 @@ fun GeminiFoodScanSheetContent(
                         onAdjustGrams(newGrams)
                     },
                     onConfirm = {
-                        appleHaptics.tactileClick()
-                        onConfirmMeal(
-                            uiState.result,
-                            uiState.adjustedGrams,
-                            selectedMealType,
-                            currentDate
-                        )
+                        if (!uiState.isSaving) {
+                            appleHaptics.tactileClick()
+                            onConfirmMeal(
+                                uiState.result,
+                                uiState.adjustedGrams,
+                                selectedMealType,
+                                currentDate
+                            )
+                        }
                     }
                 )
             }
@@ -563,6 +565,7 @@ private fun SuccessView(
         // Big Primary CTA Button
         Button(
             onClick = onConfirm,
+            enabled = !state.isSaving,
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
@@ -571,17 +574,31 @@ private fun SuccessView(
                 .fillMaxWidth()
                 .height(54.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Aggiungi al pasto",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            if (state.isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Salvataggio...",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Aggiungi al pasto",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

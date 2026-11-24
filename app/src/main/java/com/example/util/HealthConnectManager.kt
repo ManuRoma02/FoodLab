@@ -3,6 +3,7 @@ package com.example.util
 import android.content.Context
 import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.aggregate.AggregateMetric
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -58,11 +59,20 @@ class HealthConnectManager(private val context: Context) {
         HealthPermission.getWritePermission(WeightRecord::class)
     )
 
-    private val healthConnectClient: HealthConnectClient? by lazy {
-        if (checkAvailability() == HealthConnectAvailability.AVAILABLE) {
-            HealthConnectClient.getOrCreate(context)
-        } else {
-            null
+    @Volatile
+    private var cachedClient: HealthConnectClient? = null
+
+    private fun getOrCreateClient(): HealthConnectClient? {
+        cachedClient?.let { return it }
+        if (checkAvailability() != HealthConnectAvailability.AVAILABLE) {
+            return null
+        }
+        return synchronized(this) {
+            cachedClient ?: if (checkAvailability() == HealthConnectAvailability.AVAILABLE) {
+                HealthConnectClient.getOrCreate(context).also { cachedClient = it }
+            } else {
+                null
+            }
         }
     }
 
@@ -90,7 +100,7 @@ class HealthConnectManager(private val context: Context) {
      * Returns true if any required health data permissions have been granted.
      */
     suspend fun checkPermissionsGranted(): Boolean {
-        val client = healthConnectClient ?: return false
+        val client = getOrCreateClient() ?: return false
         return try {
             val granted = client.permissionController.getGrantedPermissions()
             val hasPermission = granted.any { permissions.contains(it) }
@@ -136,7 +146,7 @@ class HealthConnectManager(private val context: Context) {
      * Syncs health data for a given date (defaulting to today).
      */
     suspend fun syncDailyData(targetDate: LocalDate = LocalDate.now()): Result<HealthConnectDailyData> {
-        val client = healthConnectClient
+        val client = getOrCreateClient()
             ?: return Result.failure(IllegalStateException("Health Connect is not available on this device"))
 
         val startOfDay = targetDate.atStartOfDay(ZoneId.systemDefault()).toInstant()
@@ -148,9 +158,16 @@ class HealthConnectManager(private val context: Context) {
                 readSteps(client, startOfDay, endOfDay)
             } else 0L
 
-            val calories = if (granted.contains(HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class)) ||
-                granted.contains(HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class))) {
-                readCaloriesBurned(client, startOfDay, endOfDay)
+            val hasTotalCalories = granted.contains(HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class))
+            val hasActiveCalories = granted.contains(HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class))
+            val calories = if (hasTotalCalories || hasActiveCalories) {
+                readCaloriesBurned(
+                    client = client,
+                    startTime = startOfDay,
+                    endTime = endOfDay,
+                    includeTotal = hasTotalCalories,
+                    includeActive = hasActiveCalories
+                )
             } else 0.0
 
             val weight = if (granted.contains(HealthPermission.getReadPermission(WeightRecord::class))) {
@@ -193,26 +210,37 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
+    internal fun caloriesAggregateMetrics(
+        includeTotal: Boolean,
+        includeActive: Boolean
+    ): Set<AggregateMetric<Energy>> = buildSet {
+        if (includeTotal) add(TotalCaloriesBurnedRecord.ENERGY_TOTAL)
+        if (includeActive) add(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL)
+    }
+
     /**
-     * Aggregates total calories burned (active + basal or total) for the specified time window.
+     * Aggregates total calories burned (active + basal or total) for the specified time window,
+     * requesting only metrics for which permissions were granted.
      */
-    private suspend fun readCaloriesBurned(
+    internal suspend fun readCaloriesBurned(
         client: HealthConnectClient,
         startTime: Instant,
-        endTime: Instant
+        endTime: Instant,
+        includeTotal: Boolean = true,
+        includeActive: Boolean = true
     ): Double {
+        val metrics = caloriesAggregateMetrics(includeTotal = includeTotal, includeActive = includeActive)
+        if (metrics.isEmpty()) return 0.0
+
         return try {
             val response = client.aggregate(
                 AggregateRequest(
-                    metrics = setOf(
-                        TotalCaloriesBurnedRecord.ENERGY_TOTAL,
-                        ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL
-                    ),
+                    metrics = metrics,
                     timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
                 )
             )
-            val total = response[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories
-            val active = response[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories
+            val total = if (includeTotal) response[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories else null
+            val active = if (includeActive) response[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]?.inKilocalories else null
 
             total ?: active ?: 0.0
         } catch (e: Exception) {
@@ -248,7 +276,7 @@ class HealthConnectManager(private val context: Context) {
         weightKg: Double,
         time: Instant = Instant.now()
     ): Result<Unit> {
-        val client = healthConnectClient
+        val client = getOrCreateClient()
             ?: return Result.failure(IllegalStateException("Health Connect is not available on this device"))
 
         return try {

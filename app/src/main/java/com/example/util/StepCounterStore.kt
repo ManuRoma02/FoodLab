@@ -19,6 +19,7 @@ object StepCounterStore {
             .getInt(totalKey(dateString), 0)
     }
 
+    @Synchronized
     fun updateFromSensor(context: Context, rawSensorSteps: Int, dateString: String = today()): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val baselineKey = baselineKey(dateString)
@@ -38,15 +39,14 @@ object StepCounterStore {
         var offset = savedOffset
 
         if (baseline == -1) {
-            // New day initialization
+            // New day initialization; preserve any pre-sensor steps (e.g. Health Connect or manual +1).
+            offset = maxOf(savedOffset, savedTotal)
             if (globalLastDate == yesterday && globalLastRaw in 0..rawSensorSteps) {
                 // Smooth transition from yesterday to today with no reboot
                 baseline = globalLastRaw
-                offset = 0
             } else {
-                // First initialization, device rebooted, or skipped days: start today's counter cleanly at 0
+                // First initialization, device rebooted, or skipped days: anchor baseline at current sensor reading
                 baseline = rawSensorSteps
-                offset = 0
             }
         } else if (rawSensorSteps < baseline || (lastRaw >= 0 && rawSensorSteps < lastRaw)) {
             // Device rebooted on the current day while app was tracking: retain steps counted before reboot
@@ -68,13 +68,18 @@ object StepCounterStore {
         return totalSteps
     }
 
+    @Synchronized
     fun resetForNewDay(context: Context, dateString: String = today()): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val baselineKey = baselineKey(dateString)
         val totalKey = totalKey(dateString)
+        val existingTotal = prefs.getInt(totalKey, 0).coerceAtLeast(0)
+        val globalLastDate = prefs.getString(KEY_GLOBAL_LAST_DATE, null)
+        if (globalLastDate == dateString || existingTotal > 0) {
+            return existingTotal
+        }
+        val baselineKey = baselineKey(dateString)
         val offsetKey = offsetKey(dateString)
         val globalLastRaw = prefs.getInt(KEY_GLOBAL_LAST_RAW, -1)
-        val globalLastDate = prefs.getString(KEY_GLOBAL_LAST_DATE, null)
         val yesterday = SessionManager.getPreviousDay(dateString, 1)
 
         val baseline = if (globalLastDate == yesterday && globalLastRaw >= 0) {
@@ -95,6 +100,7 @@ object StepCounterStore {
         return 0
     }
 
+    @Synchronized
     fun resetStepsForDate(context: Context, dateString: String = today()): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val baselineKey = baselineKey(dateString)
@@ -117,6 +123,7 @@ object StepCounterStore {
         return 0
     }
 
+    @Synchronized
     fun incrementSteps(context: Context, delta: Int = 1, dateString: String = today()): Int {
         if (delta <= 0) return savedSteps(context, dateString)
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -133,17 +140,27 @@ object StepCounterStore {
         return newTotal
     }
 
+    @Synchronized
     fun setSteps(context: Context, steps: Int, dateString: String = today()): Int {
+        val safeSteps = steps.coerceAtLeast(0)
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val baselineKey = baselineKey(dateString)
         val totalKey = totalKey(dateString)
         val offsetKey = offsetKey(dateString)
+        val lastRaw = prefs.getInt(lastRawKey(dateString), -1)
         prefs.edit {
-            putInt(totalKey, steps)
-            putInt(offsetKey, steps)
+            if (lastRaw >= 0) {
+                putInt(baselineKey, lastRaw)
+            } else {
+                remove(baselineKey)
+            }
+            putInt(totalKey, safeSteps)
+            putInt(offsetKey, safeSteps)
         }
-        return steps
+        return safeSteps
     }
 
+    @Synchronized
     fun clear(context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { clear() }
     }

@@ -50,8 +50,27 @@ def test_parse_usda_foundation_record():
     assert "Manzo" in food.name
     assert food.calories_100g == 198
     assert food.protein_100g == 21.5
-    assert food.sodium_100g == 54.0
+    assert food.sodium_100g == 0.054
     assert food.source == "USDA"
+
+
+def test_parse_usda_nested_nutrient_units():
+    """Regression P-5: support nested nutrient.unitName for kJ->kcal and MG->g sodium."""
+    raw_usda = {
+        "description": "Chicken, breast, raw",
+        "foodCategory": "Poultry",
+        "foodNutrients": [
+            {"nutrient": {"name": "Energy", "unitName": "kJ"}, "amount": 502},
+            {"nutrient": {"name": "Protein", "unitName": "G"}, "amount": 23.0},
+            {"nutrient": {"name": "Carbohydrate, by difference", "unitName": "G"}, "amount": 0.0},
+            {"nutrient": {"name": "Total lipid (fat)", "unitName": "G"}, "amount": 2.6},
+            {"nutrient": {"name": "Sodium, Na", "unitName": "MG"}, "amount": 65},
+        ],
+    }
+    food = parse_usda_foundation_record(raw_usda)
+    assert food is not None
+    assert food.calories_100g == 120
+    assert food.sodium_100g == 0.065
 
 def test_extract_scientific_foods_file():
     sample_ciqual = [

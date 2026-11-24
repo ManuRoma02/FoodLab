@@ -147,12 +147,21 @@ class PreferencesManager private constructor(context: Context) {
     fun reset() {
         prefs.edit { clear() }
         _themeSkin.value = ThemeSkin.ORIGINAL
-        _syncSteps.value = false
+        _syncSteps.value = true
         _soundEnabled.value = false
         _notificationsEnabled.value = false
         _hasCompletedOnboarding.value = false
         _waterGoal.value = 2500
         _stepGoal.value = 10000
+        _showCalorieDeficit.value = true
+        _showCalorieChart.value = true
+        _showMacroBreakdown.value = true
+        _showProteinChart.value = true
+        _showCarbsChart.value = true
+        _showFatChart.value = true
+        _showWeightChart.value = true
+        _showStepsChart.value = true
+        _showStreakCard.value = true
     }
 
     companion object {

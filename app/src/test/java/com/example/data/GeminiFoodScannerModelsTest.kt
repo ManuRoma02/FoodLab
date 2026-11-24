@@ -3,7 +3,9 @@ package com.example.data
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
+import java.io.IOException
 
 class GeminiFoodScannerModelsTest {
 
@@ -260,5 +262,67 @@ class GeminiFoodScannerModelsTest {
         assertEquals(500, normalized.notes?.length)
         assertEquals("Item1", normalized.detectedItems[0])
         assertEquals(80, normalized.detectedItems[1].length)
+    }
+
+    @Test
+    fun parseScanResponse_envelopeWithError_throwsIOExceptionWithMessage() {
+        val errorEnvelope = """
+            {
+              "error": {
+                "code": 400,
+                "message": "API key expired",
+                "status": "INVALID_ARGUMENT"
+              }
+            }
+        """.trimIndent()
+
+        try {
+            GeminiFoodScannerService.parseScanResponse(errorEnvelope)
+            fail("Expected IOException")
+        } catch (e: IOException) {
+            assertTrue(e.message!!.contains("API key expired"))
+        }
+    }
+
+    @Test
+    fun parseScanResponse_envelopeBlockedByPromptFeedback_throwsIOExceptionWithBlockReason() {
+        val blockedEnvelope = """
+            {
+              "candidates": [],
+              "promptFeedback": {
+                "blockReason": "SAFETY"
+              }
+            }
+        """.trimIndent()
+
+        try {
+            GeminiFoodScannerService.parseScanResponse(blockedEnvelope)
+            fail("Expected IOException")
+        } catch (e: IOException) {
+            assertTrue(e.message!!.contains("SAFETY"))
+        }
+    }
+
+    @Test
+    fun parseScanResponse_envelopeWithEmptyCandidates_throwsIOException() {
+        val emptyEnvelope = """
+            {
+              "candidates": [
+                {
+                  "content": {
+                    "parts": []
+                  },
+                  "finishReason": "RECITATION"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        try {
+            GeminiFoodScannerService.parseScanResponse(emptyEnvelope)
+            fail("Expected IOException")
+        } catch (e: IOException) {
+            assertTrue(e.message!!.contains("RECITATION"))
+        }
     }
 }

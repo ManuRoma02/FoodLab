@@ -2,6 +2,12 @@ package com.example.util
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -287,5 +293,88 @@ class OtaUpdateManagerTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is SecurityException)
         assertTrue(manager.state.value is OtaUpdateState.Error)
+    }
+
+    @Test
+    fun testDownloadUpdate_whenCancelled_rethrowsAndCleansTempWithoutErrorState() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val updatesDir = File(context.cacheDir, "ota_updates").apply { mkdirs() }
+        val mockBytes = ByteArray(32 * 1024) { 1 }
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                Response.Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body(mockBytes.toResponseBody("application/vnd.android.package-archive".toMediaType()))
+                    .build()
+            }
+            .build()
+
+        val manager = OtaUpdateManager(client = client)
+        val info = OtaUpdateInfo(
+            versionCode = 41,
+            versionName = "1.0.41",
+            apkUrl = "https://example.com/app-v1.0.41.apk",
+            changelog = "Cancel test",
+            sha256 = "0".repeat(64)
+        )
+
+        var caughtCancellation = false
+        val job = launch {
+            try {
+                manager.downloadUpdate(context, info) { _, _, _ ->
+                    throw CancellationException("UI left screen")
+                }
+            } catch (e: CancellationException) {
+                caughtCancellation = true
+            }
+        }
+        job.join()
+
+        assertTrue("CancellationException must be rethrown", caughtCancellation)
+        assertFalse("State must not become Error on cancellation", manager.state.value is OtaUpdateState.Error)
+        assertFalse(File(updatesDir, "FoodLab_v1.0.41.apk.tmp").exists())
+    }
+
+    @Test
+    fun testStartDownloadUpdate_survivesCallerScopeCancellation() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mockBytes = "mock apk binary payload".toByteArray()
+        val gate = java.util.concurrent.CountDownLatch(1)
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                gate.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                Response.Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body(mockBytes.toResponseBody("application/vnd.android.package-archive".toMediaType()))
+                    .build()
+            }
+            .build()
+
+        val manager = OtaUpdateManager(client = client)
+        val info = OtaUpdateInfo(
+            versionCode = 42,
+            versionName = "1.0.42",
+            apkUrl = "https://example.com/app-v1.0.42.apk",
+            changelog = "Background scope test",
+            sha256 = "78eda42ba38a4ab03ca69c7bec6bc6406607579bda7f5bdf254540451add318f"
+        )
+
+        val callerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        var downloadJob: kotlinx.coroutines.Job? = null
+        callerScope.launch {
+            downloadJob = manager.startDownloadUpdate(context, info)
+        }.join()
+        // Simulate user leaving OtaUpdateCard before download completes
+        callerScope.cancel()
+        gate.countDown()
+        downloadJob!!.join()
+
+        assertTrue("Download on manager otaScope should finish ReadyToInstall", manager.state.value is OtaUpdateState.ReadyToInstall)
     }
 }

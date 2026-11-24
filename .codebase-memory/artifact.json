@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "e01898c774aa408958effc21e31671979035f4ae",
-    "indexed_at": "2026-09-28T23:10:41Z",
-    "project": "C-Users-developer-Dropbox-FoodLab",
-    "nodes": 3415,
-    "edges": 12427,
-    "original_size": 13303808,
-    "compressed_size": 2148507,
-    "compression_level": 9
+    "commit": "104c42db5358a3b2cdb3b7e17d9422213727ea24",
+    "indexed_at": "2026-11-17T19:22:45Z",
+    "project": "C-Users-manue-Dropbox-FoodLab",
+    "nodes": 2478,
+    "edges": 9980,
+    "original_size": 14417920,
+    "compressed_size": 2182307,
+    "compression_level": 3
 }

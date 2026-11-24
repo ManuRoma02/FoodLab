@@ -13,16 +13,20 @@ import com.example.data.MealEntry
 import com.example.data.Repository
 import com.example.util.MealTypes
 import com.example.util.WidgetUpdater
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.util.Date
+import kotlin.coroutines.coroutineContext
 import kotlin.math.roundToInt
 
 /**
@@ -37,7 +41,8 @@ sealed interface GeminiScanUiState {
 
     data class Success(
         val result: GeminiFoodScanResult,
-        val adjustedGrams: Int
+        val adjustedGrams: Int,
+        val isSaving: Boolean = false
     ) : GeminiScanUiState {
         /**
          * Convenience accessor returning the scan result scaled to [adjustedGrams].
@@ -73,13 +78,15 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
     val uiState: StateFlow<GeminiScanUiState> = _uiState.asStateFlow()
 
     private var lastAnalyzedBytes: ByteArray? = null
+    private var activeScanJob: Job? = null
+    private var activeSaveJob: Job? = null
 
     /**
      * Updates the portion grams for the currently analyzed meal before confirming.
      */
     fun updateAdjustedGrams(grams: Int) {
         val currentState = _uiState.value
-        if (currentState is GeminiScanUiState.Success) {
+        if (currentState is GeminiScanUiState.Success && !currentState.isSaving) {
             val safeGrams = grams.coerceIn(1, 5_000)
             _uiState.value = currentState.copy(adjustedGrams = safeGrams)
         }
@@ -89,6 +96,8 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
      * Resets the scan UI state back to [GeminiScanUiState.Idle] and clears cached photo data.
      */
     fun resetState() {
+        activeScanJob?.cancel()
+        activeScanJob = null
         _uiState.value = GeminiScanUiState.Idle
         lastAnalyzedBytes = null
     }
@@ -104,8 +113,15 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
     /**
      * Analyzes raw JPEG byte array with Gemini Vision service.
      */
-    fun analyzeImageBytes(jpegBytes: ByteArray): Job = viewModelScope.launch {
-        analyzeImageBytesInternal(jpegBytes)
+    fun analyzeImageBytes(jpegBytes: ByteArray): Job {
+        activeScanJob?.cancel()
+        lateinit var job: Job
+        job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            analyzeImageBytesInternal(jpegBytes, job)
+        }
+        activeScanJob = job
+        job.start()
+        return job
     }
 
     /**
@@ -116,28 +132,43 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
         bitmap: Bitmap,
         maxDimension: Int = 1024,
         quality: Int = 85
-    ): Job = viewModelScope.launch {
-        if (bitmap.isRecycled) {
-            _uiState.value = GeminiScanUiState.Error(
-                message = "Immagine riciclata o non valida",
-                canRetry = false
-            )
-            return@launch
-        }
+    ): Job {
+        activeScanJob?.cancel()
+        lateinit var job: Job
+        job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            if (bitmap.isRecycled) {
+                if (activeScanJob === job) {
+                    _uiState.value = GeminiScanUiState.Error(
+                        message = "Immagine riciclata o non valida",
+                        canRetry = false
+                    )
+                    activeScanJob = null
+                }
+                return@launch
+            }
 
-        _uiState.value = GeminiScanUiState.Analyzing("Preparazione e compressione immagine...")
-        val bytes = withContext(defaultDispatcher) {
-            compressBitmapToJpeg(bitmap, maxDimension, quality)
+            _uiState.value = GeminiScanUiState.Analyzing("Preparazione e compressione immagine...")
+            val bytes = withContext(defaultDispatcher) {
+                compressBitmapToJpeg(bitmap, maxDimension, quality)
+            }
+            if (!isActive || activeScanJob !== job) return@launch
+            analyzeImageBytesInternal(bytes, job)
         }
-        analyzeImageBytesInternal(bytes)
+        activeScanJob = job
+        job.start()
+        return job
     }
 
-    private suspend fun analyzeImageBytesInternal(jpegBytes: ByteArray) {
+    private suspend fun analyzeImageBytesInternal(jpegBytes: ByteArray, scanJob: Job) {
+        if (!coroutineContext.isActive || activeScanJob !== scanJob) return
         if (jpegBytes.isEmpty()) {
-            _uiState.value = GeminiScanUiState.Error(
-                message = "Immagine non valida o vuota",
-                canRetry = false
-            )
+            if (activeScanJob === scanJob) {
+                _uiState.value = GeminiScanUiState.Error(
+                    message = "Immagine non valida o vuota",
+                    canRetry = false
+                )
+                activeScanJob = null
+            }
             return
         }
 
@@ -145,6 +176,8 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
         _uiState.value = GeminiScanUiState.Analyzing("Analisi del piatto in corso...")
 
         val outcome = scannerService.analyzeFoodImage(jpegBytes)
+        if (!coroutineContext.isActive || activeScanJob !== scanJob) return
+
         outcome.fold(
             onSuccess = { result ->
                 val normalized = result.normalized()
@@ -154,6 +187,7 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
                 )
             },
             onFailure = { error ->
+                if (error is CancellationException) throw error
                 val message = error.message?.takeIf { it.isNotBlank() }
                     ?: "Errore durante l'analisi del piatto"
                 _uiState.value = GeminiScanUiState.Error(
@@ -162,6 +196,9 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
                 )
             }
         )
+        if (activeScanJob === scanJob) {
+            activeScanJob = null
+        }
     }
 
     /**
@@ -174,66 +211,86 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
         grams: Int,
         mealType: String,
         dateString: String
-    ): Job = viewModelScope.launch {
-        try {
-            val safeGrams = grams.coerceIn(1, 5_000)
-            val scaledResult = if (safeGrams != result.estimatedGrams) {
-                result.scaledToGrams(safeGrams)
-            } else {
-                result
-            }.normalized()
-
-            // 1. Create or persist FoodItem in catalog for historical tracking and reuse
-            val foodItem = FoodItem(
-                name = scaledResult.foodName,
-                brand = "Gemini AI",
-                caloriesPer100g = scaledResult.caloriesPer100g,
-                proteinPer100g = scaledResult.proteinPer100g,
-                carbsPer100g = scaledResult.carbsPer100g,
-                fatPer100g = scaledResult.fatPer100g,
-                defaultServingSize = safeGrams,
-                useCount = 1,
-                isUserCreated = true
-            )
-            val insertedFoodId = repository.insertFood(foodItem).toInt()
-
-            // 2. Canonicalize meal type and ensure valid date
-            val canonicalMealType = MealTypes.canonicalize(mealType)
-            val finalDateString = dateString.trim().ifEmpty {
-                SessionManager.formatDate(Date())
+    ): Job {
+        activeSaveJob?.takeIf { it.isActive }?.let { return it }
+        val currentState = _uiState.value
+        if (currentState is GeminiScanUiState.Success) {
+            if (currentState.isSaving) {
+                return activeSaveJob ?: Job().apply { complete() }
             }
-
-            // 3. Insert MealEntry with exact scaled macros
-            val entry = MealEntry(
-                dateString = finalDateString,
-                mealType = canonicalMealType,
-                foodId = insertedFoodId,
-                foodName = scaledResult.foodName,
-                quantityGrams = safeGrams,
-                calories = scaledResult.calories,
-                protein = scaledResult.protein,
-                carbs = scaledResult.carbs,
-                fat = scaledResult.fat,
-                caloriesPer100g = scaledResult.caloriesPer100g,
-                proteinPer100g = scaledResult.proteinPer100g,
-                carbsPer100g = scaledResult.carbsPer100g,
-                fatPer100g = scaledResult.fatPer100g,
-                timestamp = System.currentTimeMillis()
-            )
-            repository.insertMeal(entry)
-
-            // 4. Update home widgets
-            widgetUpdater(getApplication())
-
-            // 5. Reset state
-            _uiState.value = GeminiScanUiState.Idle
-            lastAnalyzedBytes = null
-        } catch (e: Exception) {
-            _uiState.value = GeminiScanUiState.Error(
-                message = e.localizedMessage ?: "Errore durante il salvataggio del pasto",
-                canRetry = false
-            )
+            _uiState.value = currentState.copy(isSaving = true)
         }
+        lateinit var job: Job
+        job = viewModelScope.launch(start = CoroutineStart.LAZY) {
+            try {
+                val safeGrams = grams.coerceIn(1, 5_000)
+                val scaledResult = if (safeGrams != result.estimatedGrams) {
+                    result.scaledToGrams(safeGrams)
+                } else {
+                    result
+                }.normalized()
+
+                // 1. Create or persist FoodItem in catalog for historical tracking and reuse
+                val foodItem = FoodItem(
+                    name = scaledResult.foodName,
+                    brand = "Gemini AI",
+                    caloriesPer100g = scaledResult.caloriesPer100g,
+                    proteinPer100g = scaledResult.proteinPer100g,
+                    carbsPer100g = scaledResult.carbsPer100g,
+                    fatPer100g = scaledResult.fatPer100g,
+                    defaultServingSize = safeGrams,
+                    useCount = 1,
+                    isUserCreated = true
+                )
+                val insertedFoodId = repository.insertFood(foodItem).toInt()
+
+                // 2. Canonicalize meal type and ensure valid date
+                val canonicalMealType = MealTypes.canonicalize(mealType)
+                val finalDateString = dateString.trim().ifEmpty {
+                    SessionManager.formatDate(Date())
+                }
+
+                // 3. Insert MealEntry with exact scaled macros
+                val entry = MealEntry(
+                    dateString = finalDateString,
+                    mealType = canonicalMealType,
+                    foodId = insertedFoodId,
+                    foodName = scaledResult.foodName,
+                    quantityGrams = safeGrams,
+                    calories = scaledResult.calories,
+                    protein = scaledResult.protein,
+                    carbs = scaledResult.carbs,
+                    fat = scaledResult.fat,
+                    caloriesPer100g = scaledResult.caloriesPer100g,
+                    proteinPer100g = scaledResult.proteinPer100g,
+                    carbsPer100g = scaledResult.carbsPer100g,
+                    fatPer100g = scaledResult.fatPer100g,
+                    timestamp = System.currentTimeMillis()
+                )
+                repository.insertMeal(entry)
+
+                // 4. Update home widgets
+                widgetUpdater(getApplication())
+
+                // 5. Reset state
+                _uiState.value = GeminiScanUiState.Idle
+                lastAnalyzedBytes = null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = GeminiScanUiState.Error(
+                    message = e.localizedMessage ?: "Errore durante il salvataggio del pasto",
+                    canRetry = false
+                )
+            } finally {
+                if (activeSaveJob === job) {
+                    activeSaveJob = null
+                }
+            }
+        }
+        activeSaveJob = job
+        job.start()
+        return job
     }
 
     /**
@@ -244,6 +301,7 @@ class GeminiFoodScanViewModel @JvmOverloads constructor(
         dateString: String = SessionManager.formatDate(Date())
     ): Job? {
         val current = _uiState.value as? GeminiScanUiState.Success ?: return null
+        if (current.isSaving) return activeSaveJob
         return confirmAndLogMeal(
             result = current.result,
             grams = current.adjustedGrams,

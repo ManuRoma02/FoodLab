@@ -117,3 +117,56 @@ def test_user_export_ingestion_e2e():
     c.execute("SELECT COUNT(*) FROM food_portions")
     assert c.fetchone()[0] == 2
     conn.close()
+
+
+def test_user_export_guards_bad_weights_and_dedups_portions():
+    """Regression P-8: invalid/non-finite weights ignored; repeated merge skips duplicate portions."""
+    mock_user_foods = [
+        {
+            "name": "Bowl Proteica",
+            "brand": "User",
+            "barcode": "",
+            "caloriesPer100g": 150,
+            "proteinPer100g": 12.0,
+            "carbsPer100g": 18.0,
+            "fatPer100g": 3.0,
+            "portions": [
+                {"name": "Valid", "weightGrams": 200},
+                {"name": "BadText", "weightGrams": "abc"},
+                {"name": "BadNaN", "weightGrams": "nan"},
+                {"name": "BadInf", "weightGrams": "inf"},
+                {"name": "BadBool", "weightGrams": True},
+                {"name": "BadNeg", "weightGrams": -10},
+            ],
+        }
+    ]
+    with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".json", encoding="utf-8") as f:
+        json.dump(mock_user_foods, f)
+        json_path = f.name
+
+    foods, portions = parse_user_export(json_path)
+    assert len(foods) == 1
+    assert len(portions) == 1
+    assert portions[0].name == "Valid"
+
+    with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".db") as db_file:
+        db_path = db_file.name
+
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "CREATE TABLE foods (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, brand TEXT, category TEXT, barcode TEXT, calories_100g REAL, protein_100g REAL, carbs_100g REAL, fat_100g REAL, default_serving_size INTEGER, source TEXT)"
+    )
+    conn.execute(
+        "CREATE TABLE food_portions (id INTEGER PRIMARY KEY AUTOINCREMENT, food_id INTEGER NOT NULL, name TEXT NOT NULL, weight_grams REAL NOT NULL)"
+    )
+    conn.commit()
+    conn.close()
+
+    assert merge_user_foods_into_db(db_path, foods, portions) == 1
+    assert merge_user_foods_into_db(db_path, foods, portions) == 0
+
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM food_portions")
+    assert c.fetchone()[0] == 1
+    conn.close()

@@ -78,4 +78,23 @@ class HealthConnectManagerTest {
             availability == HealthConnectAvailability.NOT_SUPPORTED
         )
     }
+
+    @Test
+    fun caloriesAggregateMetrics_includesOnlyPermittedMetrics() {
+        assertEquals(
+            setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL),
+            manager.caloriesAggregateMetrics(includeTotal = true, includeActive = false)
+        )
+        assertEquals(
+            setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
+            manager.caloriesAggregateMetrics(includeTotal = false, includeActive = true)
+        )
+        assertEquals(
+            setOf(TotalCaloriesBurnedRecord.ENERGY_TOTAL, ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
+            manager.caloriesAggregateMetrics(includeTotal = true, includeActive = true)
+        )
+        assertTrue(
+            manager.caloriesAggregateMetrics(includeTotal = false, includeActive = false).isEmpty()
+        )
+    }
 }

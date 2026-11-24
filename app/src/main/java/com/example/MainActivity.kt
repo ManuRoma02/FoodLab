@@ -225,9 +225,10 @@ class MainActivity : ComponentActivity() {
                         previousToday.value = todayDate
                     }
 
-                    DisposableEffect(context) {
+                    DisposableEffect(context, dashboardViewModel) {
                         val receiver = object : android.content.BroadcastReceiver() {
                             override fun onReceive(c: android.content.Context?, intent: Intent?) {
+                                dashboardViewModel.refreshToday()
                                 val newToday = SessionManager.formatDate(Date())
                                 if (currentDateState.value == previousToday.value) {
                                     currentDateState.value = newToday
@@ -241,7 +242,14 @@ class MainActivity : ComponentActivity() {
                             addAction(Intent.ACTION_TIMEZONE_CHANGED)
                         }
                         context.registerReceiver(receiver, filter)
+                        val lifecycleObserver = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                                dashboardViewModel.refreshToday()
+                            }
+                        }
+                        lifecycle.addObserver(lifecycleObserver)
                         onDispose {
+                            lifecycle.removeObserver(lifecycleObserver)
                             try { context.unregisterReceiver(receiver) } catch (_: Exception) {}
                         }
                     }
@@ -286,7 +294,14 @@ class MainActivity : ComponentActivity() {
                         currentIntent?.let { intentObj ->
                             if (intentObj.action == "WIDGET_ADD_FOOD") {
                                 currentDateState.value = SessionManager.formatDate(Date())
-                                val mealType = MealTypes.canonicalize(intentObj.getStringExtra("MEAL_TYPE"))
+                                val rawMealType = intentObj.getStringExtra("MEAL_TYPE")
+                                val mealType = if (rawMealType.isNullOrBlank()) {
+                                    MealTypes.inferMealTypeFromHour(
+                                        java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                                    )
+                                } else {
+                                    MealTypes.canonicalize(rawMealType)
+                                }
                                 navController.navigate(Routes.createSearchRoute(mealType)) {
                                     popUpTo(Routes.Dashboard) { inclusive = false }
                                     launchSingleTop = true

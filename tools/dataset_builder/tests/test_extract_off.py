@@ -341,3 +341,35 @@ def test_stream_off_italian_products_csv_gz():
     finally:
         Path(gz_path).unlink(missing_ok=True)
 
+
+def test_stream_off_tsv_kj_fallback_and_empty_edge_columns():
+    """Regression P-2 & P-3: energy_100g kJ->kcal fallback and empty leading/trailing TSV columns."""
+    header = [
+        "code", "product_name", "brands", "countries_tags",
+        "energy-kcal_100g", "energy_100g", "proteins_100g",
+        "carbohydrates_100g", "fat_100g", "fiber_100g",
+    ]
+    rows = [
+        # Empty leading code AND empty trailing fiber_100g, plus kJ-only energy_100g (2255 kJ -> 539 kcal)
+        ["", "Biscotti kJ", "MarcaTest", "en:italy", "", "2255", "6.3", "57.5", "30.9", ""],
+        # Non-finite energy_100g must be rejected
+        ["8000000000111", "Prodotto NaN", "MarcaTest", "en:italy", "", "nan", "6.3", "57.5", "30.9", ""],
+    ]
+    with tempfile.NamedTemporaryFile(suffix=".csv.gz", delete=False) as f:
+        gz_path = f.name
+
+    try:
+        with gzip.open(gz_path, "wt", encoding="utf-8") as gz:
+            gz.write("\t".join(header) + "\n")
+            for r in rows:
+                gz.write("\t".join(r) + "\n")
+
+        records = list(stream_off_italian_products(gz_path))
+        assert len(records) == 1
+        assert records[0].name == "Biscotti kJ"
+        assert records[0].barcode == ""
+        assert records[0].calories_100g == 539
+        assert records[0].fiber_100g is None
+    finally:
+        Path(gz_path).unlink(missing_ok=True)
+

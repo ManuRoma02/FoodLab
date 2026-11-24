@@ -6,14 +6,14 @@
     android:background="@drawable/widget_surface_bg"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="6dp">
 
     <!-- Apple Quick Action Green Circle -->
     <FrameLayout
-        android:layout_width="42dp"
-        android:layout_height="42dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:background="@drawable/widget_quick_add_btn_bg"
-        android:padding="10dp">
+        android:padding="7dp">
 
         <ImageView
             android:layout_width="match_parent"
@@ -25,14 +25,20 @@
 
     <!-- Label -->
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="2dp"
+        android:autoSizeMaxTextSize="10sp"
+        android:autoSizeMinTextSize="7sp"
+        android:autoSizeStepGranularity="1sp"
+        android:autoSizeTextType="uniform"
+        android:ellipsize="end"
         android:fontFamily="sans-serif-medium"
+        android:gravity="center"
         android:includeFontPadding="false"
-        android:singleLine="true"
+        android:maxLines="1"
         android:text="Aggiungi"
         android:textColor="#FFFFFF"
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:textStyle="bold" />
 </LinearLayout>

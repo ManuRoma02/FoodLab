@@ -40,6 +40,36 @@ class WidgetLayoutTest {
     }
 
     @Test
+    fun pedometerAndQuickAddWidgetsFitDeclaredMinimumSizes() {
+        verifyAndCapture(R.layout.widget_pedometer, 110, "widget_pedometer_2x2.png", assertFilled = true)
+        verifyAndCapture(R.layout.widget_pedometer, 144, "widget_pedometer_2x2_launcher.png", assertFilled = true)
+        verifyAndCapture(R.layout.widget_quick_add, 60, "widget_quick_add_1x1.png")
+    }
+
+    @Test
+    fun twoByTwoWidgetsStayInsideBoundsWithBurnedCaloriesTarget() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val density = context.resources.displayMetrics.density
+        val sizePx = (110 * density).toInt()
+        val exactSize = View.MeasureSpec.makeMeasureSpec(sizePx, View.MeasureSpec.EXACTLY)
+
+        val dailyRoot = LayoutInflater.from(context).inflate(R.layout.widget_daily_calories, null) as ViewGroup
+        dailyRoot.findViewById<TextView>(R.id.calories_text).text = "2450"
+        dailyRoot.findViewById<TextView>(R.id.daily_target_text).text = "su 2500 (+450) kcal"
+        dailyRoot.measure(exactSize, exactSize)
+        dailyRoot.layout(0, 0, sizePx, sizePx)
+        assertChildrenStayInside(dailyRoot, "daily_burned")
+
+        val petRoot = LayoutInflater.from(context).inflate(R.layout.widget_pet_status, null) as ViewGroup
+        petRoot.findViewById<TextView>(R.id.pet_status_text).text = "IN TARGET"
+        petRoot.findViewById<TextView>(R.id.pet_hp_text).text = "2450"
+        petRoot.findViewById<TextView>(R.id.pet_target_text).text = "su 2500 (+450) kcal"
+        petRoot.measure(exactSize, exactSize)
+        petRoot.layout(0, 0, sizePx, sizePx)
+        assertChildrenStayInside(petRoot, "pet_burned")
+    }
+
+    @Test
     fun petWidgetKeepsMacroReadoutMinimal() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val root = LayoutInflater.from(context).inflate(R.layout.widget_pet_status, null)

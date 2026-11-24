@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.*
 import com.example.util.NutritionCalculator
 import com.example.util.StreakCalculator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -73,10 +74,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         .map { foods -> foods.filter { it.isFavorite } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val todayKey = flow {
-        while (true) {
-            emit(SessionManager.formatDate(java.util.Date()))
-            delay(60_000)
+    private val _todayRefreshTrigger = MutableStateFlow(0L)
+
+    fun refreshToday() {
+        _todayRefreshTrigger.update { it + 1L }
+    }
+
+    val todayKey = _todayRefreshTrigger.flatMapLatest {
+        flow {
+            while (true) {
+                emit(SessionManager.formatDate(java.util.Date()))
+                delay(60_000)
+            }
         }
     }.distinctUntilChanged()
 
@@ -105,7 +114,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             todayBurnedCalories = burned,
             historicalBurnedCalories = historicalBurned
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun deleteMealEntry(id: Int) {
         viewModelScope.launch {

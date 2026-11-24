@@ -142,7 +142,7 @@ def run_pipeline(
     """
     start_time = time.time()
     active_sources = [s.strip().lower() for s in sources if s.strip()]
-    valid_choices = {"crea", "chains", "off", "scrapling", "scientific"}
+    valid_choices = {"crea", "chains", "off", "traditional", "fitness", "scrapling", "scientific"}
     invalid = [s for s in active_sources if s not in valid_choices]
     if invalid:
         raise ValueError(f"Unknown sources specified: {invalid}. Supported choices: {sorted(valid_choices)}")
@@ -296,12 +296,14 @@ def run_pipeline(
             logger.info("Ingesting European & International Fitness Brands from: %s", off_path)
             try:
                 fit_count = 0
+                fit_portions = 0
                 for f_rec, p_list in stream_fitness_products_csv_gz(off_path, limit=limit):
                     all_foods.append(f_rec)
                     all_portions.extend(p_list)
                     fit_count += 1
+                    fit_portions += len(p_list)
                 stats["fitness"]["extracted_foods"] = fit_count
-                stats["fitness"]["extracted_portions"] = len([p for p in all_portions if p.food_barcode_or_key])
+                stats["fitness"]["extracted_portions"] = fit_portions
                 logger.info("Fitness Nutrition: Streamed %d verified items", fit_count)
             except Exception as e:
                 logger.error("Failed to extract Fitness Nutrition: %s", e)

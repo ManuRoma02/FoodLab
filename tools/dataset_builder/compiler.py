@@ -7,6 +7,7 @@ Also supports optional export to Apache Parquet format.
 
 from __future__ import annotations
 
+import math
 import re
 import sqlite3
 from pathlib import Path
@@ -276,15 +277,19 @@ class DatasetCompiler:
             # Defense-in-depth: ensure mandatory macronutrients are valid and physically consistent
             if (
                 record.calories_100g is None
+                or not math.isfinite(record.calories_100g)
                 or record.calories_100g < 0
                 or record.calories_100g > 950
                 or record.protein_100g is None
+                or not math.isfinite(record.protein_100g)
                 or record.protein_100g < 0
                 or record.protein_100g > 100.5
                 or record.carbs_100g is None
+                or not math.isfinite(record.carbs_100g)
                 or record.carbs_100g < 0
                 or record.carbs_100g > 100.5
                 or record.fat_100g is None
+                or not math.isfinite(record.fat_100g)
                 or record.fat_100g < 0
                 or record.fat_100g > 100.5
                 or (record.protein_100g + record.carbs_100g + record.fat_100g > 102.0)
@@ -359,27 +364,34 @@ class DatasetCompiler:
             portion_rows: List[Tuple[int, str, float]] = []
 
             with conn:
+                cursor.execute("DELETE FROM food_portions;")
+                cursor.execute("DELETE FROM foods;")
                 if food_rows:
                     cursor.executemany(INSERT_FOOD_SQL, food_rows)
 
                 # Link portions if any provided
                 portions_list = list(portions)
                 if portions_list and food_rows:
-                    cursor.execute("SELECT id, barcode, name FROM foods")
+                    cursor.execute("SELECT id, barcode, brand, name FROM foods")
                     all_foods = cursor.fetchall()
 
                     barcode_to_id: Dict[str, int] = {}
+                    brand_name_to_id: Dict[Tuple[str, str], int] = {}
+                    norm_brand_name_to_id: Dict[Tuple[str, str], int] = {}
                     name_to_id: Dict[str, int] = {}
                     norm_name_to_id: Dict[str, int] = {}
                     all_food_ids: Set[int] = set()
 
-                    for fid, bc, fname in all_foods:
+                    for fid, bc, fbrand, fname in all_foods:
                         all_food_ids.add(fid)
                         if bc:
                             barcode_to_id[bc] = fid
                         if fname:
-                            name_to_id[fname] = fid
-                            norm_name_to_id[_normalize_key_text(fname)] = fid
+                            b_str = fbrand or ""
+                            brand_name_to_id[(b_str, fname)] = fid
+                            norm_brand_name_to_id[(_normalize_key_text(b_str), _normalize_key_text(fname))] = fid
+                            name_to_id.setdefault(fname, fid)
+                            norm_name_to_id.setdefault(_normalize_key_text(fname), fid)
 
                     seen_portions = set()
                     for p in portions_list:
@@ -396,11 +408,21 @@ class DatasetCompiler:
 
                         if key in barcode_to_id:
                             food_id = barcode_to_id[key]
-                        elif key in name_to_id:
-                            food_id = name_to_id[key]
-                        elif _normalize_key_text(key) in norm_name_to_id:
-                            food_id = norm_name_to_id[_normalize_key_text(key)]
-                        elif key.isdigit() and int(key) in all_food_ids:
+                        elif "|" in key or "::" in key:
+                            sep = "::" if "::" in key else "|"
+                            b_part, n_part = [x.strip() for x in key.split(sep, 1)]
+                            food_id = brand_name_to_id.get((b_part, n_part)) or norm_brand_name_to_id.get(
+                                (_normalize_key_text(b_part), _normalize_key_text(n_part))
+                            )
+                        if food_id is None:
+                            norm_key = _normalize_key_text(key)
+                            food_id = (
+                                brand_name_to_id.get(("", key))
+                                or norm_brand_name_to_id.get(("", norm_key))
+                                or name_to_id.get(key)
+                                or norm_name_to_id.get(norm_key)
+                            )
+                        if food_id is None and key.isdigit() and int(key) in all_food_ids:
                             food_id = int(key)
 
                         if food_id is not None:

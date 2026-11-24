@@ -41,8 +41,7 @@ class PedometerWidgetProvider : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             updatePedometerWidget(context, appWidgetManager, appWidgetId, StepCounterStore.savedSteps(context))
         }
-        triggerSensorUpdate(context)
-        triggerHealthConnectSync(context)
+        startAsyncRefreshes(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -55,13 +54,23 @@ class PedometerWidgetProvider : AppWidgetProvider() {
                 updatePedometerWidget(context, appWidgetManager, id, saved)
             }
             if (intent.action != "com.example.UPDATE_WIDGETS") {
-                triggerSensorUpdate(context)
-                triggerHealthConnectSync(context)
+                startAsyncRefreshes(context)
             }
         }
     }
 
-    private fun triggerSensorUpdate(context: Context) {
+    private fun startAsyncRefreshes(context: Context) {
+        val coordinator = SharedPendingResult(try { goAsync() } catch (_: Exception) { null })
+        val setupHold = coordinator.register()
+        try {
+            triggerSensorUpdate(context, coordinator)
+            triggerHealthConnectSync(context, coordinator)
+        } finally {
+            setupHold()
+        }
+    }
+
+    private fun triggerSensorUpdate(context: Context, coordinator: SharedPendingResult) {
         val now = System.currentTimeMillis()
         if (now - lastSensorCheckTimeMs < SENSOR_DEBOUNCE_MS) return
         lastSensorCheckTimeMs = now
@@ -71,7 +80,7 @@ class PedometerWidgetProvider : AppWidgetProvider() {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return
         val stepSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) ?: return
 
-        val pendingResult = try { goAsync() } catch (_: Exception) { null }
+        val done = coordinator.register()
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         var isFinished = false
 
@@ -101,8 +110,10 @@ class PedometerWidgetProvider : AppWidgetProvider() {
                     isFinished = true
                     try {
                         sensorManager.unregisterListener(this)
-                        pendingResult?.finish()
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    } finally {
+                        done()
+                    }
                 }
             }
         }
@@ -115,7 +126,7 @@ class PedometerWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun triggerHealthConnectSync(context: Context) {
+    private fun triggerHealthConnectSync(context: Context, coordinator: SharedPendingResult) {
         val now = System.currentTimeMillis()
         if (now - lastHcSyncTimeMs < HC_SYNC_DEBOUNCE_MS) return
         lastHcSyncTimeMs = now
@@ -124,7 +135,7 @@ class PedometerWidgetProvider : AppWidgetProvider() {
         val hcManager = app.healthConnectManager
         if (hcManager.checkAvailability() != com.example.util.HealthConnectAvailability.AVAILABLE) return
 
-        val pendingResult = try { goAsync() } catch (_: Exception) { null }
+        val done = coordinator.register()
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             try {
                 kotlinx.coroutines.withTimeout(5000L) {
@@ -148,7 +159,36 @@ class PedometerWidgetProvider : AppWidgetProvider() {
             } catch (e: Exception) {
                 android.util.Log.w("PedometerWidgetProvider", "Failed to sync HC from widget", e)
             } finally {
-                try { pendingResult?.finish() } catch (_: Exception) {}
+                done()
+            }
+        }
+    }
+}
+
+internal class SharedPendingResult(
+    private val pendingResult: android.content.BroadcastReceiver.PendingResult?,
+    private val onFinished: (() -> Unit)? = null
+) {
+    private val activeTasks = java.util.concurrent.atomic.AtomicInteger(0)
+    private val finished = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    fun register(): () -> Unit {
+        activeTasks.incrementAndGet()
+        val released = java.util.concurrent.atomic.AtomicBoolean(false)
+        return {
+            if (released.compareAndSet(false, true) && activeTasks.decrementAndGet() <= 0) {
+                finishNow()
+            }
+        }
+    }
+
+    private fun finishNow() {
+        if (finished.compareAndSet(false, true)) {
+            try {
+                pendingResult?.finish()
+            } catch (_: Exception) {
+            } finally {
+                onFinished?.invoke()
             }
         }
     }
@@ -186,6 +226,7 @@ internal fun updatePedometerWidget(context: Context, appWidgetManager: AppWidget
             10000
         }
         views.setTextViewText(R.id.steps_text, steps.toString())
+        views.setTextViewText(R.id.steps_goal_text, "Obiettivo: %,d".format(Locale.ITALY, stepGoal))
         views.setProgressBar(R.id.steps_progress, stepGoal, steps, false)
     }
 

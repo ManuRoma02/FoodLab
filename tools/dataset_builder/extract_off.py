@@ -10,6 +10,7 @@ import gzip
 import io
 import json
 import logging
+import math
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Union
 import urllib.request
@@ -296,8 +297,8 @@ def stream_off_italian_products(
 
     try:
         for line in stream:
-            line_str = line.strip()
-            if not line_str:
+            line_str = line.rstrip("\r\n")
+            if not line_str.strip():
                 continue
 
             # Auto-detect tab-separated CSV from first line
@@ -359,12 +360,23 @@ def stream_off_italian_products(
                         return v if v else None
                     return None
 
+                kcal_val: Optional[Union[str, float]] = get_val("energy-kcal_100g")
+                if kcal_val is None:
+                    raw_kj = get_val("energy_100g")
+                    if raw_kj is not None:
+                        try:
+                            kj_num = float(raw_kj.replace(",", "."))
+                            if math.isfinite(kj_num):
+                                kcal_val = kj_num / 4.184
+                        except ValueError:
+                            kcal_val = None
+
                 raw_dict = {
                     "name": name,
                     "brand": get_val("brands") or "",
                     "category": get_val("categories") or "",
                     "barcode": barcode,
-                    "calories_100g": get_val("energy-kcal_100g") or get_val("energy_100g"),
+                    "calories_100g": kcal_val,
                     "protein_100g": get_val("proteins_100g"),
                     "carbs_100g": get_val("carbohydrates_100g"),
                     "fat_100g": get_val("fat_100g"),
